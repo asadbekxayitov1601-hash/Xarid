@@ -1,0 +1,114 @@
+// SQLite for local dev. For production switch provider to "postgresql"
+// and set DATABASE_URL to a Supabase/Neon connection string — the schema
+// is written to be portable (no SQLite-only features, string-based enums).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Both buyers (restaurants) and suppliers. type: BUYER | SUPPLIER
+model Organization {
+  id        String   @id @default(cuid())
+  type      String
+  name      String
+  district  String
+  phone     String
+  createdAt DateTime @default(now())
+
+  users  User[]
+  offers SupplierOffer[]
+  orders Order[]
+}
+
+// role: OWNER | STAFF | ADMIN
+model User {
+  id         String   @id @default(cuid())
+  phone      String?  @unique
+  telegramId BigInt?  @unique
+  name       String?
+  role       String   @default("OWNER")
+  orgId      String?
+  org        Organization? @relation(fields: [orgId], references: [id])
+  createdAt  DateTime @default(now())
+
+  orders Order[]
+}
+
+// Canonical SKU, e.g. "Onion, yellow / kg". unit: KG | PIECE | LITER | BLOCK
+model Product {
+  id       String @id @default(cuid())
+  nameUz   String
+  nameRu   String
+  category String
+  unit     String
+  sortKey  Int    @default(0)
+
+  offers SupplierOffer[]
+}
+
+// A supplier's price for a canonical SKU. Prices are integer UZS.
+// price = what the buyer sees (take rate already inside),
+// costPrice = what the supplier receives.
+model SupplierOffer {
+  id         String  @id @default(cuid())
+  supplierId String
+  supplier   Organization @relation(fields: [supplierId], references: [id])
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  price      Int
+  costPrice  Int
+  available  Boolean @default(true)
+  minQty     Float   @default(0)
+
+  items OrderItem[]
+
+  @@unique([supplierId, productId])
+}
+
+// The buyer's single morning basket.
+// status: PLACED | CONFIRMED | PARTIAL | DELIVERING | DELIVERED | CANCELLED
+model Order {
+  id           String   @id @default(cuid())
+  buyerUserId  String
+  buyerUser    User     @relation(fields: [buyerUserId], references: [id])
+  buyerOrgId   String?
+  buyerOrg     Organization? @relation(fields: [buyerOrgId], references: [id])
+  buyerName    String
+  buyerPhone   String
+  address      String
+  status       String   @default("PLACED")
+  deliveryDate DateTime
+  total        Int
+  createdAt    DateTime @default(now())
+
+  items OrderItem[]
+}
+
+// Prices and quantities are snapshotted at order time; qtyActual is the
+// weighed/accepted quantity recorded at delivery — invoicing uses qtyActual.
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  offerId   String
+  offer     SupplierOffer @relation(fields: [offerId], references: [id])
+  qty       Float
+  qtyActual Float?
+  price     Int
+  costPrice Int
+}
+
+// Phase 0 lead capture from the landing page. role: BUYER | SUPPLIER
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  role      String
+  district  String?
+  createdAt DateTime @default(now())
+}

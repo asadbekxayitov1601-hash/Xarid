@@ -35,6 +35,16 @@ Everything lives in **one Next.js repository** until Phase 4. No microservices,
 no monorepo tooling, no Kubernetes. A solo founder's biggest risk is build
 time, not architecture purity.
 
+> **Decision (2026-06-10): website + Telegram Mini App from one codebase.**
+> Instead of "landing first, app later", the same Next.js app serves the
+> public website AND the Telegram Mini App (Telegram Mini Apps are web apps
+> opened inside Telegram). Users coming from the bot are authenticated
+> automatically via initData; browser users use the same pages. Phases 0 and 1
+> are therefore built together: the landing page and the ordering flow shipped
+> in the same codebase on day one. The buyer-side "bot" reduces to a webhook
+> that hands out the Mini App button; the supplier confirmation bot (chat
+> buttons) remains as planned.
+
 ---
 
 ## Phase 0 — Validation & landing page (Weeks 1–2, $0)

@@ -31,6 +31,38 @@ haggling over the phone, and hoping the truck shows up before service.
 - **Choco Family / Ryadom** (Kazakhstan) — regional proof that food
   marketplace + own logistics works in Central Asia
 
+## Architecture: one codebase, two surfaces
+
+The same Next.js app serves both:
+
+1. **The website** (`xarid.uz`) — landing page, catalog, basket, orders in any browser.
+2. **The Telegram Mini App** — the identical app opened inside Telegram via the
+   bot's menu button. Telegram users are authenticated automatically (initData
+   HMAC validation), no login screen.
+
+This means zero duplicated work: every feature ships to web and Telegram at once.
+
+## Running locally
+
+```bash
+npm install
+cp .env.example .env        # defaults work for local dev
+npx prisma db push          # create SQLite dev database
+npx prisma db seed          # ~30 SKUs, 4 suppliers
+npm run dev                 # http://localhost:3000
+```
+
+## Connecting the Telegram Mini App (after deploying)
+
+1. Create a bot with [@BotFather](https://t.me/BotFather), put the token in
+   `TELEGRAM_BOT_TOKEN`, set `NEXT_PUBLIC_APP_URL` to the deployed HTTPS URL.
+2. Register the webhook:
+   `https://api.telegram.org/bot<TOKEN>/setWebhook?url=<APP_URL>/api/bot`
+3. In BotFather: **Bot Settings → Menu Button** → set the URL to
+   `<APP_URL>/catalog`. `/start` also replies with an "open app" button.
+4. In production switch `prisma/schema.prisma` provider to `postgresql` and
+   point `DATABASE_URL` at Supabase/Neon.
+
 ## Repository structure
 
 | Path | Purpose |
@@ -41,4 +73,8 @@ haggling over the phone, and hoping the truck shows up before service.
 
 ## Status
 
-Planning phase. No code yet — see `docs/PLAN.md` for the build sequence.
+**Phase 0–1 in progress.** Built: landing page with lead capture (UZ),
+catalog with transparent best-price-per-SKU, multi-supplier basket, order
+placement with server-side price verification, order history, Telegram Mini
+App auth + bot webhook. Next: supplier confirmation bot, admin panel, 22:00
+cutoff cron — see `docs/PLAN.md`.
