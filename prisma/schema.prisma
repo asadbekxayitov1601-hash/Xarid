@@ -18,11 +18,14 @@ model Organization {
   name      String
   district  String
   phone     String
+  // Supplier staff link their Telegram by sending /start sup_<botCode> to the bot
+  botCode   String   @unique @default(cuid())
   createdAt DateTime @default(now())
 
-  users  User[]
-  offers SupplierOffer[]
-  orders Order[]
+  users          User[]
+  offers         SupplierOffer[]
+  orders         Order[]
+  purchaseOrders PurchaseOrder[]
 }
 
 // role: OWNER | STAFF | ADMIN
@@ -86,7 +89,25 @@ model Order {
   total        Int
   createdAt    DateTime @default(now())
 
-  items OrderItem[]
+  items          OrderItem[]
+  purchaseOrders PurchaseOrder[]
+}
+
+// Per-supplier slice of an Order, created by the 22:00 cutoff.
+// status: SENT | CONFIRMED | REJECTED
+model PurchaseOrder {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  supplierId String
+  supplier   Organization @relation(fields: [supplierId], references: [id])
+  status     String   @default("SENT")
+  note       String?
+  createdAt  DateTime @default(now())
+
+  lines OrderItem[]
+
+  @@unique([orderId, supplierId])
 }
 
 // Prices and quantities are snapshotted at order time; qtyActual is the
@@ -95,6 +116,8 @@ model OrderItem {
   id        String  @id @default(cuid())
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id])
+  poId      String?
+  po        PurchaseOrder? @relation(fields: [poId], references: [id])
   offerId   String
   offer     SupplierOffer @relation(fields: [offerId], references: [id])
   qty       Float

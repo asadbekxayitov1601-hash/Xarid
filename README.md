@@ -73,8 +73,12 @@ npm run dev                 # http://localhost:3000
 
 ## Status
 
-**Phase 0–1 in progress.** Built: landing page with lead capture (UZ),
+**Phase 1 core complete.** Built: landing page with lead capture (UZ),
 catalog with transparent best-price-per-SKU, multi-supplier basket, order
 placement with server-side price verification, order history, Telegram Mini
-App auth + bot webhook. Next: supplier confirmation bot, admin panel, 22:00
-cutoff cron — see `docs/PLAN.md`.
+App auth + bot webhook, supplier confirmation via Telegram (one-tap
+confirm/reject), 22:00 cutoff cron splitting baskets into per-supplier
+purchase orders, and an admin panel (`/admin`: dashboard, orders pipeline,
+supplier & price-list management, printable morning route sheet).
+Next: deploy, onboard real suppliers, then Phase 2 logistics — see
+`docs/PLAN.md`.
