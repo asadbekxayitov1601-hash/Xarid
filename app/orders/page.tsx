@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/session";
 import { getLocale } from "@/lib/locale";
 import { t, unitLabel, uzs, type MessageKey } from "@/lib/i18n";
-import { clickPayUrl, paynetPayUrl, uzumPayUrl } from "@/lib/payments/links";
+import { paynetPayUrl, uzumPayUrl } from "@/lib/payments/links";
+import { ReorderButton } from "@/components/reorder-button";
 
 export const dynamic = "force-dynamic";
 
@@ -88,19 +89,14 @@ export default async function OrdersPage({
                 <span>{t(locale, "total")}</span>
                 <span>{uzs(locale, o.total)}</span>
               </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <ReorderButton orderId={o.id} locale={locale} />
+              </div>
               {o.paidAt ? (
                 <p className="mt-2 text-sm font-semibold text-emerald-700">✅ {t(locale, "paid")}</p>
               ) : (
                 o.status !== "CANCELLED" && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {clickPayUrl(o.id, o.total) && (
-                      <a
-                        href={clickPayUrl(o.id, o.total)!}
-                        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-                      >
-                        {t(locale, "pay_with")} · Click
-                      </a>
-                    )}
                     {uzumPayUrl(o.id, o.total) && (
                       <a
                         href={uzumPayUrl(o.id, o.total)!}

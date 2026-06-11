@@ -119,9 +119,11 @@ model Payment {
   id             String   @id @default(cuid())
   orderId        String
   order          Order    @relation(fields: [orderId], references: [id])
-  provider       String   // CLICK | UZUM
-  externalId     String   // click_trans_id / Uzum transId
-  clickPrepareId BigInt   @unique @default(autoincrement()) // numeric id Click echoes back at complete
+  provider       String   // PAYNET | UZUM
+  externalId     String   // provider's transaction id
+  // Monotonic numeric id some providers require (Paynet providerTrnId).
+  // Column name is historical; kept to avoid migrating live databases.
+  seq            BigInt   @unique(map: "Payment_clickPrepareId_key") @default(autoincrement()) @map("clickPrepareId")
   amount         Int
   status         String   @default("PENDING")
   createdAt      DateTime @default(now())

@@ -9,6 +9,7 @@ import { runCutoff } from "@/lib/po";
 import { saveActuals } from "@/lib/orders";
 import { sellPrice } from "@/lib/pricing";
 import { sendStopToDriver } from "@/lib/driver";
+import { notifyBuyerStatus } from "@/lib/notifications";
 
 export async function loginAdmin(formData: FormData) {
   const password = process.env.ADMIN_PASSWORD;
@@ -35,6 +36,7 @@ export async function setOrderStatus(formData: FormData) {
   const status = String(formData.get("status"));
   if (!["CONFIRMED", "DELIVERING", "DELIVERED", "CANCELLED"].includes(status)) return;
   await prisma.order.update({ where: { id }, data: { status } });
+  await notifyBuyerStatus(id).catch(() => {});
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
 }

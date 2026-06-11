@@ -26,7 +26,7 @@ Guiding constraints:
 | ORM | Prisma | Type-safe schema, migrations |
 | Telegram bots | Raw Bot API via Next.js route handlers (webhooks) | No extra server to pay for |
 | Auth | Telegram Mini App initData; phone + OTP (Eskiz.uz SMS) later for web-only buyers | SMS costs money; Telegram auth is free |
-| Payments (Phase 3) | Payme + Click merchant APIs | The two payment rails every Uzbek business accepts |
+| Payments (Phase 3) | Paynet + Uzum Bank merchant APIs | The payment rails this business runs on |
 | Hosting | Railway (persistent Node server); proven in Dasturkhon | Always-on process → in-app cron, Telegram webhooks, no serverless limits |
 | Monitoring | Sentry free tier + Railway logs | Enough for MVP |
 | Languages | UZ (Latin) + RU from day one | Both are mandatory for Tashkent HoReCa |
@@ -298,8 +298,8 @@ schedule, commission/subscription engine, real financial reports.
 
 ```
 app/
-├── api/payments/payme/route.ts     # Payme merchant API (JSON-RPC callbacks)
-├── api/payments/click/route.ts     # Click merchant API (prepare/complete)
+├── api/payments/uzum/[op]/route.ts # Uzum Bank webhooks (check/create/confirm/reverse/status)
+├── api/payments/paynet/route.ts    # Paynet JSON-RPC merchant endpoint
 ├── (buyer)/billing/page.tsx        # Invoices, pay-by-card, balance
 ├── (supplier)/payouts/page.tsx     # Payout statements, subscription status
 ├── (admin)/admin/finance/
@@ -307,8 +307,8 @@ app/
 │   ├── commissions/page.tsx        # Per-supplier take rate / subscription config
 │   └── reports/page.tsx            # GMV, revenue, margin per zone/category/supplier
 lib/
-├── payments/payme.ts
-├── payments/click.ts
+├── payments/paynet.ts
+├── payments/uzum.ts
 ├── ledger.ts                       # Double-entry: every tenge has a from/to account
 └── invoicing.ts                    # Invoice from qtyActual at delivery confirmation
 prisma/ (schema additions)
@@ -326,11 +326,12 @@ model Subscription{ id, supplierId, plan, monthlyFee, activeUntil }
 
 - **Double-entry ledger from day one of Phase 3.** Marketplace + COD + payouts
   without a ledger ends in unexplainable money gaps. Every event (delivery
-  confirmed, cash handed in, Payme callback, payout sent) writes balanced
+  confirmed, cash handed in, payment callback, payout sent) writes balanced
   entries.
-- Payme uses a JSON-RPC merchant protocol, Click a prepare/complete callback
-  pair; both need a registered legal entity (MChJ/LLC) and merchant contracts —
-  start that paperwork in Phase 2.
+- Paynet uses a JSON-RPC merchant protocol (GetInformation/PerformTransaction/
+  CheckTransaction/CancelTransaction/GetStatement); Uzum Bank uses Basic-auth
+  check/create/confirm/reverse/status webhooks; both need a registered legal
+  entity (MChJ/LLC) and merchant contracts — start that paperwork in Phase 2.
 - Commission engine supports per-supplier overrides: default 7% take rate,
   negotiable to 5% for anchor suppliers, or 0% + monthly subscription
   (500k–1.5M UZS) for high-volume ones.

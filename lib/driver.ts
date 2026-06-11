@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { tg } from "@/lib/telegram";
 import { uzs } from "@/lib/format";
+import { notifyBuyerStatus } from "@/lib/notifications";
 
 export const shortId = (id: string) => id.slice(-6).toUpperCase();
 
@@ -66,6 +67,7 @@ export async function markDelivered(orderId: string, byTelegramId: number) {
   if (order.status === "DELIVERED") return { ok: false, message: "Allaqachon yetkazilgan" };
 
   await prisma.order.update({ where: { id: orderId }, data: { status: "DELIVERED" } });
+  await notifyBuyerStatus(orderId).catch(() => {});
 
   await tg("sendMessage", {
     chat_id: byTelegramId,

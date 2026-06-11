@@ -118,7 +118,7 @@ export async function handlePaynet(body: RpcBody): Promise<PaynetResult> {
       await prisma.order.update({ where: { id: order.id }, data: { paidAt } });
 
       return ok(id, {
-        providerTrnId: Number(payment.clickPrepareId),
+        providerTrnId: Number(payment.seq),
         timestamp: plain(paidAt),
         fields: { order_id: order.id },
       });
@@ -134,7 +134,7 @@ export async function handlePaynet(body: RpcBody): Promise<PaynetResult> {
       }
       return ok(id, {
         transactionState: payment.status === "PAID" ? 1 : 2,
-        providerTrnId: Number(payment.clickPrepareId),
+        providerTrnId: Number(payment.seq),
         timestamp: plain(payment.paidAt ?? payment.createdAt),
       });
     }
@@ -153,7 +153,7 @@ export async function handlePaynet(body: RpcBody): Promise<PaynetResult> {
         }
       }
       return ok(id, {
-        providerTrnId: Number(payment.clickPrepareId),
+        providerTrnId: Number(payment.seq),
         timestamp: plain(new Date()),
         transactionState: 2,
       });
@@ -171,7 +171,7 @@ export async function handlePaynet(body: RpcBody): Promise<PaynetResult> {
       return ok(id, {
         statements: payments.map((p) => ({
           amount: p.amount * 100,
-          providerTrnId: Number(p.clickPrepareId),
+          providerTrnId: Number(p.seq),
           transactionId: p.externalId,
           timestamp: plain(p.createdAt),
         })),
