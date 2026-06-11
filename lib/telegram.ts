@@ -46,14 +46,22 @@ export function validateInitData(
   }
 }
 
-/** Minimal Bot API client — enough for the webhook; no library needed. */
+/**
+ * Minimal Bot API client — enough for the webhook; no library needed.
+ * Never throws: a Telegram hiccup must not 500 the order flow.
+ */
 export async function tg(method: string, payload: Record<string, unknown>) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) throw new Error("TELEGRAM_BOT_TOKEN is not set");
-  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
+  if (!token) return { ok: false, description: "TELEGRAM_BOT_TOKEN is not set" };
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  } catch (e) {
+    console.error(`tg ${method} failed`, e);
+    return { ok: false, description: String(e) };
+  }
 }

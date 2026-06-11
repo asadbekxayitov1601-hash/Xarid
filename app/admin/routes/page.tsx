@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 import { uzs, UNIT_LABELS } from "@/lib/format";
+import { assignDriver } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +11,17 @@ export const dynamic = "force-dynamic";
 export default async function AdminRoutesPage() {
   await requireAdmin();
 
-  const orders = await prisma.order.findMany({
-    where: { status: { in: ["CONFIRMED", "PARTIAL", "DELIVERING"] } },
-    orderBy: { address: "asc" },
-    include: {
-      items: { include: { offer: { include: { product: true, supplier: { select: { name: true } } } } } },
-    },
-  });
+  const [orders, drivers] = await Promise.all([
+    prisma.order.findMany({
+      where: { status: { in: ["CONFIRMED", "PARTIAL", "DELIVERING"] } },
+      orderBy: { address: "asc" },
+      include: {
+        driver: { select: { id: true, name: true } },
+        items: { include: { offer: { include: { product: true, supplier: { select: { name: true } } } } } },
+      },
+    }),
+    prisma.driver.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+  ]);
 
   // Consolidated pickup quantities per supplier per product.
   const pickup = new Map<string, Map<string, { qty: number; unit: string }>>();
@@ -66,6 +71,27 @@ export default async function AdminRoutesPage() {
               </p>
               <p className="text-stone-600">{o.address}</p>
               <p className="mt-1 font-semibold text-emerald-700">Naqd olinadi: {uzs(o.total)}</p>
+              <div className="mt-2 print:hidden">
+                {o.driver ? (
+                  <p className="text-xs text-stone-500">🚐 {o.driver.name}</p>
+                ) : drivers.length > 0 ? (
+                  <form action={assignDriver} className="flex items-center gap-2">
+                    <input type="hidden" name="orderId" value={o.id} />
+                    <select name="driverId" className="rounded-lg border border-stone-300 px-2 py-1 text-xs">
+                      {drivers.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="rounded-lg bg-stone-900 px-2.5 py-1 text-xs font-semibold text-white">
+                      Biriktirish
+                    </button>
+                  </form>
+                ) : (
+                  <p className="text-xs text-stone-400">Haydovchi qo'shing → Haydovchilar bo'limi</p>
+                )}
+              </div>
             </li>
           ))}
         </ol>

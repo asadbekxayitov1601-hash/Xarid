@@ -7,6 +7,8 @@ import { setSession } from "@/lib/session";
 import { requireAdmin } from "@/lib/admin";
 import { runCutoff } from "@/lib/po";
 import { saveActuals } from "@/lib/orders";
+import { sellPrice } from "@/lib/pricing";
+import { sendStopToDriver } from "@/lib/driver";
 
 export async function loginAdmin(formData: FormData) {
   const password = process.env.ADMIN_PASSWORD;
@@ -70,19 +72,36 @@ export async function updateOffer(formData: FormData) {
   revalidatePath("/admin/suppliers");
 }
 
-const TAKE_RATE = 0.07;
-
 export async function addOffer(formData: FormData) {
   await requireAdmin();
   const supplierId = String(formData.get("supplierId"));
   const productId = String(formData.get("productId"));
   const costPrice = Math.round(Number(formData.get("costPrice")));
   if (!productId || !Number.isFinite(costPrice) || costPrice <= 0) return;
-  const price = Math.round((costPrice * (1 + TAKE_RATE)) / 100) * 100;
   await prisma.supplierOffer.upsert({
     where: { supplierId_productId: { supplierId, productId } },
-    update: { costPrice, price, available: true },
-    create: { supplierId, productId, costPrice, price, available: true },
+    update: { costPrice, price: sellPrice(costPrice), available: true },
+    create: { supplierId, productId, costPrice, price: sellPrice(costPrice), available: true },
   });
   revalidatePath(`/admin/suppliers/${supplierId}`);
+}
+
+export async function createDriver(formData: FormData) {
+  await requireAdmin();
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!name || !phone) return;
+  await prisma.driver.create({ data: { name, phone } });
+  revalidatePath("/admin/drivers");
+}
+
+export async function assignDriver(formData: FormData) {
+  await requireAdmin();
+  const orderId = String(formData.get("orderId"));
+  const driverId = String(formData.get("driverId"));
+  if (!orderId || !driverId) return;
+  await prisma.order.update({ where: { id: orderId }, data: { driverId } });
+  await sendStopToDriver(orderId); // no-op if the driver hasn't linked Telegram yet
+  revalidatePath("/admin/routes");
+  revalidatePath("/admin/orders");
 }

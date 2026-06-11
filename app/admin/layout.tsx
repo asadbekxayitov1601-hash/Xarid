@@ -4,6 +4,7 @@ const nav = [
   { href: "/admin", label: "Bugun" },
   { href: "/admin/orders", label: "Buyurtmalar" },
   { href: "/admin/suppliers", label: "Yetkazib beruvchilar" },
+  { href: "/admin/drivers", label: "Haydovchilar" },
   { href: "/admin/routes", label: "Marshrut" },
 ];
 

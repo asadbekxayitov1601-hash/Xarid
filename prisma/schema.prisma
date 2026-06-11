@@ -39,6 +39,7 @@ model User {
   createdAt  DateTime @default(now())
 
   orders Order[]
+  driver Driver?
 }
 
 // Canonical SKU, e.g. "Onion, yellow / kg". unit: KG | PIECE | LITER | BLOCK
@@ -72,6 +73,20 @@ model SupplierOffer {
   @@unique([supplierId, productId])
 }
 
+// Delivery driver. Links their Telegram via /start drv_<botCode>.
+model Driver {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  botCode   String   @unique @default(cuid())
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id])
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
 // The buyer's single morning basket.
 // status: PLACED | CONFIRMED | PARTIAL | DELIVERING | DELIVERED | CANCELLED
 model Order {
@@ -86,6 +101,9 @@ model Order {
   status       String   @default("PLACED")
   deliveryDate DateTime
   total        Int
+  driverId     String?
+  driver       Driver?  @relation(fields: [driverId], references: [id])
+  cashTaken    Int?
   createdAt    DateTime @default(now())
 
   items          OrderItem[]

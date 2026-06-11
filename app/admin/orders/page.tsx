@@ -56,6 +56,15 @@ export default async function AdminOrdersPage() {
             </div>
             <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold">{o.status}</span>
             <span className="text-sm font-bold">{uzs(o.total)}</span>
+            {o.cashTaken != null && (
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  o.cashTaken === o.total ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-700"
+                }`}
+              >
+                naqd: {uzs(o.cashTaken)}
+              </span>
+            )}
           </header>
 
           {o.purchaseOrders.length > 0 && (

@@ -3,7 +3,8 @@ import { seedCatalog } from "./seed";
 
 // Schema DDL generated from prisma/schema.prisma via:
 //   npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
-// Regenerate and replace whenever the schema changes.
+// Regenerate and replace whenever the schema changes, and add idempotent
+// statements to MIGRATIONS for databases created before the change.
 const DDL = `
 CREATE SCHEMA IF NOT EXISTS "public";
 
@@ -54,6 +55,18 @@ CREATE TABLE "SupplierOffer" (
     CONSTRAINT "SupplierOffer_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "Driver" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "botCode" TEXT NOT NULL,
+    "userId" TEXT,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Driver_pkey" PRIMARY KEY ("id")
+);
+
 CREATE TABLE "Order" (
     "id" TEXT NOT NULL,
     "buyerUserId" TEXT NOT NULL,
@@ -64,6 +77,8 @@ CREATE TABLE "Order" (
     "status" TEXT NOT NULL DEFAULT 'PLACED',
     "deliveryDate" TIMESTAMP(3) NOT NULL,
     "total" INTEGER NOT NULL,
+    "driverId" TEXT,
+    "cashTaken" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
@@ -112,6 +127,10 @@ CREATE UNIQUE INDEX "User_telegramId_key" ON "User"("telegramId");
 
 CREATE UNIQUE INDEX "SupplierOffer_supplierId_productId_key" ON "SupplierOffer"("supplierId", "productId");
 
+CREATE UNIQUE INDEX "Driver_botCode_key" ON "Driver"("botCode");
+
+CREATE UNIQUE INDEX "Driver_userId_key" ON "Driver"("userId");
+
 CREATE UNIQUE INDEX "PurchaseOrder_orderId_supplierId_key" ON "PurchaseOrder"("orderId", "supplierId");
 
 ALTER TABLE "User" ADD CONSTRAINT "User_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -120,9 +139,13 @@ ALTER TABLE "SupplierOffer" ADD CONSTRAINT "SupplierOffer_supplierId_fkey" FOREI
 
 ALTER TABLE "SupplierOffer" ADD CONSTRAINT "SupplierOffer_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+ALTER TABLE "Driver" ADD CONSTRAINT "Driver_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
 ALTER TABLE "Order" ADD CONSTRAINT "Order_buyerUserId_fkey" FOREIGN KEY ("buyerUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "Order" ADD CONSTRAINT "Order_buyerOrgId_fkey" FOREIGN KEY ("buyerOrgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "Order" ADD CONSTRAINT "Order_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -135,6 +158,24 @@ ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_poId_fkey" FOREIGN KEY ("poId"
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "SupplierOffer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 `;
 
+// Idempotent upgrades for already-existing databases (IF NOT EXISTS only).
+const MIGRATIONS = [
+  `CREATE TABLE IF NOT EXISTS "Driver" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "botCode" TEXT NOT NULL,
+    "userId" TEXT,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Driver_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Driver_botCode_key" ON "Driver"("botCode")`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Driver_userId_key" ON "Driver"("userId")`,
+  `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "driverId" TEXT`,
+  `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "cashTaken" INTEGER`,
+];
+
 /** True when the schema's tables already exist in the connected database. */
 export async function tablesExist(prisma: PrismaClient): Promise<boolean> {
   const rows = await prisma.$queryRaw<{ exists: boolean }[]>`
@@ -144,8 +185,8 @@ export async function tablesExist(prisma: PrismaClient): Promise<boolean> {
 
 /**
  * Browser-driven bootstrap for fresh deployments: creates the schema if
- * missing and seeds the demo catalog if empty. Idempotent — safe to call
- * repeatedly; it never touches an already-populated database.
+ * missing, applies idempotent upgrades to existing databases, and seeds the
+ * demo catalog if empty. Safe to call repeatedly; it never touches data.
  */
 export async function ensureDatabase(prisma: PrismaClient) {
   let createdTables = false;
@@ -155,6 +196,10 @@ export async function ensureDatabase(prisma: PrismaClient) {
       await prisma.$executeRawUnsafe(statement);
     }
     createdTables = true;
+  } else {
+    for (const statement of MIGRATIONS) {
+      await prisma.$executeRawUnsafe(statement);
+    }
   }
 
   let seeded = null;
@@ -162,5 +207,5 @@ export async function ensureDatabase(prisma: PrismaClient) {
     seeded = await seedCatalog(prisma);
   }
 
-  return { createdTables, seeded, products: await prisma.product.count() };
+  return { createdTables, migrated: !createdTables, seeded, products: await prisma.product.count() };
 }
