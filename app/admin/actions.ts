@@ -10,6 +10,7 @@ import { saveActuals } from "@/lib/orders";
 import { sellPrice } from "@/lib/pricing";
 import { sendStopToDriver } from "@/lib/driver";
 import { notifyBuyerStatus } from "@/lib/notifications";
+import { markPayoutPaid, postCashHandover, postDelivery } from "@/lib/ledger";
 
 export async function loginAdmin(formData: FormData) {
   const password = process.env.ADMIN_PASSWORD;
@@ -36,6 +37,7 @@ export async function setOrderStatus(formData: FormData) {
   const status = String(formData.get("status"));
   if (!["CONFIRMED", "DELIVERING", "DELIVERED", "CANCELLED"].includes(status)) return;
   await prisma.order.update({ where: { id }, data: { status } });
+  if (status === "DELIVERED") await postDelivery(id).catch(console.error);
   await notifyBuyerStatus(id).catch(() => {});
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
@@ -106,4 +108,25 @@ export async function assignDriver(formData: FormData) {
   await sendStopToDriver(orderId); // no-op if the driver hasn't linked Telegram yet
   revalidatePath("/admin/routes");
   revalidatePath("/admin/orders");
+}
+
+export async function paySupplierWeek(formData: FormData) {
+  await requireAdmin();
+  const supplierId = String(formData.get("supplierId"));
+  const periodStart = new Date(String(formData.get("periodStart")));
+  const periodEnd = new Date(String(formData.get("periodEnd")));
+  const amount = Math.round(Number(formData.get("amount")));
+  if (!supplierId || isNaN(+periodStart) || isNaN(+periodEnd)) return;
+  await markPayoutPaid(supplierId, periodStart, periodEnd, amount);
+  revalidatePath("/admin/finance");
+}
+
+export async function recordCashHandover(formData: FormData) {
+  await requireAdmin();
+  const driverId = String(formData.get("driverId"));
+  const amount = Math.round(Number(formData.get("amount")));
+  if (!driverId || !Number.isFinite(amount) || amount <= 0) return;
+  await postCashHandover(driverId, amount);
+  revalidatePath("/admin/drivers");
+  revalidatePath("/admin/finance");
 }

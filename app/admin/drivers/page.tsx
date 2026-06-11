@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 import { uzs } from "@/lib/format";
-import { createDriver } from "../actions";
+import { balances } from "@/lib/ledger";
+import { createDriver, recordCashHandover } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,17 @@ export default async function AdminDriversPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const drivers = await prisma.driver.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      user: { select: { telegramId: true } },
-      orders: { where: { createdAt: { gte: today } } },
-    },
-  });
+  const [drivers, pocketBalances] = await Promise.all([
+    prisma.driver.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        user: { select: { telegramId: true } },
+        orders: { where: { createdAt: { gte: today } } },
+      },
+    }),
+    balances("CASH:DRIVER:"),
+  ]);
+  const pocket = new Map(pocketBalances.map((b) => [b.account.slice(12), b.balance]));
 
   return (
     <div className="space-y-6">
@@ -48,6 +53,23 @@ export default async function AdminDriversPage() {
                 <p className="mt-2 break-all rounded-lg bg-stone-50 p-2 text-xs text-stone-600">
                   Ulanish havolasi: <code>https://t.me/&lt;bot&gt;?start=drv_{d.botCode}</code>
                 </p>
+              )}
+              {(pocket.get(d.id) ?? 0) > 0 && (
+                <form action={recordCashHandover} className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs">
+                  <span className="font-semibold text-amber-800">
+                    Qo'lida: {uzs(pocket.get(d.id) ?? 0)}
+                  </span>
+                  <input type="hidden" name="driverId" value={d.id} />
+                  <input
+                    name="amount"
+                    type="number"
+                    defaultValue={pocket.get(d.id) ?? 0}
+                    className="w-32 rounded border border-stone-300 px-2 py-1 text-right"
+                  />
+                  <button className="rounded-lg bg-amber-500 px-3 py-1.5 font-semibold text-white hover:bg-amber-600">
+                    Kassaga qabul qilish
+                  </button>
+                </form>
               )}
             </li>
           );

@@ -100,6 +100,30 @@ CREATE TABLE "Payment" (
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "LedgerEntry" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "debit" TEXT NOT NULL,
+    "credit" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "orderId" TEXT,
+    "memo" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LedgerEntry_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Payout" (
+    "id" TEXT NOT NULL,
+    "supplierId" TEXT NOT NULL,
+    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Payout_pkey" PRIMARY KEY ("id")
+);
+
 CREATE TABLE "PurchaseOrder" (
     "id" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
@@ -150,6 +174,10 @@ CREATE UNIQUE INDEX "Driver_userId_key" ON "Driver"("userId");
 CREATE UNIQUE INDEX "Payment_clickPrepareId_key" ON "Payment"("clickPrepareId");
 
 CREATE UNIQUE INDEX "Payment_provider_externalId_key" ON "Payment"("provider", "externalId");
+
+CREATE UNIQUE INDEX "LedgerEntry_key_key" ON "LedgerEntry"("key");
+
+CREATE UNIQUE INDEX "Payout_supplierId_periodStart_key" ON "Payout"("supplierId", "periodStart");
 
 CREATE UNIQUE INDEX "PurchaseOrder_orderId_supplierId_key" ON "PurchaseOrder"("orderId", "supplierId");
 
@@ -212,6 +240,28 @@ const MIGRATIONS = [
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Payment_clickPrepareId_key" ON "Payment"("clickPrepareId")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Payment_provider_externalId_key" ON "Payment"("provider", "externalId")`,
+  `CREATE TABLE IF NOT EXISTS "LedgerEntry" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "debit" TEXT NOT NULL,
+    "credit" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "orderId" TEXT,
+    "memo" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "LedgerEntry_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "LedgerEntry_key_key" ON "LedgerEntry"("key")`,
+  `CREATE TABLE IF NOT EXISTS "Payout" (
+    "id" TEXT NOT NULL,
+    "supplierId" TEXT NOT NULL,
+    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Payout_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Payout_supplierId_periodStart_key" ON "Payout"("supplierId", "periodStart")`,
 ];
 
 /** True when the schema's tables already exist in the connected database. */

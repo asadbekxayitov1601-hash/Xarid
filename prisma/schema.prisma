@@ -132,6 +132,33 @@ model Payment {
   @@unique([provider, externalId])
 }
 
+// Double-entry ledger. Account ids are structured strings:
+//   BUYER_RECEIVABLE:<userId> | SUPPLIER_PAYABLE:<orgId> | REVENUE:MARGIN |
+//   CASH:DRIVER:<driverId> | CASH:OFFICE | BANK:<provider>
+// `key` makes every posting idempotent (re-running an event is a no-op).
+model LedgerEntry {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  debit     String
+  credit    String
+  amount    Int
+  orderId   String?
+  memo      String?
+  createdAt DateTime @default(now())
+}
+
+// A week of supplier payables marked as paid out.
+model Payout {
+  id          String   @id @default(cuid())
+  supplierId  String
+  periodStart DateTime
+  periodEnd   DateTime
+  amount      Int
+  createdAt   DateTime @default(now())
+
+  @@unique([supplierId, periodStart])
+}
+
 // Per-supplier slice of an Order, created by the 22:00 cutoff.
 // status: SENT | CONFIRMED | REJECTED
 model PurchaseOrder {

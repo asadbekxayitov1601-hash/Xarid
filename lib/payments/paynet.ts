@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { postOnlinePayment } from "@/lib/ledger";
 
 // Paynet merchant protocol: JSON-RPC 2.0 over a single Basic-auth POST
 // endpoint. Methods: GetInformation, PerformTransaction, CheckTransaction,
@@ -116,6 +117,7 @@ export async function handlePaynet(body: RpcBody): Promise<PaynetResult> {
         },
       });
       await prisma.order.update({ where: { id: order.id }, data: { paidAt } });
+      await postOnlinePayment(payment.id).catch(console.error);
 
       return ok(id, {
         providerTrnId: Number(payment.seq),

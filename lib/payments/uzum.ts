@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { postOnlinePayment } from "@/lib/ledger";
 
 // Uzum Bank merchant webhook protocol (developer.uzumbank.uz): Basic-auth
 // POSTs to /check, /create, /confirm, /reverse, /status. Amounts arrive in
@@ -102,6 +103,7 @@ export async function handleUzum(op: string, body: UzumBody): Promise<UzumResult
       const paidAt = new Date();
       await prisma.payment.update({ where: { id: payment.id }, data: { status: "PAID", paidAt } });
       await prisma.order.update({ where: { id: payment.orderId }, data: { paidAt } });
+      await postOnlinePayment(payment.id).catch(console.error);
       return {
         httpStatus: 200,
         body: { serviceId, transId, status: "CONFIRMED", confirmTime: now() },

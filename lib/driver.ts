@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { tg } from "@/lib/telegram";
 import { uzs } from "@/lib/format";
 import { notifyBuyerStatus } from "@/lib/notifications";
+import { postCashCollected, postDelivery } from "@/lib/ledger";
 
 export const shortId = (id: string) => id.slice(-6).toUpperCase();
 
@@ -67,6 +68,7 @@ export async function markDelivered(orderId: string, byTelegramId: number) {
   if (order.status === "DELIVERED") return { ok: false, message: "Allaqachon yetkazilgan" };
 
   await prisma.order.update({ where: { id: orderId }, data: { status: "DELIVERED" } });
+  await postDelivery(orderId).catch(console.error);
   await notifyBuyerStatus(orderId).catch(() => {});
 
   await tg("sendMessage", {
@@ -108,6 +110,7 @@ export async function recordCashReply(msg: {
   }
 
   await prisma.order.update({ where: { id: order.id }, data: { cashTaken: amount } });
+  await postCashCollected(order.id).catch(console.error);
 
   const diff = amount - order.total;
   const note =

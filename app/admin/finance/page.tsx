@@ -2,6 +2,8 @@ import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
 import { uzs } from "@/lib/format";
 import { payoutStatement, weekStart } from "@/lib/payouts";
+import { balances } from "@/lib/ledger";
+import { paySupplierWeek } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,7 @@ export default async function AdminFinancePage({
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
 
-  const [rows, paid, pending] = await Promise.all([
+  const [rows, paid, pending, payouts, ledgerBalances, suppliers, drivers] = await Promise.all([
     payoutStatement(start, end),
     prisma.payment.aggregate({
       where: { status: "PAID", paidAt: { gte: start, lt: end } },
@@ -29,7 +31,27 @@ export default async function AdminFinancePage({
       _count: true,
     }),
     prisma.payment.count({ where: { status: "PENDING" } }),
+    prisma.payout.findMany({ where: { periodStart: start } }),
+    balances(),
+    prisma.organization.findMany({ where: { type: "SUPPLIER" }, select: { id: true, name: true } }),
+    prisma.driver.findMany({ select: { id: true, name: true } }),
   ]);
+
+  const paidSuppliers = new Map(payouts.map((p) => [p.supplierId, p.amount]));
+  const supplierName = new Map(suppliers.map((s) => [s.id, s.name]));
+  const driverName = new Map(drivers.map((d) => [d.id, d.name]));
+  const accountLabel = (account: string) => {
+    if (account === "REVENUE:MARGIN") return "Xarid marjasi (jami)";
+    if (account === "CASH:OFFICE") return "Kassa (ofis)";
+    if (account.startsWith("BANK:")) return `Bank: ${account.slice(5)}`;
+    if (account.startsWith("SUPPLIER_PAYABLE:")) return `Qarz: ${supplierName.get(account.slice(17)) ?? account}`;
+    if (account.startsWith("CASH:DRIVER:")) return `Haydovchida: ${driverName.get(account.slice(12)) ?? account}`;
+    if (account.startsWith("BUYER_RECEIVABLE:")) return null; // aggregated below
+    return account;
+  };
+  const receivables = ledgerBalances
+    .filter((b) => b.account.startsWith("BUYER_RECEIVABLE:"))
+    .reduce((s, b) => s + b.balance, 0);
 
   const totalGross = rows.reduce((s, r) => s + r.gross, 0);
   const totalMargin = rows.reduce((s, r) => s + r.margin, 0);
@@ -82,7 +104,8 @@ export default async function AdminFinancePage({
               <th className="px-2 py-2.5 text-right">Buyurtmalar</th>
               <th className="px-2 py-2.5 text-right">Qatorlar</th>
               <th className="px-2 py-2.5 text-right">To'lanadi</th>
-              <th className="px-4 py-2.5 text-right">Marja</th>
+              <th className="px-2 py-2.5 text-right">Marja</th>
+              <th className="px-4 py-2.5 text-right">To'lov</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
@@ -92,7 +115,24 @@ export default async function AdminFinancePage({
                 <td className="px-2 py-2.5 text-right">{r.orders}</td>
                 <td className="px-2 py-2.5 text-right">{r.lines}</td>
                 <td className="px-2 py-2.5 text-right font-semibold">{uzs(r.gross)}</td>
-                <td className="px-4 py-2.5 text-right text-emerald-700">{uzs(r.margin)}</td>
+                <td className="px-2 py-2.5 text-right text-emerald-700">{uzs(r.margin)}</td>
+                <td className="px-4 py-2.5 text-right">
+                  {paidSuppliers.has(r.supplierId) ? (
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                      ✅ To'langan
+                    </span>
+                  ) : (
+                    <form action={paySupplierWeek} className="inline">
+                      <input type="hidden" name="supplierId" value={r.supplierId} />
+                      <input type="hidden" name="periodStart" value={start.toISOString()} />
+                      <input type="hidden" name="periodEnd" value={end.toISOString()} />
+                      <input type="hidden" name="amount" value={r.gross} />
+                      <button className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-700">
+                        To'landi deb belgilash
+                      </button>
+                    </form>
+                  )}
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
@@ -104,6 +144,35 @@ export default async function AdminFinancePage({
             )}
           </tbody>
         </table>
+      </section>
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-4">
+        <h2 className="font-semibold">Balanslar (butun davr, jonli)</h2>
+        <ul className="mt-2 space-y-1 text-sm">
+          <li className="flex justify-between border-b border-dotted border-stone-200 py-1">
+            <span>Mijozlardan olinadigan (jami)</span>
+            <span className={receivables > 0 ? "font-semibold text-amber-700" : "font-semibold"}>
+              {uzs(receivables)}
+            </span>
+          </li>
+          {ledgerBalances.map((b) => {
+            const label = accountLabel(b.account);
+            if (!label || b.balance === 0) return null;
+            return (
+              <li key={b.account} className="flex justify-between border-b border-dotted border-stone-200 py-1">
+                <span>{label}</span>
+                <span className="font-semibold">{uzs(Math.abs(b.balance))}</span>
+              </li>
+            );
+          })}
+          {ledgerBalances.length === 0 && (
+            <li className="py-2 text-stone-500">Hozircha yozuvlar yo'q — birinchi yetkazilgan buyurtmadan boshlanadi.</li>
+          )}
+        </ul>
+        <p className="mt-2 text-xs text-stone-400">
+          Har bir yozuv ikki tomonlama: mijoz qarzi → yetkazib beruvchi haqi + marja; naqd → haydovchi → kassa;
+          onlayn to'lov → bank. Hech bir so'm izsiz yo'qolmaydi.
+        </p>
       </section>
 
       <p className="text-xs text-stone-400 print:hidden">Chop etish uchun: Ctrl+P / Cmd+P</p>
