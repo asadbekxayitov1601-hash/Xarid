@@ -71,12 +71,16 @@ Required environment variables (set them in the platform dashboard, then
 | `ADMIN_TELEGRAM_ID` | Optional — your Telegram ID, receives the 23:30 unconfirmed-PO summary |
 | `CRON_SECRET` | Optional — protects `/api/cron/*` |
 
-Then create the schema and seed once, from your machine pointed at Neon:
+Then initialize the database **from your browser** (no local tools needed):
 
-```bash
-DATABASE_URL="<neon-url>" npx prisma db push
-DATABASE_URL="<neon-url>" npx prisma db seed
-```
+1. Open `https://<your-app>/api/health` — it reports which env vars are
+   missing, whether the database is reachable, and what to do next.
+2. Open `https://<your-app>/api/setup?key=<ADMIN_PASSWORD>` once — it creates
+   the tables and seeds the demo catalog. Idempotent: it never touches a
+   database that already has data.
+
+(Equivalent CLI route, if you prefer: `DATABASE_URL="<neon-url>" npx prisma
+db push && DATABASE_URL="<neon-url>" npx prisma db seed`.)
 
 **Scheduling** (22:00 cutoff, 23:30 reminder) works on both platforms
 automatically: on Vercel via `vercel.json` crons; on Railway via the
@@ -84,13 +88,17 @@ in-process scheduler (`lib/scheduler.ts`), since the server is always on.
 
 ### Troubleshooting
 
+**Start with `/api/health`** — it tells you exactly what's wrong and how to
+fix it. Common cases:
+
 - **`PrismaClientInitializationError: Environment variable not found:
-  DATABASE_URL`** — the platform doesn't have `DATABASE_URL` set. Add it in
-  the project's environment variables and redeploy.
-- **Pages load but catalog is empty** — schema exists but no data; run the
-  seed command above.
+  DATABASE_URL`** — the platform doesn't have `DATABASE_URL` set, **or it was
+  added after the last deploy**. Env vars only apply to new deployments —
+  add/verify the variable, then redeploy.
+- **Error mentions a missing table (`P2021`)** or catalog is empty — the
+  database has no schema/data yet; open `/api/setup?key=<ADMIN_PASSWORD>`.
 - **`Too many connections` on Vercel** — you used Neon's direct (non-pooled)
-  connection string; switch to the pooled one.
+  connection string; switch to the pooled one (`-pooler` in the hostname).
 
 ## Connecting the Telegram Mini App (after deploying)
 
