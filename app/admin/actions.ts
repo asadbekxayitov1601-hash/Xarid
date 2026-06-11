@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { setSession } from "@/lib/session";
 import { requireAdmin } from "@/lib/admin";
 import { runCutoff } from "@/lib/po";
+import { saveActuals } from "@/lib/orders";
 
 export async function loginAdmin(formData: FormData) {
   const password = process.env.ADMIN_PASSWORD;
@@ -32,6 +33,18 @@ export async function setOrderStatus(formData: FormData) {
   const status = String(formData.get("status"));
   if (!["CONFIRMED", "DELIVERING", "DELIVERED", "CANCELLED"].includes(status)) return;
   await prisma.order.update({ where: { id }, data: { status } });
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+}
+
+export async function saveOrderActuals(formData: FormData) {
+  await requireAdmin();
+  const orderId = String(formData.get("orderId"));
+  const actuals: Record<string, number> = {};
+  for (const [key, value] of formData.entries()) {
+    if (key.startsWith("item_")) actuals[key.slice(5)] = Number(value);
+  }
+  await saveActuals(orderId, actuals);
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
 }

@@ -54,19 +54,43 @@ npx prisma db seed          # ~30 SKUs, 4 suppliers
 npm run dev                 # http://localhost:3000
 ```
 
-## Deploying (Railway + Neon — same setup as Dasturkhon)
+## Deploying
 
-1. Create a Neon project, copy the connection string.
-2. New Railway service from this GitHub repo. Railway auto-detects Next.js
-   (`npm run build` / `npm start`; `prisma generate` runs on postinstall).
-3. Railway → Variables: `DATABASE_URL` (Neon), `TELEGRAM_BOT_TOKEN`,
-   `NEXT_PUBLIC_APP_URL` (the Railway/custom domain), `SESSION_SECRET`,
-   `ADMIN_PASSWORD`.
-4. Set the pre-deploy command to `npx prisma db push` (or use migrations
-   later), then seed once: `npx prisma db seed` from a local machine pointed
-   at the Neon URL.
-5. The 22:00 cutoff runs in-process (`lib/scheduler.ts`) — no platform cron
-   needed; `/api/cron/cutoff` remains as a manual/external trigger.
+Works on **Vercel** or **Railway**, with the database on **Neon** either way.
+
+Required environment variables (set them in the platform dashboard, then
+**redeploy** — env changes never apply to existing deployments):
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon connection string. On Vercel use the **pooled** one (`-pooler` in the hostname) — serverless functions need connection pooling |
+| `NEXT_PUBLIC_APP_URL` | The deployed HTTPS URL (e.g. `https://xarid-nu.vercel.app`) |
+| `SESSION_SECRET` | Any long random string |
+| `ADMIN_PASSWORD` | Password for `/admin` |
+| `TELEGRAM_BOT_TOKEN` | From @BotFather (when ready) |
+| `ADMIN_TELEGRAM_ID` | Optional — your Telegram ID, receives the 23:30 unconfirmed-PO summary |
+| `CRON_SECRET` | Optional — protects `/api/cron/*` |
+
+Then create the schema and seed once, from your machine pointed at Neon:
+
+```bash
+DATABASE_URL="<neon-url>" npx prisma db push
+DATABASE_URL="<neon-url>" npx prisma db seed
+```
+
+**Scheduling** (22:00 cutoff, 23:30 reminder) works on both platforms
+automatically: on Vercel via `vercel.json` crons; on Railway via the
+in-process scheduler (`lib/scheduler.ts`), since the server is always on.
+
+### Troubleshooting
+
+- **`PrismaClientInitializationError: Environment variable not found:
+  DATABASE_URL`** — the platform doesn't have `DATABASE_URL` set. Add it in
+  the project's environment variables and redeploy.
+- **Pages load but catalog is empty** — schema exists but no data; run the
+  seed command above.
+- **`Too many connections` on Vercel** — you used Neon's direct (non-pooled)
+  connection string; switch to the pooled one.
 
 ## Connecting the Telegram Mini App (after deploying)
 

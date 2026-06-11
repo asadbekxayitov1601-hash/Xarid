@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 import { uzs, UNIT_LABELS } from "@/lib/format";
-import { setOrderStatus } from "../actions";
+import { saveOrderActuals, setOrderStatus } from "../actions";
+
+// Statuses where the driver/admin records weighed quantities at delivery.
+const ACTUALS_EDITABLE = new Set(["CONFIRMED", "PARTIAL", "DELIVERING"]);
 
 export const dynamic = "force-dynamic";
 
@@ -65,19 +68,51 @@ export default async function AdminOrdersPage() {
             </div>
           )}
 
-          <ul className="divide-y divide-stone-100 text-sm">
-            {o.items.map((i) => (
-              <li key={i.id} className="flex justify-between px-4 py-1.5">
-                <span className="min-w-0 flex-1 truncate">
-                  {i.offer.product.nameUz}
-                  <span className="text-xs text-stone-400"> · {i.offer.supplier.name}</span>
-                </span>
-                <span className="text-stone-500">
-                  {i.qty} {UNIT_LABELS[i.offer.product.unit] ?? ""}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {ACTUALS_EDITABLE.has(o.status) ? (
+            <form action={saveOrderActuals}>
+              <input type="hidden" name="orderId" value={o.id} />
+              <ul className="divide-y divide-stone-100 text-sm">
+                {o.items.map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2 px-4 py-1.5">
+                    <span className="min-w-0 flex-1 truncate">
+                      {i.offer.product.nameUz}
+                      <span className="text-xs text-stone-400"> · {i.offer.supplier.name}</span>
+                    </span>
+                    <span className="text-xs text-stone-400">
+                      buyurtma: {i.qty} {UNIT_LABELS[i.offer.product.unit] ?? ""}
+                    </span>
+                    <input
+                      name={`item_${i.id}`}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      defaultValue={i.qtyActual ?? i.qty}
+                      className="w-20 rounded border border-stone-300 px-2 py-1 text-right"
+                    />
+                  </li>
+                ))}
+              </ul>
+              <div className="border-t border-stone-100 px-4 py-2">
+                <button className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold hover:bg-stone-50">
+                  Haqiqiy og'irliklarni saqlash (summa qayta hisoblanadi)
+                </button>
+              </div>
+            </form>
+          ) : (
+            <ul className="divide-y divide-stone-100 text-sm">
+              {o.items.map((i) => (
+                <li key={i.id} className="flex justify-between px-4 py-1.5">
+                  <span className="min-w-0 flex-1 truncate">
+                    {i.offer.product.nameUz}
+                    <span className="text-xs text-stone-400"> · {i.offer.supplier.name}</span>
+                  </span>
+                  <span className="text-stone-500">
+                    {i.qtyActual ?? i.qty} {UNIT_LABELS[i.offer.product.unit] ?? ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {NEXT_ACTIONS[o.status] && (
             <footer className="flex flex-wrap gap-2 border-t border-stone-100 px-4 py-3">

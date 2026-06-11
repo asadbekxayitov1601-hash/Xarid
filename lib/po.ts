@@ -86,6 +86,43 @@ export async function notifySupplier(poId: string) {
 }
 
 /**
+ * 23:30 escalation: re-ping suppliers about unconfirmed POs and send the
+ * admin (ADMIN_TELEGRAM_ID) a summary so they can start calling.
+ */
+export async function remindUnconfirmed(): Promise<{ pending: number }> {
+  const pending = await prisma.purchaseOrder.findMany({
+    where: { status: "SENT" },
+    include: { supplier: { include: { users: { where: { telegramId: { not: null } } } } } },
+  });
+
+  if (pending.length === 0 || !process.env.TELEGRAM_BOT_TOKEN) return { pending: pending.length };
+
+  for (const po of pending) {
+    for (const user of po.supplier.users) {
+      await tg("sendMessage", {
+        chat_id: Number(user.telegramId),
+        text: `⏰ Eslatma: №${po.id.slice(-6).toUpperCase()} buyurtmasi hali tasdiqlanmagan. Iltimos, yuqoridagi xabardagi tugma orqali javob bering.`,
+      }).catch(() => {});
+    }
+  }
+
+  const adminId = process.env.ADMIN_TELEGRAM_ID;
+  if (adminId) {
+    const bySupplier = new Map<string, number>();
+    for (const po of pending) {
+      bySupplier.set(po.supplier.name, (bySupplier.get(po.supplier.name) ?? 0) + 1);
+    }
+    const lines = [...bySupplier.entries()].map(([name, n]) => `• ${name}: ${n} ta PO`).join("\n");
+    await tg("sendMessage", {
+      chat_id: Number(adminId),
+      text: `⚠️ 23:30 holati — tasdiqlanmagan buyurtmalar:\n${lines}\n\nQo'ng'iroq qilish vaqti keldi.`,
+    }).catch(() => {});
+  }
+
+  return { pending: pending.length };
+}
+
+/**
  * Supplier tapped confirm/reject. Updates the PO, recomputes the parent
  * order status (CONFIRMED when all POs confirmed, PARTIAL otherwise),
  * notifies the buyer when fully confirmed.
