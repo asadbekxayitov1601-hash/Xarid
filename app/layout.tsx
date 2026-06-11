@@ -3,6 +3,7 @@ import "./globals.css";
 import { TelegramProvider } from "@/components/telegram-provider";
 import { BasketProvider } from "@/components/basket-provider";
 import { Header } from "@/components/header";
+import { getLocale } from "@/lib/locale";
 
 export const metadata: Metadata = {
   title: "Xarid — restoranlar uchun ertalabki ta'minot",
@@ -16,13 +17,14 @@ export const viewport: Viewport = {
   maximumScale: 1, // Mini App webview: prevent pinch-zoom breaking the layout
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="uz">
+    <html lang={locale}>
       <body>
         <TelegramProvider>
           <BasketProvider>
-            <Header />
+            <Header locale={locale} />
             <main className="mx-auto max-w-3xl px-4 pb-28 pt-4">{children}</main>
           </BasketProvider>
         </TelegramProvider>

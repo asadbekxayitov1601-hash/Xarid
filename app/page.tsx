@@ -1,35 +1,36 @@
 import Link from "next/link";
 import { LeadForm } from "@/components/lead-form";
+import { getLocale } from "@/lib/locale";
+import { t } from "@/lib/i18n";
 
-const steps = [
-  { n: "1", title: "Kechqurun buyurtma", text: "Soat 22:00 gacha barcha kerakli mahsulotlarni bitta savatga yig'asiz — sabzavot, go'sht, sut, quruq mahsulotlar." },
-  { n: "2", title: "Tasdiqlash", text: "Tekshirilgan yetkazib beruvchilar buyurtmani kechasi tasdiqlaydi. Narxlar oldindan ko'rinadi — savdolashish shart emas." },
-  { n: "3", title: "Ertalab yetkazib berish", text: "Hammasi bitta mashinada, tushlik tayyorgarligidan oldin — soat 10:00 gacha yetkazib beriladi." },
-];
+export default async function LandingPage() {
+  const locale = await getLocale();
 
-export default function LandingPage() {
+  const steps = [
+    { n: "1", title: t(locale, "step1_title"), text: t(locale, "step1_text") },
+    { n: "2", title: t(locale, "step2_title"), text: t(locale, "step2_text") },
+    { n: "3", title: t(locale, "step3_title"), text: t(locale, "step3_text") },
+  ];
+
   return (
     <div className="space-y-12 py-6">
       <section className="space-y-4 text-center">
         <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
-          Ertalabki ta'minot — <span className="text-emerald-700">bitta savatda</span>
+          {t(locale, "hero_title_pre")} <span className="text-emerald-700">{t(locale, "hero_title_accent")}</span>
         </h1>
-        <p className="mx-auto max-w-xl text-stone-600">
-          Restoran, kafe va choyxonalar uchun: o'nta yetkazib beruvchiga qo'ng'iroq qilish o'rniga,
-          butun buyurtmani bitta ilovada bering. Shaffof narxlar, ertalab soat 10:00 gacha yetkazib berish.
-        </p>
+        <p className="mx-auto max-w-xl text-stone-600">{t(locale, "hero_text")}</p>
         <div className="flex justify-center gap-3">
           <Link
             href="/catalog"
             className="rounded-full bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700"
           >
-            Katalogni ochish
+            {t(locale, "cta_catalog")}
           </Link>
           <a
             href="#signup"
             className="rounded-full border border-stone-300 px-6 py-3 font-semibold text-stone-700 hover:bg-stone-100"
           >
-            Ro'yxatdan o'tish
+            {t(locale, "cta_signup")}
           </a>
         </div>
       </section>
@@ -48,14 +49,16 @@ export default function LandingPage() {
 
       <section id="signup" className="grid gap-6 sm:grid-cols-2">
         <LeadForm
+          locale={locale}
           role="BUYER"
-          title="Restoran yoki kafe uchun"
-          text="Birinchi yetkazib berish — bepul. Telefon raqamingizni qoldiring, biz bog'lanamiz."
+          title={t(locale, "form_buyer_title")}
+          text={t(locale, "form_buyer_text")}
         />
         <LeadForm
+          locale={locale}
           role="SUPPLIER"
-          title="Yetkazib beruvchi uchun"
-          text="O'nlab restoranlarning buyurtmasi bitta jamlangan ro'yxatda. Haftalik kafolatlangan to'lov."
+          title={t(locale, "form_supplier_title")}
+          text={t(locale, "form_supplier_text")}
         />
       </section>
     </div>

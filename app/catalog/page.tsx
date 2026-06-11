@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/db";
+import { getLocale } from "@/lib/locale";
 import { CatalogClient, type CatalogProduct } from "@/components/catalog-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
+  const locale = await getLocale();
   const products = await prisma.product.findMany({
     orderBy: { sortKey: "asc" },
     include: {
@@ -22,8 +24,8 @@ export default async function CatalogPage() {
       const best = p.offers[0];
       return {
         productId: p.id,
-        nameUz: p.nameUz,
-        nameRu: p.nameRu,
+        name: locale === "ru" ? p.nameRu : p.nameUz,
+        altName: locale === "ru" ? p.nameUz : p.nameRu,
         category: p.category,
         unit: p.unit,
         offerId: best.id,
@@ -34,5 +36,5 @@ export default async function CatalogPage() {
       };
     });
 
-  return <CatalogClient items={items} />;
+  return <CatalogClient items={items} locale={locale} />;
 }
