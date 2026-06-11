@@ -6,6 +6,7 @@ const nav = [
   { href: "/admin/suppliers", label: "Yetkazib beruvchilar" },
   { href: "/admin/drivers", label: "Haydovchilar" },
   { href: "/admin/routes", label: "Marshrut" },
+  { href: "/admin/finance", label: "Moliya" },
 ];
 
 // Auth is enforced per-page via requireAdmin() (the login page shares this

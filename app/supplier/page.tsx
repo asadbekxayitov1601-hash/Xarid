@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireSupplier } from "@/lib/supplier";
-import { UNIT_LABELS } from "@/lib/format";
+import { UNIT_LABELS, uzs } from "@/lib/format";
+import { payoutStatement, weekStart } from "@/lib/payouts";
 import { addMyOffer, updateMyOffer } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -22,12 +23,26 @@ export default async function SupplierPortalPage() {
     orderBy: { sortKey: "asc" },
   });
 
+  const start = weekStart(new Date());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  const myRow = (await payoutStatement(start, end)).find((r) => r.supplierId === org.id);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold">{org.name}</h1>
         <p className="text-sm text-stone-500">Narxlar ro'yxatingiz — o'zgartirishlar darhol kuchga kiradi</p>
       </div>
+
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <h2 className="text-sm font-semibold text-emerald-900">Shu hafta (yetkazilganlar bo'yicha)</h2>
+        <p className="mt-1 text-2xl font-bold text-emerald-800">{uzs(myRow?.gross ?? 0)}</p>
+        <p className="text-xs text-emerald-700">
+          {myRow ? `${myRow.orders} ta buyurtma · ${myRow.lines} ta qator` : "Hozircha yetkazilgan buyurtmalar yo'q"}
+          {" · "}to'lov har hafta amalga oshiriladi
+        </p>
+      </section>
 
       <section className="rounded-2xl border border-stone-200 bg-white">
         <h2 className="border-b border-stone-100 px-4 py-2.5 text-sm font-semibold text-stone-500">

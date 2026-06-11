@@ -80,9 +80,24 @@ CREATE TABLE "Order" (
     "driverId" TEXT,
     "cashTaken" INTEGER,
     "podFileId" TEXT,
+    "paidAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Payment" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "externalId" TEXT NOT NULL,
+    "clickPrepareId" BIGSERIAL NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "paidAt" TIMESTAMP(3),
+
+    CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
 
 CREATE TABLE "PurchaseOrder" (
@@ -132,6 +147,10 @@ CREATE UNIQUE INDEX "Driver_botCode_key" ON "Driver"("botCode");
 
 CREATE UNIQUE INDEX "Driver_userId_key" ON "Driver"("userId");
 
+CREATE UNIQUE INDEX "Payment_clickPrepareId_key" ON "Payment"("clickPrepareId");
+
+CREATE UNIQUE INDEX "Payment_provider_externalId_key" ON "Payment"("provider", "externalId");
+
 CREATE UNIQUE INDEX "PurchaseOrder_orderId_supplierId_key" ON "PurchaseOrder"("orderId", "supplierId");
 
 ALTER TABLE "User" ADD CONSTRAINT "User_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -147,6 +166,8 @@ ALTER TABLE "Order" ADD CONSTRAINT "Order_buyerUserId_fkey" FOREIGN KEY ("buyerU
 ALTER TABLE "Order" ADD CONSTRAINT "Order_buyerOrgId_fkey" FOREIGN KEY ("buyerOrgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "Order" ADD CONSTRAINT "Order_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -176,6 +197,21 @@ const MIGRATIONS = [
   `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "driverId" TEXT`,
   `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "cashTaken" INTEGER`,
   `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "podFileId" TEXT`,
+  `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paidAt" TIMESTAMP(3)`,
+  `CREATE TABLE IF NOT EXISTS "Payment" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "externalId" TEXT NOT NULL,
+    "clickPrepareId" BIGSERIAL NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "paidAt" TIMESTAMP(3),
+    CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Payment_clickPrepareId_key" ON "Payment"("clickPrepareId")`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Payment_provider_externalId_key" ON "Payment"("provider", "externalId")`,
 ];
 
 /** True when the schema's tables already exist in the connected database. */

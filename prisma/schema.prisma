@@ -105,10 +105,29 @@ model Order {
   driver       Driver?  @relation(fields: [driverId], references: [id])
   cashTaken    Int?
   podFileId    String?  // proof-of-delivery photo (Telegram file_id)
+  paidAt       DateTime?
   createdAt    DateTime @default(now())
 
   items          OrderItem[]
   purchaseOrders PurchaseOrder[]
+  payments       Payment[]
+}
+
+// An online payment attempt (Click or Uzum Bank). Amounts in UZS.
+// status: PENDING | PAID | CANCELLED
+model Payment {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id])
+  provider       String   // CLICK | UZUM
+  externalId     String   // click_trans_id / Uzum transId
+  clickPrepareId BigInt   @unique @default(autoincrement()) // numeric id Click echoes back at complete
+  amount         Int
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  paidAt         DateTime?
+
+  @@unique([provider, externalId])
 }
 
 // Per-supplier slice of an Order, created by the 22:00 cutoff.

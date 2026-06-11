@@ -59,6 +59,8 @@ const dict = {
     status_DELIVERING: "Yo'lda",
     status_DELIVERED: "Yetkazildi",
     status_CANCELLED: "Bekor qilindi",
+    pay_with: "To'lash",
+    paid: "To'landi",
     // units
     unit_KG: "kg",
     unit_PIECE: "dona",
@@ -115,6 +117,8 @@ const dict = {
     status_DELIVERING: "В пути",
     status_DELIVERED: "Доставлен",
     status_CANCELLED: "Отменён",
+    pay_with: "Оплатить",
+    paid: "Оплачен",
     unit_KG: "кг",
     unit_PIECE: "шт",
     unit_LITER: "л",
