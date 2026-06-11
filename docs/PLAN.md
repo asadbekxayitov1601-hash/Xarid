@@ -20,15 +20,15 @@ Guiding constraints:
 
 | Layer | Choice | Why |
 |---|---|---|
-| Web app | Next.js 15 (App Router, TypeScript) | One codebase for storefront, supplier portal, admin; free hosting on Vercel |
+| Web app | Next.js 15 (App Router, TypeScript) | One codebase for storefront, supplier portal, admin |
 | UI | Tailwind CSS + shadcn/ui | Fast to build, looks professional, free |
-| Database | PostgreSQL on Supabase (free tier) | Postgres + auth + file storage + row-level security in one free service |
+| Database | PostgreSQL on Neon (free tier) | Serverless Postgres with branching; proven in Dasturkhon |
 | ORM | Prisma | Type-safe schema, migrations |
-| Telegram bots | grammY, running as Next.js route handlers (webhooks) | No extra server to pay for |
-| Auth | Phone number + OTP via Telegram (free) with Eskiz.uz SMS as fallback | SMS costs money; Telegram OTP is free |
+| Telegram bots | Raw Bot API via Next.js route handlers (webhooks) | No extra server to pay for |
+| Auth | Telegram Mini App initData; phone + OTP (Eskiz.uz SMS) later for web-only buyers | SMS costs money; Telegram auth is free |
 | Payments (Phase 3) | Payme + Click merchant APIs | The two payment rails every Uzbek business accepts |
-| Hosting | Vercel free tier; upgrade only when traffic demands | $0 until it matters |
-| Monitoring | Sentry free tier + Vercel logs | Enough for MVP |
+| Hosting | Railway (persistent Node server); proven in Dasturkhon | Always-on process → in-app cron, Telegram webhooks, no serverless limits |
+| Monitoring | Sentry free tier + Railway logs | Enough for MVP |
 | Languages | UZ (Latin) + RU from day one | Both are mandatory for Tashkent HoReCa |
 
 Everything lives in **one Next.js repository** until Phase 4. No microservices,
@@ -69,12 +69,12 @@ app/
 ├── (marketing)/
 │   ├── for-restaurants/page.tsx
 │   └── for-suppliers/page.tsx
-├── api/leads/route.ts          # POST → leads table in Supabase
+├── api/leads/route.ts          # POST → leads table in Postgres (Neon)
 components/
 ├── lead-form.tsx               # Name, phone, business type, district
 ├── language-switcher.tsx
 lib/
-├── supabase.ts                 # Supabase client
+├── db.ts                       # Prisma client
 ├── i18n.ts                     # UZ/RU dictionaries (simple JSON, no library)
 messages/
 ├── uz.json
@@ -83,10 +83,11 @@ messages/
 
 ### Technical details
 
-- Single Supabase table `leads(id, name, phone, role buyer|supplier, district, created_at)`.
-- Deploy to Vercel, attach `xarid.uz` domain (~$10–15/yr — the only Phase 0 cost).
+- Single table `leads(id, name, phone, role buyer|supplier, district, created_at)`.
+- Deploy to Railway, attach `xarid.uz` domain (~$10–15/yr — the only Phase 0 cost
+  besides Railway's ~$5/mo hobby plan).
 - Telegram channel/bot link on the page so leads land in a community you control.
-- No auth, no dashboard — read leads straight from the Supabase table editor.
+- No auth, no dashboard — read leads via Prisma Studio or the Neon console.
 
 ---
 
@@ -136,11 +137,11 @@ app/
 ├── api/
 │   ├── bot/buyer/route.ts          # grammY webhook: OTP login, order notifications
 │   ├── bot/supplier/route.ts       # grammY webhook: PO confirm/adjust buttons
-│   └── cron/cutoff/route.ts        # Vercel cron 22:00: close baskets → POs
+│   └── cron/cutoff/route.ts        # Manual/external cutoff trigger (22:00 run is in-process)
 ├── login/page.tsx
 lib/
 ├── db.ts                           # Prisma client
-├── auth.ts                         # Session handling (iron-session or Supabase auth)
+├── session.ts                      # Signed-cookie sessions
 ├── pricing.ts                      # Markup/commission application to supplier prices
 ├── order-splitter.ts               # Basket → per-supplier purchase orders
 └── bots/
@@ -222,8 +223,9 @@ model OrderItem {
   `Σ(price − costPrice) × qtyActual`.
 - **`qtyActual` is first-class** — meat and vegetables are sold by weight; the
   delivered weight never equals the ordered weight. Invoicing uses `qtyActual`.
-- Vercel Cron (free) fires the 22:00 cutoff; a second cron at 23:30
-  auto-escalates unconfirmed POs to the admin's Telegram.
+- An in-process scheduler (the Railway server is always on) fires the 22:00
+  cutoff; a second timer at 23:30 will auto-escalate unconfirmed POs to the
+  admin's Telegram.
 
 **Exit criteria:** 4 consecutive weeks of orders, ≥15 active buyers, weekly
 GMV ≥ 50M UZS (~$4k), and the founder can state real per-order delivery cost.
@@ -259,7 +261,7 @@ model Route    { id, date, driverId, zoneId, status, stops RouteStop[] }
 model RouteStop {
   id, routeId, orderId, sequence Int,
   status     StopStatus  // PENDING|ARRIVED|DELIVERED|FAILED
-  podPhoto   String?     // proof-of-delivery photo (Supabase storage)
+  podPhoto   String?     // proof-of-delivery photo (Telegram file_id — free storage)
   cashDue    Decimal
   cashTaken  Decimal?
   note       String?     // shortage / rejection reason
@@ -358,7 +360,7 @@ specified — it gets re-planned with real Phase 1–3 data.
 - **Mobile:** PWA first (the Next.js app already works on phones); a React
   Native/Expo app only if PWA friction is proven, since buyers order once a
   day in the evening.
-- **Infra:** move off free tiers (Supabase Pro, Vercel Pro ≈ $45/mo), add
+- **Infra:** move off entry tiers (Neon Scale, bigger Railway plan), add
   read replica, background job queue (pg-boss — still just Postgres).
 
 ---

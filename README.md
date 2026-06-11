@@ -44,13 +44,29 @@ This means zero duplicated work: every feature ships to web and Telegram at once
 
 ## Running locally
 
+Requires PostgreSQL (local, or a [Neon](https://neon.tech) dev branch).
+
 ```bash
 npm install
-cp .env.example .env        # defaults work for local dev
-npx prisma db push          # create SQLite dev database
+cp .env.example .env        # set DATABASE_URL if not using local Postgres
+npx prisma db push          # create schema
 npx prisma db seed          # ~30 SKUs, 4 suppliers
 npm run dev                 # http://localhost:3000
 ```
+
+## Deploying (Railway + Neon — same setup as Dasturkhon)
+
+1. Create a Neon project, copy the connection string.
+2. New Railway service from this GitHub repo. Railway auto-detects Next.js
+   (`npm run build` / `npm start`; `prisma generate` runs on postinstall).
+3. Railway → Variables: `DATABASE_URL` (Neon), `TELEGRAM_BOT_TOKEN`,
+   `NEXT_PUBLIC_APP_URL` (the Railway/custom domain), `SESSION_SECRET`,
+   `ADMIN_PASSWORD`.
+4. Set the pre-deploy command to `npx prisma db push` (or use migrations
+   later), then seed once: `npx prisma db seed` from a local machine pointed
+   at the Neon URL.
+5. The 22:00 cutoff runs in-process (`lib/scheduler.ts`) — no platform cron
+   needed; `/api/cron/cutoff` remains as a manual/external trigger.
 
 ## Connecting the Telegram Mini App (after deploying)
 
@@ -60,8 +76,8 @@ npm run dev                 # http://localhost:3000
    `https://api.telegram.org/bot<TOKEN>/setWebhook?url=<APP_URL>/api/bot`
 3. In BotFather: **Bot Settings → Menu Button** → set the URL to
    `<APP_URL>/catalog`. `/start` also replies with an "open app" button.
-4. In production switch `prisma/schema.prisma` provider to `postgresql` and
-   point `DATABASE_URL` at Supabase/Neon.
+4. The schema is PostgreSQL everywhere — point `DATABASE_URL` at Neon in
+   production.
 
 ## Repository structure
 

@@ -1,13 +1,12 @@
-// SQLite for local dev. For production switch provider to "postgresql"
-// and set DATABASE_URL to a Supabase/Neon connection string — the schema
-// is written to be portable (no SQLite-only features, string-based enums).
+// PostgreSQL everywhere: Neon in production, local Postgres (or a Neon
+// dev branch) for development.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
