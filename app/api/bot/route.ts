@@ -99,46 +99,57 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Linked supplier staff get the portal; linked drivers get their stops;
-    // everyone else gets the buyer Mini App.
-    if (from?.id) {
-      const user = await prisma.user.findUnique({
-        where: { telegramId: BigInt(from.id) },
-        include: { org: true, driver: true },
-      });
-      if (user?.org?.type === "SUPPLIER") {
-        await tg("sendMessage", {
-          chat_id: msg.chat.id,
-          text: `"${user.org.name}" — narxlar va buyurtmalar:`,
-          reply_markup: {
-            inline_keyboard: [[{ text: "📋 Narxlarni boshqarish", web_app: { url: `${appUrl}/supplier` } }]],
-          },
-        });
-        return NextResponse.json({ ok: true });
-      }
-      if (user?.driver) {
-        await sendDriverStops(from.id);
-        return NextResponse.json({ ok: true });
-      }
-    }
-
-    await tg("sendMessage", {
-      chat_id: msg.chat.id,
-      text:
-        "Xarid — restoran va kafelar uchun ertalabki ta'minot bozori.\n" +
-        "Bitta savatda barcha mahsulotlar, ertalab soat 10:00 gacha yetkazib beramiz.\n\n" +
-        "Buyurtma berish uchun ilovani oching:",
-      reply_markup: {
-        inline_keyboard: [[{ text: "🛒 Xarid ilovasini ochish", web_app: { url: `${appUrl}/catalog` } }]],
-      },
-    });
+    await sendWelcome(msg.chat.id, from?.id, appUrl);
     return NextResponse.json({ ok: true });
   }
 
   // Driver requesting today's route.
   if (typeof msg.text === "string" && /^\/?marshrut/i.test(msg.text.trim()) && msg.from?.id) {
     await sendDriverStops(msg.from.id);
+    return NextResponse.json({ ok: true });
+  }
+
+  // Anything else the bot doesn't understand (e.g. "/admin", free text):
+  // answer with the role-aware welcome instead of silence.
+  if (typeof msg.text === "string") {
+    await sendWelcome(msg.chat.id, msg.from?.id, appUrl);
   }
 
   return NextResponse.json({ ok: true });
+}
+
+// Role-aware default reply: linked supplier staff get their portal, linked
+// drivers get today's stops, everyone else gets the buyer Mini App.
+async function sendWelcome(chatId: number, fromId: number | undefined, appUrl: string) {
+  if (fromId) {
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(fromId) },
+      include: { org: true, driver: true },
+    });
+    if (user?.org?.type === "SUPPLIER") {
+      await tg("sendMessage", {
+        chat_id: chatId,
+        text: `"${user.org.name}" — narxlar va buyurtmalar:`,
+        reply_markup: {
+          inline_keyboard: [[{ text: "📋 Narxlarni boshqarish", web_app: { url: `${appUrl}/supplier` } }]],
+        },
+      });
+      return;
+    }
+    if (user?.driver) {
+      await sendDriverStops(fromId);
+      return;
+    }
+  }
+
+  await tg("sendMessage", {
+    chat_id: chatId,
+    text:
+      "Xarid — restoran va kafelar uchun ertalabki ta'minot bozori.\n" +
+      "Bitta savatda barcha mahsulotlar, ertalab soat 10:00 gacha yetkazib beramiz.\n\n" +
+      "Buyurtma berish uchun ilovani oching:",
+    reply_markup: {
+      inline_keyboard: [[{ text: "🛒 Xarid ilovasini ochish", web_app: { url: `${appUrl}/catalog` } }]],
+    },
+  });
 }
