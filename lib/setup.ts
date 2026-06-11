@@ -79,6 +79,7 @@ CREATE TABLE "Order" (
     "total" INTEGER NOT NULL,
     "driverId" TEXT,
     "cashTaken" INTEGER,
+    "podFileId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
@@ -174,6 +175,7 @@ const MIGRATIONS = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "Driver_userId_key" ON "Driver"("userId")`,
   `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "driverId" TEXT`,
   `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "cashTaken" INTEGER`,
+  `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "podFileId" TEXT`,
 ];
 
 /** True when the schema's tables already exist in the connected database. */

@@ -12,6 +12,7 @@ export async function sendStopToDriver(orderId: string) {
   });
   if (!order?.driver?.user?.telegramId) return;
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
   await tg("sendMessage", {
     chat_id: Number(order.driver.user.telegramId),
     text:
@@ -20,7 +21,10 @@ export async function sendStopToDriver(orderId: string) {
       `Manzil: ${order.address}\n` +
       `💵 Naqd olinadi: ${uzs(order.total)}`,
     reply_markup: {
-      inline_keyboard: [[{ text: "✅ Yetkazildi", callback_data: `ord:done:${order.id}` }]],
+      inline_keyboard: [
+        [{ text: "⚖️ Tarozidan o'tkazish", web_app: { url: `${appUrl}/driver/orders/${order.id}` } }],
+        [{ text: "✅ Yetkazildi", callback_data: `ord:done:${order.id}` }],
+      ],
     },
   });
 }
@@ -108,7 +112,42 @@ export async function recordCashReply(msg: {
     diff === 0 ? "✅ Summa to'g'ri." : diff > 0 ? `⚠️ ${uzs(diff)} ortiqcha.` : `⚠️ ${uzs(-diff)} kam.`;
   await tg("sendMessage", {
     chat_id: msg.from.id,
-    text: `Qabul qilindi: ${uzs(amount)} (№${shortId(order.id)}). ${note}`,
+    text:
+      `Qabul qilindi: ${uzs(amount)} (№${shortId(order.id)}). ${note}\n\n` +
+      `📷 Endi yetkazish suratini yuborishingiz mumkin (ixtiyoriy).`,
+  });
+  return true;
+}
+
+/**
+ * Records a proof-of-delivery photo sent by the driver. The Telegram file_id
+ * is stored directly — free storage, no bucket needed. Target order: the №
+ * in the replied-to message, otherwise the driver's latest delivered order
+ * without a photo. Returns true when the message was handled.
+ */
+export async function recordPodPhoto(msg: {
+  from?: { id: number };
+  photo?: { file_id: string }[];
+  reply_to_message?: { text?: string };
+}): Promise<boolean> {
+  if (!msg.photo?.length || !msg.from?.id) return false;
+  const fileId = msg.photo[msg.photo.length - 1].file_id; // largest size
+
+  const replyShort = msg.reply_to_message?.text ? /№([A-Z0-9]{6})/.exec(msg.reply_to_message.text)?.[1] : null;
+  const byDriver = { driver: { user: { telegramId: BigInt(msg.from.id) } } };
+
+  const order = replyShort
+    ? await prisma.order.findFirst({ where: { id: { endsWith: replyShort.toLowerCase() }, ...byDriver } })
+    : await prisma.order.findFirst({
+        where: { ...byDriver, status: "DELIVERED", podFileId: null },
+        orderBy: { createdAt: "desc" },
+      });
+  if (!order) return false;
+
+  await prisma.order.update({ where: { id: order.id }, data: { podFileId: fileId } });
+  await tg("sendMessage", {
+    chat_id: msg.from.id,
+    text: `📷 Surat №${shortId(order.id)} buyurtmasiga biriktirildi. Rahmat!`,
   });
   return true;
 }

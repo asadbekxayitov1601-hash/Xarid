@@ -65,6 +65,15 @@ export default async function AdminOrdersPage() {
                 naqd: {uzs(o.cashTaken)}
               </span>
             )}
+            {o.podFileId && (
+              <a
+                href={`/api/pod/${o.id}`}
+                target="_blank"
+                className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-200"
+              >
+                📷 surat
+              </a>
+            )}
           </header>
 
           {o.purchaseOrders.length > 0 && (

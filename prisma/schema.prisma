@@ -104,6 +104,7 @@ model Order {
   driverId     String?
   driver       Driver?  @relation(fields: [driverId], references: [id])
   cashTaken    Int?
+  podFileId    String?  // proof-of-delivery photo (Telegram file_id)
   createdAt    DateTime @default(now())
 
   items          OrderItem[]

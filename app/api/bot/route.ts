@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { tg } from "@/lib/telegram";
 import { resolvePo } from "@/lib/po";
-import { markDelivered, recordCashReply, sendDriverStops } from "@/lib/driver";
+import { markDelivered, recordCashReply, recordPodPhoto, sendDriverStops } from "@/lib/driver";
 
 // Telegram bot webhook. Register once with:
 //   https://api.telegram.org/bot<TOKEN>/setWebhook?url=<APP_URL>/api/bot
@@ -47,6 +47,9 @@ export async function POST(req: NextRequest) {
   // Driver replying to the cash prompt.
   if (await recordCashReply(msg)) return NextResponse.json({ ok: true });
 
+  // Driver sending a proof-of-delivery photo.
+  if (await recordPodPhoto(msg)) return NextResponse.json({ ok: true });
+
   if (typeof msg.text === "string" && msg.text.startsWith("/start")) {
     const payload = msg.text.split(" ")[1];
     const from = msg.from;
@@ -83,6 +86,8 @@ export async function POST(req: NextRequest) {
           update: { name: name ?? undefined },
           create: { telegramId: BigInt(from.id), name, role: "DRIVER" },
         });
+        // One Telegram account drives for one driver record at a time.
+        await prisma.driver.updateMany({ where: { userId: user.id }, data: { userId: null } });
         await prisma.driver.update({ where: { id: driver.id }, data: { userId: user.id } });
         await tg("sendMessage", {
           chat_id: msg.chat.id,
