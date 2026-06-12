@@ -13,8 +13,8 @@ const nav = [
 // layout, so the guard can't live here).
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      <nav className="-mx-4 mb-4 flex gap-2 overflow-x-auto border-b border-stone-200 px-4 pb-3 text-sm">
+    <div className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+      <nav className="-mx-4 mb-4 flex gap-2 overflow-x-auto border-b border-stone-200 px-4 pb-3 text-sm sm:-mx-6 sm:px-6">
         {nav.map((n) => (
           <Link
             key={n.href}

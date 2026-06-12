@@ -25,6 +25,7 @@ CREATE TABLE "User" (
     "phone" TEXT,
     "telegramId" BIGINT,
     "name" TEXT,
+    "passwordHash" TEXT,
     "role" TEXT NOT NULL DEFAULT 'OWNER',
     "orgId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -39,6 +40,7 @@ CREATE TABLE "Product" (
     "category" TEXT NOT NULL,
     "unit" TEXT NOT NULL,
     "sortKey" INTEGER NOT NULL DEFAULT 0,
+    "imageUrl" TEXT,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
 );
@@ -262,6 +264,8 @@ const MIGRATIONS = [
     CONSTRAINT "Payout_pkey" PRIMARY KEY ("id")
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Payout_supplierId_periodStart_key" ON "Payout"("supplierId", "periodStart")`,
+  `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT`,
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "passwordHash" TEXT`,
 ];
 
 /** True when the schema's tables already exist in the connected database. */

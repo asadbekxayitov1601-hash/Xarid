@@ -9,6 +9,7 @@ export type BasketItem = {
   unit: string;
   price: number; // UZS, display only — server recomputes from DB at checkout
   minQty: number;
+  image?: string | null;
   qty: number;
 };
 

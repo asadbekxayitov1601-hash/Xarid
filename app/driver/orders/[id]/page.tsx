@@ -20,7 +20,7 @@ export default async function DriverOrderPage({ params }: { params: Promise<{ id
   if (!order || order.driverId !== driver.id) notFound();
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pt-6">
       <div>
         <h1 className="text-xl font-bold">№{order.id.slice(-6).toUpperCase()} — tarozi</h1>
         <p className="text-sm text-stone-500">

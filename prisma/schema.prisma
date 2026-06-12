@@ -27,16 +27,17 @@ model Organization {
   purchaseOrders PurchaseOrder[]
 }
 
-// role: OWNER | STAFF | ADMIN
+// role: OWNER | STAFF | ADMIN | DRIVER
 model User {
-  id         String   @id @default(cuid())
-  phone      String?  @unique
-  telegramId BigInt?  @unique
-  name       String?
-  role       String   @default("OWNER")
-  orgId      String?
-  org        Organization? @relation(fields: [orgId], references: [id])
-  createdAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  phone        String?  @unique
+  telegramId   BigInt?  @unique
+  name         String?
+  passwordHash String?  // scrypt salt:hash — only for web sign-in accounts
+  role         String   @default("OWNER")
+  orgId        String?
+  org          Organization? @relation(fields: [orgId], references: [id])
+  createdAt    DateTime @default(now())
 
   orders Order[]
   driver Driver?
@@ -44,12 +45,13 @@ model User {
 
 // Canonical SKU, e.g. "Onion, yellow / kg". unit: KG | PIECE | LITER | BLOCK
 model Product {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   nameUz   String
   nameRu   String
   category String
   unit     String
-  sortKey  Int    @default(0)
+  sortKey  Int     @default(0)
+  imageUrl String? // uploaded photo (compressed data URL) or external URL
 
   offers SupplierOffer[]
 }

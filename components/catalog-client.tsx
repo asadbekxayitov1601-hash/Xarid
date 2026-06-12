@@ -13,6 +13,7 @@ export type CatalogProduct = {
   altName: string;
   category: string;
   unit: string;
+  image: string | null;
   offerId: string;
   price: number;
   minQty: number;
@@ -36,6 +37,7 @@ function ItemQty({ p, locale }: { p: CatalogProduct; locale: Locale }) {
             unit: p.unit,
             price: p.price,
             minQty: p.minQty,
+            image: p.image,
           })
         }
         className="rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
@@ -70,10 +72,10 @@ export function CatalogClient({ items, locale }: { items: CatalogProduct[]; loca
   });
 
   return (
-    <div>
-      <div className="sticky top-14 z-10 -mx-4 space-y-2 bg-stone-50/95 px-4 py-2 backdrop-blur">
+    <div className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+      <div className="sticky top-14 z-10 -mx-4 space-y-2 bg-stone-50/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="relative">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">🔍</span>
+          <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-stone-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -100,15 +102,19 @@ export function CatalogClient({ items, locale }: { items: CatalogProduct[]; loca
         </div>
       </div>
 
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((p) => (
           <li
             key={p.productId}
-            className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="card-3d flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm"
           >
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-50 to-stone-100 text-2xl">
-              {productEmoji(p.name, p.category)}
-            </span>
+            {p.image ? (
+              <img src={p.image} alt="" className="h-14 w-14 shrink-0 rounded-2xl object-cover" />
+            ) : (
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-50 to-stone-100 text-2xl">
+                {productEmoji(p.name, p.category)}
+              </span>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">{p.name}</p>
               <p className="truncate text-xs text-stone-500">
@@ -123,9 +129,9 @@ export function CatalogClient({ items, locale }: { items: CatalogProduct[]; loca
           </li>
         ))}
         {visible.length === 0 && (
-          <li className="py-16 text-center text-stone-500">
-            <p className="text-4xl">🔍</p>
-            <p className="mt-2 text-sm">{query} — 0</p>
+          <li className="col-span-full py-16 text-center text-stone-500">
+            <i className="fa-solid fa-magnifying-glass text-3xl text-stone-300" />
+            <p className="mt-3 text-sm">{query} — 0</p>
           </li>
         )}
       </ul>

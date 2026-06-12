@@ -76,6 +76,16 @@ body {
   transform: translateY(0);
 }
 
+/* ---------- 3D hover cards (CSS-only, applied site-wide) ---------- */
+
+.card-3d {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-3d:hover {
+  transform: perspective(900px) rotateX(1.5deg) rotateY(-1.5deg) translateY(-4px);
+  box-shadow: 0 24px 48px -20px rgba(28, 25, 23, 0.25);
+}
+
 /* ---------- glass card ---------- */
 
 .glass {

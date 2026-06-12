@@ -38,6 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       unit: i.offer.product.unit,
       price: i.offer.price, // current price, not the old snapshot
       minQty: i.offer.minQty,
+      image: i.offer.product.imageUrl,
       qty: i.qty,
     });
   }

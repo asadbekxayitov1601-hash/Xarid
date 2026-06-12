@@ -68,13 +68,13 @@ export function Hero3D({
           </div>
         </div>
 
-        {/* satellite tiles at different 3D depths */}
-        <div className="depth-3 float-b glass absolute left-[4%] top-[12%] grid h-16 w-16 place-items-center rounded-2xl text-3xl">🍅</div>
-        <div className="depth-1 float-c glass absolute right-[2%] top-[6%] grid h-14 w-14 place-items-center rounded-2xl text-2xl">🥩</div>
-        <div className="depth-3 float-c glass absolute bottom-[10%] left-[10%] grid h-14 w-14 place-items-center rounded-2xl text-2xl">🥛</div>
-        <div className="depth-2 float-b glass absolute bottom-[4%] right-[8%] grid h-16 w-16 place-items-center rounded-2xl text-3xl">🍚</div>
-        <div className="depth-1 float-a glass absolute right-[18%] top-[42%] grid h-12 w-12 place-items-center rounded-xl text-xl">🧅</div>
-        <div className="depth-2 float-a glass absolute left-[-2%] top-[48%] grid h-12 w-12 place-items-center rounded-xl text-xl">🍵</div>
+        {/* satellite illustration tiles at different 3D depths */}
+        <img src="/hero/tomato.svg" alt="" className="depth-3 float-b glass absolute left-[4%] top-[12%] h-20 w-20 rounded-3xl p-1" />
+        <img src="/hero/meat.svg" alt="" className="depth-1 float-c glass absolute right-[2%] top-[6%] h-16 w-16 rounded-2xl p-1" />
+        <img src="/hero/milk.svg" alt="" className="depth-3 float-c glass absolute bottom-[10%] left-[10%] h-16 w-16 rounded-2xl p-1" />
+        <img src="/hero/rice.svg" alt="" className="depth-2 float-b glass absolute bottom-[4%] right-[8%] h-20 w-20 rounded-3xl p-1" />
+        <img src="/hero/onion.svg" alt="" className="depth-1 float-a glass absolute right-[18%] top-[44%] h-14 w-14 rounded-2xl p-1" />
+        <img src="/hero/tea.svg" alt="" className="depth-2 float-a glass absolute left-[-2%] top-[48%] h-14 w-14 rounded-2xl p-1" />
       </div>
     </div>
   );

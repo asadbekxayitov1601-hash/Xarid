@@ -28,6 +28,7 @@ export default async function CatalogPage() {
         altName: locale === "ru" ? p.nameUz : p.nameRu,
         category: p.category,
         unit: p.unit,
+        image: p.imageUrl,
         offerId: best.id,
         price: best.price,
         minQty: best.minQty,

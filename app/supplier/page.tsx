@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { requireSupplier } from "@/lib/supplier";
 import { UNIT_LABELS, uzs } from "@/lib/format";
 import { payoutStatement, weekStart } from "@/lib/payouts";
+import { productEmoji } from "@/lib/product-emoji";
+import { ProductImageUpload } from "@/components/product-image-upload";
 import { addMyOffer, updateMyOffer } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +31,7 @@ export default async function SupplierPortalPage() {
   const myRow = (await payoutStatement(start, end)).find((r) => r.supplierId === org.id);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 pt-6 sm:px-6">
       <div>
         <h1 className="text-xl font-bold">{org.name}</h1>
         <p className="text-sm text-stone-500">Narxlar ro'yxatingiz — o'zgartirishlar darhol kuchga kiradi</p>
@@ -53,6 +55,14 @@ export default async function SupplierPortalPage() {
             <li key={o.id} className="px-4 py-2.5">
               <form action={updateMyOffer} className="flex flex-wrap items-center gap-2 text-sm">
                 <input type="hidden" name="offerId" value={o.id} />
+                {o.product.imageUrl ? (
+                  <img src={o.product.imageUrl} alt="" className="h-9 w-9 shrink-0 rounded-xl object-cover" />
+                ) : (
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-stone-100 text-lg">
+                    {productEmoji(o.product.nameUz, o.product.category)}
+                  </span>
+                )}
+                <ProductImageUpload productId={o.productId} />
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {o.product.nameUz}
                   <span className="text-xs font-normal text-stone-400"> / {UNIT_LABELS[o.product.unit] ?? o.product.unit}</span>

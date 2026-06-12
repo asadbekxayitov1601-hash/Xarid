@@ -37,8 +37,11 @@ export default async function OrdersPage({
     : [];
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">{t(locale, "orders_title")}</h1>
+    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 pt-6 sm:px-6">
+      <h1 className="text-2xl font-extrabold tracking-tight">
+        <i className="fa-solid fa-receipt mr-2 text-emerald-600" />
+        {t(locale, "orders_title")}
+      </h1>
 
       {placed && (
         <p className="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
@@ -58,7 +61,7 @@ export default async function OrdersPage({
       {orders.map((o) => {
         const statusKey = `status_${o.status}` as MessageKey;
         return (
-          <section key={o.id} className="rounded-2xl border border-stone-200 bg-white">
+          <section key={o.id} className="card-3d rounded-2xl border border-stone-200 bg-white shadow-sm">
             <header className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
               <div>
                 <p className="text-sm font-semibold">
