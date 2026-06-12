@@ -1,0 +1,299 @@
+# Instincts generated from https://github.com/asadbekxayitov1601-hash/Xarid
+# Generated: 2026-06-12T14:56:34.891Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: Xarid-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat
+
+## Evidence
+
+- 1 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: dual-account UX, supplier analytics, Xarid Go logistics, design system v2
+
+---
+id: Xarid-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Commit Length
+
+## Action
+
+Write moderate-length commit messages (~79 characters)
+
+## Evidence
+
+- Average commit message length: 79 chars
+- Based on 1 commits
+
+---
+id: Xarid-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: Xarid-import-alias
+trigger: "when importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Import Alias
+
+## Action
+
+Use path aliases (@/, ~/) instead of relative imports
+
+## Evidence
+
+- Import analysis shows alias pattern
+- Example: import { x } from '@/lib/x'
+
+---
+id: Xarid-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Export Style
+
+## Action
+
+Prefer mixed exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: mixed
+
+---
+id: Xarid-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: xarid-instinct-file-naming-camelcase
+trigger: "When creating a new file in the codebase"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct File Naming Camelcase
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files: camelCase
+
+---
+id: xarid-instinct-function-naming-camelcase
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Function Naming Camelcase
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions: camelCase
+
+---
+id: xarid-instinct-class-naming-pascalcase
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Class Naming Pascalcase
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes: PascalCase
+
+---
+id: xarid-instinct-constant-naming-screaming-snake-case
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Constant Naming Screaming Snake Case
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants: SCREAMING_SNAKE_CASE
+
+---
+id: xarid-instinct-import-alias
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Import Alias
+
+## Action
+
+Use alias import style
+
+## Evidence
+
+- Pattern in importStyle: alias
+
+---
+id: xarid-instinct-export-mixed
+trigger: "When exporting modules or functions"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Export Mixed
+
+## Action
+
+Use either named or default exports as needed (mixed export style)
+
+## Evidence
+
+- Pattern in exportStyle: mixed
+
+---
+id: xarid-instinct-commit-conventional-feat
+trigger: "When writing a commit message for a new feature"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Commit Conventional Feat
+
+## Action
+
+Start the commit message with 'feat:' followed by a concise description
+
+## Evidence
+
+- Pattern in commits.prefixes: feat
+- Example: 'feat: dual-account UX, supplier analytics, Xarid Go logistics, design system v2'
+
+---
+id: xarid-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 79 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength: 79
+
+---
+id: xarid-instinct-test-location-separate
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: asadbekxayitov1601-hash/Xarid
+---
+
+# Xarid Instinct Test Location Separate
+
+## Action
+
+Place test files in a separate folder from source files
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation: separate
+
