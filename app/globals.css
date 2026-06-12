@@ -1,98 +1,268 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border-primary: var(--border-color);
+}
+
 :root {
+  --accent: #10b981; /* emerald-500 */
+  --accent-glow: rgba(16, 185, 129, 0.15);
+
+  /* Dark mode defaults */
+  color-scheme: dark;
+  --bg-primary: #0c0a09; /* stone-950 */
+  --bg-secondary: #1c1917; /* stone-900 */
+  --text-primary: #fafaf9; /* stone-50 */
+  --text-secondary: #d6d3d1; /* stone-300 */
+  --border-color: rgba(255, 255, 255, 0.08);
+
+  --glass-bg: rgba(28, 25, 23, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover-border: rgba(16, 185, 129, 0.3);
+  --glass-hover-shadow: rgba(0, 0, 0, 0.6);
+  --glass-glow: rgba(16, 185, 129, 0.15);
+  --input-bg: rgba(255, 255, 255, 0.03);
+  --input-border: rgba(255, 255, 255, 0.08);
+
+  --scroll-track: #0c0a09;
+  --scroll-thumb: #2e2a24;
+}
+
+html.light {
   color-scheme: light;
+  --bg-primary: #f5f5f4; /* stone-100 */
+  --bg-secondary: #e7e5e4; /* stone-200 */
+  --text-primary: #1c1917; /* stone-900 */
+  --text-secondary: #44403c; /* stone-700 */
+  --border-color: rgba(0, 0, 0, 0.08);
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-hover-border: rgba(16, 185, 129, 0.4);
+  --glass-hover-shadow: rgba(0, 0, 0, 0.1);
+  --glass-glow: rgba(16, 185, 129, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.85);
+  --input-border: rgba(0, 0, 0, 0.12);
+
+  --scroll-track: #f5f5f4;
+  --scroll-thumb: #d6d3d1;
 }
 
 body {
-  @apply bg-stone-50 text-stone-900 antialiased;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: inherit;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 ::selection {
-  background: #059669;
-  color: #fff;
+  background: var(--accent);
+  color: #0c0a09;
 }
 
-/* ---------- 3D hero scene ---------- */
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* ---------- 3D Scene Utilities ---------- */
 
 .scene-perspective {
   perspective: 1200px;
+  transform-style: preserve-3d;
 }
 
 .scene-3d {
   transform-style: preserve-3d;
-  transition: transform 0.25s ease-out;
+  transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.depth-1 { transform: translateZ(30px); }
-.depth-2 { transform: translateZ(70px); }
-.depth-3 { transform: translateZ(110px); }
+.depth-1 { transform: translateZ(35px); }
+.depth-2 { transform: translateZ(75px); }
+.depth-3 { transform: translateZ(120px); }
+.depth-neg-1 { transform: translateZ(-30px); }
+
+/* ---------- Smooth floating and rotation animations ---------- */
 
 @keyframes float-y {
-  0%, 100% { margin-top: 0; }
-  50% { margin-top: -14px; }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(1deg); }
 }
 @keyframes float-y2 {
-  0%, 100% { margin-top: 0; }
-  50% { margin-top: -22px; }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-24px) rotate(-1.5deg); }
 }
-.float-a { animation: float-y 5s ease-in-out infinite; }
-.float-b { animation: float-y2 7s ease-in-out infinite; }
-.float-c { animation: float-y 6s ease-in-out 1.2s infinite; }
+@keyframes float-y3 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(0.5deg); }
+}
+
+.float-a { animation: float-y 6s ease-in-out infinite; }
+.float-b { animation: float-y2 8s ease-in-out infinite; }
+.float-c { animation: float-y3 5s ease-in-out 1.5s infinite; }
 
 @keyframes ring-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
-.ring-spin { animation: ring-spin 24s linear infinite; }
-.ring-spin-reverse { animation: ring-spin 36s linear infinite reverse; }
+.ring-spin { animation: ring-spin 35s linear infinite; }
+.ring-spin-reverse { animation: ring-spin 45s linear infinite reverse; }
 
-/* ---------- animated gradient blobs ---------- */
+/* ---------- Ambient Glowing Blobs ---------- */
 
 @keyframes blob-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(40px, -30px) scale(1.15); }
-  66% { transform: translate(-30px, 25px) scale(0.95); }
+  0%, 100% { transform: translate(0, 0) scale(1); filter: blur(80px); }
+  33% { transform: translate(50px, -40px) scale(1.2); filter: blur(100px); }
+  66% { transform: translate(-40px, 30px) scale(0.85); filter: blur(70px); }
 }
 .blob {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(70px);
-  opacity: 0.55;
-  animation: blob-drift 14s ease-in-out infinite;
+  filter: blur(80px);
+  opacity: 0.35;
+  pointer-events: none;
+  animation: blob-drift 16s ease-in-out infinite;
+  z-index: 0;
 }
-.blob-2 { animation-duration: 18s; animation-delay: 2s; }
-.blob-3 { animation-duration: 22s; animation-delay: 5s; }
+.blob-2 { animation-duration: 20s; animation-delay: 3s; }
+.blob-3 { animation-duration: 24s; animation-delay: 6s; }
 
-/* ---------- scroll reveal ---------- */
+/* ---------- Scroll Reveal ---------- */
 
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
+  transform: translateY(32px) scale(0.98);
+  transition: opacity 0.8s cubic-bezier(0.215, 0.61, 0.355, 1), transform 0.8s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 .reveal.revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-/* ---------- 3D hover cards (CSS-only, applied site-wide) ---------- */
+/* ---------- Premium Glassmorphic Cards ---------- */
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 16px 36px -12px var(--glass-hover-shadow);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-card:hover {
+  border-color: var(--glass-hover-border);
+  box-shadow: 0 24px 48px -16px var(--glass-hover-shadow), 0 0 24px -4px var(--glass-glow);
+}
+
+.glass-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+.glass-input:focus {
+  background: var(--input-bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--glass-glow);
+}
+
+/* ---------- 3D Hover tilt effect (pure CSS option) ---------- */
 
 .card-3d {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.4s ease;
+  transform-style: preserve-3d;
 }
 .card-3d:hover {
-  transform: perspective(900px) rotateX(1.5deg) rotateY(-1.5deg) translateY(-4px);
-  box-shadow: 0 24px 48px -20px rgba(28, 25, 23, 0.25);
+  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-6px);
+  border-color: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 28px 56px -20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.1);
 }
 
-/* ---------- glass card ---------- */
+/* ---------- Category Hover Effects ---------- */
 
-.glass {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+.category-item {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.category-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.category-item:hover::before {
+  opacity: 1;
+}
+.category-item:hover img {
+  transform: scale(1.1) translateZ(20px);
+}
+
+/* ---------- CTA Button Pulse Glow ---------- */
+
+.glow-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 8px 20px -6px rgba(16, 185, 129, 0.4);
+}
+.glow-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 55%
+  );
+  transform: rotate(45deg);
+  transition: transform 0.6s ease;
+}
+.glow-button:hover {
+  box-shadow: 0 12px 28px -4px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.2);
+}
+.glow-button:hover::after {
+  transform: translate(100%, 100%) rotate(45deg);
+}
+
+/* ---------- Custom Status Glows ---------- */
+
+.glow-status-placed {
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.glow-status-confirmed {
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.glow-status-delivered {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -38,43 +38,43 @@ export function Hero3D({
       aria-hidden
     >
       {/* rotating dashed orbit rings */}
-      <div className="ring-spin absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-emerald-400/30" />
-      <div className="ring-spin-reverse absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-amber-300/20" />
+      <div className="ring-spin absolute left-1/2 top-1/2 h-[360px] w-[360px] rounded-full border border-dashed border-emerald-500/20" />
+      <div className="ring-spin-reverse absolute left-1/2 top-1/2 h-[460px] w-[460px] rounded-full border border-dashed border-amber-500/10" />
 
       <div
         className="scene-3d absolute inset-0"
         style={{ transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)` }}
       >
         {/* central order card */}
-        <div className="depth-2 float-a glass absolute left-1/2 top-1/2 w-72 -translate-x-1/2 -translate-y-1/2 rounded-3xl p-5 text-white">
+        <div className="depth-2 float-a glass-card absolute left-1/2 top-1/2 w-76 -translate-x-1/2 -translate-y-1/2 rounded-3xl p-5.5 text-text-primary">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-emerald-300">{title}</p>
-            <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+            <p className="text-sm font-bold tracking-wide text-emerald-500">{title}</p>
+            <span className="rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
               06:00–10:00
             </span>
           </div>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-4 space-y-2.5">
             {rows.map((r) => (
-              <li key={r.name} className="flex items-center gap-2.5 text-sm">
-                <span className="grid h-8 w-8 place-items-center rounded-xl bg-white/10 text-base">{r.emoji}</span>
-                <span className="flex-1 truncate text-white/90">{r.name}</span>
-                <span className="font-semibold text-white/70">{r.price}</span>
+              <li key={r.name} className="flex items-center gap-3 text-sm">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-bg-secondary/60 border border-border-primary text-base">{r.emoji}</span>
+                <span className="flex-1 truncate font-medium text-text-primary">{r.name}</span>
+                <span className="font-bold text-text-secondary">{r.price}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
-            <span className="text-xs text-white/60">{totalLabel}</span>
-            <span className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold">{deliveredLabel} ✓</span>
+          <div className="mt-5 flex items-center justify-between border-t border-border-primary pt-4">
+            <span className="text-xs text-text-secondary font-medium">{totalLabel}</span>
+            <span className="rounded-full bg-emerald-500 hover:bg-emerald-400 text-stone-950 px-3.5 py-1 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all duration-300">{deliveredLabel} ✓</span>
           </div>
         </div>
 
         {/* satellite illustration tiles at different 3D depths */}
-        <img src="/hero/tomato.svg" alt="" className="depth-3 float-b glass absolute left-[4%] top-[12%] h-20 w-20 rounded-3xl p-1" />
-        <img src="/hero/meat.svg" alt="" className="depth-1 float-c glass absolute right-[2%] top-[6%] h-16 w-16 rounded-2xl p-1" />
-        <img src="/hero/milk.svg" alt="" className="depth-3 float-c glass absolute bottom-[10%] left-[10%] h-16 w-16 rounded-2xl p-1" />
-        <img src="/hero/rice.svg" alt="" className="depth-2 float-b glass absolute bottom-[4%] right-[8%] h-20 w-20 rounded-3xl p-1" />
-        <img src="/hero/onion.svg" alt="" className="depth-1 float-a glass absolute right-[18%] top-[44%] h-14 w-14 rounded-2xl p-1" />
-        <img src="/hero/tea.svg" alt="" className="depth-2 float-a glass absolute left-[-2%] top-[48%] h-14 w-14 rounded-2xl p-1" />
+        <img src="/hero/tomato.svg" alt="" className="depth-3 float-b glass-card absolute left-[3%] top-[10%] h-20 w-20 rounded-3xl p-2.5 border-emerald-500/20 shadow-lg shadow-emerald-500/10" />
+        <img src="/hero/meat.svg" alt="" className="depth-1 float-c glass-card absolute right-[0%] top-[4%] h-18 w-18 rounded-2xl p-2 border-amber-500/20 shadow-lg shadow-amber-500/10" />
+        <img src="/hero/milk.svg" alt="" className="depth-3 float-c glass-card absolute bottom-[8%] left-[8%] h-18 w-18 rounded-2xl p-2 border-emerald-500/20 shadow-lg shadow-emerald-500/10" />
+        <img src="/hero/rice.svg" alt="" className="depth-2 float-b glass-card absolute bottom-[3%] right-[6%] h-20 w-20 rounded-3xl p-2.5 border-amber-500/20 shadow-lg shadow-amber-500/10" />
+        <img src="/hero/onion.svg" alt="" className="depth-1 float-a glass-card absolute right-[16%] top-[44%] h-16 w-16 rounded-2xl p-2 border-emerald-500/20 shadow-lg shadow-emerald-500/10" />
+        <img src="/hero/tea.svg" alt="" className="depth-2 float-a glass-card absolute left-[-4%] top-[46%] h-16 w-16 rounded-2xl p-2 border-amber-500/20 shadow-lg shadow-amber-500/10" />
       </div>
     </div>
   );

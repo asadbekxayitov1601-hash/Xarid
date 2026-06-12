@@ -41,7 +41,7 @@ export function QtyInput({
       <button
         type="button"
         onClick={() => onChange(Math.max(0, qty - step))}
-        className="h-8 w-8 shrink-0 rounded-full border border-stone-300 font-bold text-stone-700"
+        className="h-8 w-8 shrink-0 rounded-full border border-border-primary bg-bg-secondary/60 hover:bg-bg-secondary text-text-primary active:scale-90 font-bold transition-all flex items-center justify-center text-sm cursor-pointer"
       >
         −
       </button>
@@ -54,14 +54,14 @@ export function QtyInput({
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
-        className="w-14 rounded-lg border border-stone-300 px-1 py-1 text-center text-sm font-semibold"
+        className="w-14 rounded-lg border border-border-primary bg-bg-secondary/60 py-1 text-center text-sm font-bold text-text-primary outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
         aria-label="Miqdor"
       />
-      <span className="w-9 shrink-0 text-xs text-stone-500">{unitLabel}</span>
+      <span className="w-9 shrink-0 text-xs font-semibold text-text-secondary pl-1">{unitLabel}</span>
       <button
         type="button"
         onClick={() => onChange(integer ? qty + step : Math.round((qty + step) * 100) / 100)}
-        className="h-8 w-8 shrink-0 rounded-full border border-stone-300 font-bold text-stone-700"
+        className="h-8 w-8 shrink-0 rounded-full border border-border-primary bg-bg-secondary/60 hover:bg-bg-secondary text-text-primary active:scale-90 font-bold transition-all flex items-center justify-center text-sm cursor-pointer"
       >
         +
       </button>

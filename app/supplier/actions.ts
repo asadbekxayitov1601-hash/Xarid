@@ -38,3 +38,40 @@ export async function addMyOffer(formData: FormData) {
   });
   revalidatePath("/supplier");
 }
+
+export async function resolvePoWeb(poId: string, action: "confirm" | "reject") {
+  const { org } = await requireSupplier();
+
+  const po = await prisma.purchaseOrder.findUnique({
+    where: { id: poId },
+  });
+  if (!po || po.supplierId !== org.id) return { error: "Ruxsat yo'q" };
+  if (po.status !== "SENT") return { error: "Allaqachon javob berilgan" };
+
+  await prisma.purchaseOrder.update({
+    where: { id: poId },
+    data: { status: action === "confirm" ? "CONFIRMED" : "REJECTED" },
+  });
+
+  const siblings = await prisma.purchaseOrder.findMany({ where: { orderId: po.orderId } });
+  const allConfirmed = siblings.every((p) => p.status === "CONFIRMED");
+  const orderStatus = allConfirmed ? "CONFIRMED" : "PARTIAL";
+  const order = await prisma.order.update({
+    where: { id: po.orderId },
+    data: { status: orderStatus },
+    include: { buyerUser: true },
+  });
+
+  if (allConfirmed && order.buyerUser.telegramId && process.env.TELEGRAM_BOT_TOKEN) {
+    const { tg } = await import("@/lib/telegram");
+    const { uzs } = await import("@/lib/format");
+    await tg("sendMessage", {
+      chat_id: Number(order.buyerUser.telegramId),
+      text: `✅ Buyurtmangiz tasdiqlandi! Ertaga 06:00–10:00 oralig'ida yetkazib beramiz.\nJami: ${uzs(order.total)}`,
+    }).catch(() => {});
+  }
+
+  revalidatePath("/supplier");
+  return { success: true };
+}
+

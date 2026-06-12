@@ -11,8 +11,8 @@ const dict = {
     nav_orders: "Buyurtmalar",
     // landing
     hero_badge: "Toshkent restoranlari uchun B2B bozor",
-    hero_title_pre: "Ertalabki ta'minot —",
-    hero_title_accent: "bitta savatda",
+    hero_title_pre: "Har kuni, ",
+    hero_title_accent: "hammasi bir joyda",
     hero_text:
       "Restoran, kafe va choyxonalar uchun: o'nta yetkazib beruvchiga qo'ng'iroq qilish o'rniga, butun buyurtmani bitta ilovada bering. Shaffof narxlar, ertalab soat 10:00 gacha yetkazib berish.",
     hero_card_title: "Ertangi buyurtma",
@@ -98,8 +98,8 @@ const dict = {
     nav_basket: "Корзина",
     nav_orders: "Заказы",
     hero_badge: "B2B-маркет для ресторанов Ташкента",
-    hero_title_pre: "Утренние закупки —",
-    hero_title_accent: "в одной корзине",
+    hero_title_pre: "Каждый день, ",
+    hero_title_accent: "всё в одном месте",
     hero_text:
       "Для ресторанов, кафе и чайхан: вместо звонков десяти поставщикам — весь заказ в одном приложении. Прозрачные цены, доставка до 10:00 утра.",
     hero_card_title: "Завтрашний заказ",

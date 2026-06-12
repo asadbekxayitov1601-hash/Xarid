@@ -19,8 +19,15 @@ type Entry = { key: string; debit: string; credit: string; amount: number; order
 async function post(entries: Entry[]) {
   const valid = entries.filter((e) => e.amount > 0);
   if (valid.length === 0) return;
-  await prisma.ledgerEntry.createMany({ data: valid, skipDuplicates: true });
+  for (const entry of valid) {
+    try {
+      await prisma.ledgerEntry.create({ data: entry });
+    } catch (e) {
+      // Ignore duplicates (idempotency key constraint)
+    }
+  }
 }
+
 
 /**
  * Order delivered: the buyer now owes the order total; we owe each supplier

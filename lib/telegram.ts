@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+// import { createHmac, timingSafeEqual } from "crypto";
 
 export type TelegramInitUser = {
   id: number;
@@ -27,6 +27,7 @@ export function validateInitData(
     .map(([k, v]) => `${k}=${v}`)
     .join("\n");
 
+  const { createHmac, timingSafeEqual } = eval("require")("crypto");
   const secretKey = createHmac("sha256", "WebAppData").update(botToken).digest();
   const expected = createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
 

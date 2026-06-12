@@ -5,9 +5,11 @@ import "./globals.css";
 import { TelegramProvider } from "@/components/telegram-provider";
 import { BasketProvider } from "@/components/basket-provider";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import { getLocale } from "@/lib/locale";
 import { getSessionUserId } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"], display: "swap" });
 
@@ -25,6 +27,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("theme")?.value || "dark";
 
   let userName: string | null = null;
   const userId = await getSessionUserId();
@@ -34,12 +38,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang={locale}>
-      <body className={inter.className}>
+    <html lang={locale} className={theme}>
+      <body className={`${inter.className} min-h-screen flex flex-col bg-bg-primary text-text-primary transition-colors duration-300`}>
         <TelegramProvider>
           <BasketProvider>
             <Header locale={locale} userName={userName} />
-            <main className="w-full pb-24">{children}</main>
+            <main className="w-full flex-1 pb-16">{children}</main>
+            <Footer locale={locale} />
           </BasketProvider>
         </TelegramProvider>
       </body>

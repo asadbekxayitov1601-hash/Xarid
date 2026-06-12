@@ -1,21 +1,9 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/session";
 import { getLocale } from "@/lib/locale";
-import { t, unitLabel, uzs, type MessageKey } from "@/lib/i18n";
-import { paynetPayUrl, uzumPayUrl } from "@/lib/payments/links";
-import { ReorderButton } from "@/components/reorder-button";
+import { OrdersClient } from "@/components/orders-client";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_CLS: Record<string, string> = {
-  PLACED: "bg-amber-100 text-amber-800",
-  CONFIRMED: "bg-blue-100 text-blue-800",
-  PARTIAL: "bg-blue-100 text-blue-800",
-  DELIVERING: "bg-indigo-100 text-indigo-800",
-  DELIVERED: "bg-emerald-100 text-emerald-800",
-  CANCELLED: "bg-stone-200 text-stone-600",
-};
 
 export default async function OrdersPage({
   searchParams,
@@ -31,98 +19,56 @@ export default async function OrdersPage({
         where: { buyerUserId: userId },
         orderBy: { createdAt: "desc" },
         include: {
-          items: { include: { offer: { include: { product: true, supplier: { select: { name: true } } } } } },
+          items: {
+            include: {
+              offer: {
+                include: {
+                  product: true,
+                  supplier: { select: { name: true } },
+                },
+              },
+            },
+          },
         },
       })
     : [];
 
+  const formattedOrders = orders.map((o) => ({
+    id: o.id,
+    deliveryDate: `${o.deliveryDate.toLocaleDateString(
+      locale === "ru" ? "ru-RU" : "uz-UZ",
+      { day: "numeric", month: "long" }
+    )} · 06:00–10:00`,
+    status: o.status,
+    address: o.address,
+    total: o.total,
+    paidAt: !!o.paidAt,
+    items: o.items.map((i) => ({
+      id: i.id,
+      qty: i.qty,
+      qtyActual: i.qtyActual,
+      price: i.price,
+      offer: {
+        offerId: i.offer.id,
+        product: {
+          nameUz: i.offer.product.nameUz,
+          nameRu: i.offer.product.nameRu,
+          unit: i.offer.product.unit,
+          category: i.offer.product.category,
+          image: i.offer.product.imageUrl,
+        },
+        supplier: {
+          name: i.offer.supplier.name,
+        },
+      },
+    })),
+  }));
+
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 pt-6 sm:px-6">
-      <h1 className="text-2xl font-extrabold tracking-tight">
-        <i className="fa-solid fa-receipt mr-2 text-emerald-600" />
-        {t(locale, "orders_title")}
-      </h1>
-
-      {placed && (
-        <p className="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
-          {t(locale, "order_placed_banner")}
-        </p>
-      )}
-
-      {orders.length === 0 && !placed && (
-        <div className="py-16 text-center text-stone-500">
-          <p>{t(locale, "orders_empty")}</p>
-          <Link href="/catalog" className="mt-2 inline-block font-semibold text-emerald-700">
-            {t(locale, "go_catalog")}
-          </Link>
-        </div>
-      )}
-
-      {orders.map((o) => {
-        const statusKey = `status_${o.status}` as MessageKey;
-        return (
-          <section key={o.id} className="card-3d rounded-2xl border border-stone-200 bg-white shadow-sm">
-            <header className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold">
-                  {o.deliveryDate.toLocaleDateString(locale === "ru" ? "ru-RU" : "uz-UZ", { day: "numeric", month: "long" })} · 06:00–10:00
-                </p>
-                <p className="text-xs text-stone-500">{o.address}</p>
-              </div>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_CLS[o.status] ?? STATUS_CLS.PLACED}`}>
-                {t(locale, statusKey)}
-              </span>
-            </header>
-            <ul className="divide-y divide-stone-100">
-              {o.items.map((i) => (
-                <li key={i.id} className="flex items-center justify-between px-4 py-2 text-sm">
-                  <span className="min-w-0 flex-1 truncate">
-                    {locale === "ru" ? i.offer.product.nameRu : i.offer.product.nameUz}
-                    <span className="text-xs text-stone-400"> · {i.offer.supplier.name}</span>
-                  </span>
-                  <span className="px-3 text-stone-500">
-                    {i.qtyActual ?? i.qty} {unitLabel(locale, i.offer.product.unit)}
-                  </span>
-                  <span className="font-medium">{uzs(locale, Math.round(i.price * (i.qtyActual ?? i.qty)))}</span>
-                </li>
-              ))}
-            </ul>
-            <footer className="border-t border-stone-100 px-4 py-3">
-              <div className="flex justify-between font-semibold">
-                <span>{t(locale, "total")}</span>
-                <span>{uzs(locale, o.total)}</span>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <ReorderButton orderId={o.id} locale={locale} />
-              </div>
-              {o.paidAt ? (
-                <p className="mt-2 text-sm font-semibold text-emerald-700">✅ {t(locale, "paid")}</p>
-              ) : (
-                o.status !== "CANCELLED" && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {uzumPayUrl(o.id, o.total) && (
-                      <a
-                        href={uzumPayUrl(o.id, o.total)!}
-                        className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
-                      >
-                        {t(locale, "pay_with")} · Uzum
-                      </a>
-                    )}
-                    {paynetPayUrl(o.id, o.total) && (
-                      <a
-                        href={paynetPayUrl(o.id, o.total)!}
-                        className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
-                      >
-                        {t(locale, "pay_with")} · Paynet
-                      </a>
-                    )}
-                  </div>
-                )
-              )}
-            </footer>
-          </section>
-        );
-      })}
-    </div>
+    <OrdersClient
+      initialOrders={formattedOrders}
+      locale={locale}
+      placed={placed === "1"}
+    />
   );
 }
