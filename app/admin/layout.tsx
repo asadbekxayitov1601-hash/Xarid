@@ -5,6 +5,7 @@ const nav = [
   { href: "/admin/orders", label: "Buyurtmalar" },
   { href: "/admin/suppliers", label: "Yetkazib beruvchilar" },
   { href: "/admin/drivers", label: "Haydovchilar" },
+  { href: "/admin/dispatch", label: "Xarid Go" },
   { href: "/admin/routes", label: "Marshrut" },
   { href: "/admin/finance", label: "Moliya" },
 ];

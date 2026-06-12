@@ -5,3 +5,4 @@ node_modules/
 *.db-journal
 prisma/dev.db
 .vercel
+tsconfig.tsbuildinfo

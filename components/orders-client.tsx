@@ -39,16 +39,20 @@ type OrderWithItems = {
   items: OrderItemWithDetails[];
 };
 
+// Status pill colors pull from the design-system semantic tokens
+// (docs/DESIGN_SYSTEM.md): amber = waiting / partial, sky = in motion,
+// emerald = done, red = cancelled. Both dark and light values live in
+// app/globals.css, so no raw hex here.
 const STATUS_CONFIG: Record<
   string,
   { color: string; bg: string; icon: React.ComponentType<any> }
 > = {
-  PLACED: { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", icon: Clock },
-  CONFIRMED: { color: "#60a5fa", bg: "rgba(96,165,250,0.12)", icon: CheckCircle },
-  PARTIAL: { color: "#60a5fa", bg: "rgba(96,165,250,0.12)", icon: CheckCircle },
-  DELIVERING: { color: "#818cf8", bg: "rgba(129,140,248,0.12)", icon: Truck },
-  DELIVERED: { color: "#10b981", bg: "rgba(16,185,129,0.12)", icon: PackageCheck },
-  CANCELLED: { color: "#78716c", bg: "rgba(120,113,108,0.12)", icon: XCircle },
+  PLACED: { color: "var(--status-warning)", bg: "var(--status-warning-bg)", icon: Clock },
+  CONFIRMED: { color: "var(--status-info)", bg: "var(--status-info-bg)", icon: CheckCircle },
+  PARTIAL: { color: "var(--status-warning)", bg: "var(--status-warning-bg)", icon: CheckCircle },
+  DELIVERING: { color: "var(--accent-3)", bg: "var(--accent-3-glow)", icon: Truck },
+  DELIVERED: { color: "var(--status-success)", bg: "var(--status-success-bg)", icon: PackageCheck },
+  CANCELLED: { color: "var(--status-danger)", bg: "var(--status-danger-bg)", icon: XCircle },
 };
 
 export function OrdersClient({
@@ -96,7 +100,7 @@ export function OrdersClient({
               onClick={() => router.push("/catalog")}
               className="text-emerald-500 font-semibold hover:underline cursor-pointer"
             >
-              {t(locale, "go_catalog")}
+              {t(locale, "go_catalog")} →
             </button>
           </p>
         </div>
@@ -109,7 +113,7 @@ export function OrdersClient({
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute rounded-full blur-3xl opacity-8"
-          style={{ width: 500, height: 500, top: "30%", right: "-10%", background: "#818cf8" }}
+          style={{ width: 500, height: 500, top: "30%", right: "-10%", background: "var(--accent-3)" }}
         />
       </div>
 
@@ -125,9 +129,15 @@ export function OrdersClient({
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 p-4 text-sm font-semibold text-emerald-400"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            className="mb-6 rounded-2xl p-4 text-sm font-semibold flex items-center gap-2"
+            style={{
+              background: "var(--status-success-bg)",
+              border: "1px solid color-mix(in srgb, var(--status-success) 25%, transparent)",
+              color: "var(--status-success)",
+              fontFamily: "var(--font-display, Outfit), sans-serif",
+            }}
           >
+            <CheckCircle size={16} aria-hidden="true" />
             {t(locale, "order_placed_banner")}
           </motion.div>
         )}
@@ -155,9 +165,10 @@ export function OrdersClient({
                     <div className="flex items-center gap-2 mb-0.5">
                       <span
                         className="font-bold text-sm text-text-primary"
-                        style={{ fontFamily: "Outfit, sans-serif" }}
+                        style={{ fontFamily: "var(--font-display, Outfit), sans-serif" }}
                       >
-                        {locale === "uz" ? "Buyurtma #" : "Заказ #"}{order.id}
+                        {t(locale, "order_number_prefix")}
+                        {order.id}
                       </span>
                     </div>
                     <div
@@ -172,7 +183,10 @@ export function OrdersClient({
                     {/* Status Pill */}
                     <div
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border-primary"
-                      style={{ background: sc.bg, borderColor: `${sc.color}40` }}
+                      style={{
+                        background: sc.bg,
+                        borderColor: `color-mix(in srgb, ${sc.color} 30%, transparent)`,
+                      }}
                     >
                       <StatusIcon size={12} style={{ color: sc.color }} />
                       <span
@@ -257,11 +271,12 @@ export function OrdersClient({
                               </div>
                             ) : (
                               <div
-                                className="flex items-center gap-1.5 text-sm font-semibold text-amber-500"
+                                className="flex items-center gap-1.5 text-sm font-semibold"
+                                style={{ color: "var(--status-warning)" }}
                               >
                                 <Clock size={14} />
-                                <span style={{ fontFamily: "Outfit, sans-serif" }}>
-                                  {locale === "uz" ? "Yetkazishda to'lov" : "Оплата при доставке"}
+                                <span style={{ fontFamily: "var(--font-display, Outfit), sans-serif" }}>
+                                  {t(locale, "pay_on_delivery")}
                                 </span>
                               </div>
                             )}

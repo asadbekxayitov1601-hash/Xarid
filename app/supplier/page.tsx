@@ -1,13 +1,17 @@
 import { prisma } from "@/lib/db";
 import { requireSupplier } from "@/lib/supplier";
-import { UNIT_LABELS } from "@/lib/format";
 import { payoutStatement, weekStart } from "@/lib/payouts";
+import { getLocale } from "@/lib/locale";
+import { SupplierShell } from "@/components/supplier/SupplierShell";
 import { SupplierClient } from "@/components/supplier-client";
 
 export const dynamic = "force-dynamic";
 
+const DATE_LOCALES = { uz: "uz-UZ", ru: "ru-RU", en: "en-GB" } as const;
+
 export default async function SupplierPortalPage() {
   const { org } = await requireSupplier();
+  const locale = await getLocale();
 
   const offers = await prisma.supplierOffer.findMany({
     where: { supplierId: org.id },
@@ -51,7 +55,7 @@ export default async function SupplierPortalPage() {
     buyerName: po.order.buyerName,
     buyerPhone: po.order.buyerPhone,
     address: po.order.address,
-    deliveryDate: `${po.order.deliveryDate.toLocaleDateString("uz-UZ", {
+    deliveryDate: `${po.order.deliveryDate.toLocaleDateString(DATE_LOCALES[locale], {
       day: "numeric",
       month: "long",
     })} · 06:00–10:00`,
@@ -90,19 +94,21 @@ export default async function SupplierPortalPage() {
   const formattedOtherProducts = otherProducts.map((p) => ({
     id: p.id,
     nameUz: p.nameUz,
+    nameRu: p.nameRu,
     unit: p.unit,
   }));
 
   return (
-    <SupplierClient
-      orgName={org.name}
-      payoutGross={myRow?.gross ?? 0}
-      payoutOrders={myRow?.orders ?? 0}
-      payoutLines={myRow?.lines ?? 0}
-      initialOffers={formattedOffers}
-      otherProducts={formattedOtherProducts}
-      purchaseOrders={formattedPurchaseOrders}
-      unitLabels={UNIT_LABELS}
-    />
+    <SupplierShell locale={locale} orgName={org.name}>
+      <SupplierClient
+        locale={locale}
+        payoutGross={myRow?.gross ?? 0}
+        payoutOrders={myRow?.orders ?? 0}
+        payoutLines={myRow?.lines ?? 0}
+        initialOffers={formattedOffers}
+        otherProducts={formattedOtherProducts}
+        purchaseOrders={formattedPurchaseOrders}
+      />
+    </SupplierShell>
   );
 }

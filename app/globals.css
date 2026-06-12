@@ -277,3 +277,81 @@ body {
     transform: none;
   }
 }
+
+/* --- design-system v2 additions --- */
+/* See docs/DESIGN_SYSTEM.md. Tokens added here are referenced by every
+   agent surface. Do not edit existing tokens above — extend, don't replace. */
+
+:root {
+  /* Secondary + tertiary accents */
+  --accent-2: #f59e0b;            /* amber-500 — charts series 2, gold highlights */
+  --accent-2-glow: rgba(245, 158, 11, 0.15);
+  --accent-3: #38bdf8;            /* sky-400 — info, links, in-motion */
+  --accent-3-glow: rgba(56, 189, 248, 0.15);
+
+  /* Status colors (4 semantic states) */
+  --status-success: #10b981;
+  --status-success-bg: rgba(16, 185, 129, 0.12);
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-danger: #ef4444;
+  --status-danger-bg: rgba(239, 68, 68, 0.12);
+  --status-info: #38bdf8;
+  --status-info-bg: rgba(56, 189, 248, 0.12);
+
+  /* Shadow scale tuned for depth language */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 36px 72px -24px rgba(0, 0, 0, 0.7);
+  --shadow-glow-accent: 0 0 32px rgba(16, 185, 129, 0.3);
+  --shadow-glow-accent-2: 0 0 32px rgba(245, 158, 11, 0.25);
+  --shadow-glow-info: 0 0 32px rgba(56, 189, 248, 0.25);
+  --shadow-glow-danger: 0 0 32px rgba(239, 68, 68, 0.25);
+
+  /* Named easing tokens — pair with Tailwind's transition-[var(--ease-X)] */
+  --ease-glide: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --ease-spring: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.light {
+  --accent-2: #d97706;            /* amber-600 — better contrast on light bg */
+  --accent-2-glow: rgba(245, 158, 11, 0.1);
+  --accent-3: #0284c7;            /* sky-600 */
+  --accent-3-glow: rgba(56, 189, 248, 0.1);
+
+  --status-success: #059669;
+  --status-success-bg: rgba(16, 185, 129, 0.1);
+  --status-warning: #d97706;
+  --status-warning-bg: rgba(245, 158, 11, 0.1);
+  --status-danger: #dc2626;
+  --status-danger-bg: rgba(239, 68, 68, 0.1);
+  --status-info: #0284c7;
+  --status-info-bg: rgba(56, 189, 248, 0.1);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 36px 72px -24px rgba(0, 0, 0, 0.16);
+  --shadow-glow-accent: 0 0 32px rgba(16, 185, 129, 0.18);
+  --shadow-glow-accent-2: 0 0 32px rgba(245, 158, 11, 0.15);
+  --shadow-glow-info: 0 0 32px rgba(56, 189, 248, 0.15);
+  --shadow-glow-danger: 0 0 32px rgba(239, 68, 68, 0.15);
+}
+
+/* Extra status glow utilities — pair with the existing glow-status-* set */
+.glow-status-cancelled {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.glow-status-partial {
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+.glow-status-delivering {
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
+  border: 1px solid rgba(56, 189, 248, 0.32);
+}

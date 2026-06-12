@@ -6,6 +6,122 @@ import { postCashCollected, postDelivery } from "@/lib/ledger";
 
 export const shortId = (id: string) => id.slice(-6).toUpperCase();
 
+// ---------------------------------------------------------------------------
+// Xarid Go (Agent 5) helpers — geocoding stubs, ETA, status-state machine.
+// Documented in docs/XARID_GO.md.
+// ---------------------------------------------------------------------------
+
+/** Tashkent center, used as the fallback when an address has no embedded coords. */
+export const TASHKENT_CENTER: { lat: number; lng: number } = { lat: 41.2995, lng: 69.2401 };
+
+/** Active states the Xarid Go logistics flow recognises. */
+export const ACTIVE_ORDER_STATUSES = [
+  "PLACED",
+  "CONFIRMED",
+  "ASSIGNED",
+  "PICKED_UP",
+  "EN_ROUTE",
+  "DELIVERING", // legacy alias
+] as const;
+
+/** Statuses where a driver is in motion (used to color map pins). */
+export const IN_MOTION_STATUSES = ["PICKED_UP", "EN_ROUTE", "DELIVERING"] as const;
+
+/** Deterministic 31-bit hash, used to scatter same-address orders predictably. */
+function hash32(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+/**
+ * Best-effort address -> (lat,lng). We never run a paid geocoder; instead:
+ *   - if the address ends in `[lat,lng]`, pull them out (used by demo data
+ *     and tests so the buyer pin matches the order address);
+ *   - otherwise deterministically scatter inside the Tashkent bounding box
+ *     based on the address string. Same address always yields the same point.
+ */
+export function geocodeAddress(address: string): { lat: number; lng: number } {
+  const m = /\[(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\]\s*$/.exec(address);
+  if (m) {
+    const lat = Number(m[1]);
+    const lng = Number(m[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+  // ~12km x 12km box around the center — plenty for Tashkent demo data.
+  const h = hash32(address || "tashkent");
+  const dLat = ((h & 0xffff) / 0xffff - 0.5) * 0.1; // ~±5.5km
+  const dLng = ((h >> 16) / 0xffff - 0.5) * 0.1;
+  return { lat: TASHKENT_CENTER.lat + dLat, lng: TASHKENT_CENTER.lng + dLng };
+}
+
+/** Great-circle distance in kilometres (haversine). */
+export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+
+/** Minutes between two points at a fixed 25 km/h city average. Null if unknown. */
+export function computeEtaMinutes(
+  from: { lat: number; lng: number } | null,
+  to: { lat: number; lng: number }
+): number | null {
+  if (!from) return null;
+  const km = haversineKm(from, to);
+  const minutes = (km / 25) * 60;
+  return Math.max(0, Math.round(minutes));
+}
+
+/** Map any order status string to a coarse phase the timeline component cares about. */
+export type GoPhase = "PLACED" | "CONFIRMED" | "ASSIGNED" | "PICKED_UP" | "EN_ROUTE" | "DELIVERED" | "CANCELLED";
+
+export function toGoPhase(status: string): GoPhase {
+  switch (status) {
+    case "PLACED":
+      return "PLACED";
+    case "CONFIRMED":
+    case "PARTIAL":
+      return "CONFIRMED";
+    case "ASSIGNED":
+      return "ASSIGNED";
+    case "PICKED_UP":
+      return "PICKED_UP";
+    case "EN_ROUTE":
+    case "DELIVERING":
+      return "EN_ROUTE";
+    case "DELIVERED":
+      return "DELIVERED";
+    case "CANCELLED":
+      return "CANCELLED";
+    default:
+      return "PLACED";
+  }
+}
+
+/** The next status a driver should transition to when they tap the primary CTA. */
+export function nextDriverStatus(status: string): GoPhase | null {
+  switch (status) {
+    case "ASSIGNED":
+      return "PICKED_UP";
+    case "PICKED_UP":
+      return "EN_ROUTE";
+    case "EN_ROUTE":
+    case "DELIVERING":
+      return "DELIVERED";
+    default:
+      return null;
+  }
+}
+
 /** One delivery stop as a Telegram message with a "delivered" button. */
 export async function sendStopToDriver(orderId: string) {
   const order = await prisma.order.findUnique({

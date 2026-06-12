@@ -15,74 +15,88 @@ const T = {
   badge: {
     uz: "✨ Toshkentdagi HoReCa uchun ertalabki ta'minot bozori",
     ru: "✨ Утренний рынок снабжения для HoReCa в Ташкенте",
+    en: "✨ The morning supply market for HoReCa in Tashkent",
   },
   h1a: {
     uz: "Har kuni, ",
     ru: "Каждый день, ",
+    en: "Every day, ",
   },
   h1b: {
     uz: "hammasi bir joyda",
     ru: "всё в одном месте",
+    en: "everything in one place",
   },
   sub: {
     uz: "Ertalabki qo'ng'iroqlar yo'q. Turli yetkazib beruvchilardan sabzavot, go'sht va quruq mahsulotlarni bir savatga soling. Soat 10:00 gacha bitta yetkazib berishda barchasini olamiz.",
     ru: "Никаких утренних звонков. Добавьте овощи, мясо и бакалею от разных поставщиков в одну корзину. Мы доставим всё одной поставкой до 10:00.",
+    en: "No more morning phone calls. Add vegetables, meat and dry goods from different suppliers to one basket. We deliver everything in a single drop before 10:00.",
   },
   cta1: {
     uz: "Katalogga o'tish",
     ru: "Перейти в каталог",
+    en: "Browse the catalog",
   },
   cta2: {
     uz: "Buyurtma tarixi",
     ru: "История заказов",
+    en: "Order history",
   },
   howTitle: {
     uz: "Xarid qanday ishlaydi",
     ru: "Как работает Xarid",
+    en: "How Xarid works",
   },
   step1t: {
     uz: "22:00 gacha buyurtma bering",
     ru: "Закажите до 22:00",
+    en: "Order before 22:00",
   },
   step1d: {
     uz: "Turli yetkazib beruvchilar ro'yxatidan yangi oziq-ovqatlar qo'shing.",
     ru: "Добавьте свежие продукты из списков разных поставщиков.",
+    en: "Add fresh products from the listings of different suppliers.",
   },
   step2t: {
     uz: "Tunda tasdiqlash",
     ru: "Ночное подтверждение",
+    en: "Overnight confirmation",
   },
   step2d: {
     uz: "Tizim mahsulotlarni zonalar bo'yicha guruhlaydi va yetkazib beruvchilar zahirani tasdiqlaydi.",
     ru: "Система группирует позиции по зонам, поставщики подтверждают наличие.",
+    en: "The system groups items by zone and suppliers confirm availability.",
   },
   step3t: {
     uz: "Birlashtirilgan yetkazib berish",
     ru: "Консолидированная доставка",
+    en: "Consolidated delivery",
   },
   step3d: {
     uz: "Xarid avtomobillari barcha mahsulotlarni bitta ertalabki tashishda yetkazib beradi (06:00–10:00).",
     ru: "Автомобили Xarid доставляют всё одной поставкой утром (06:00–10:00).",
+    en: "Xarid vehicles deliver everything in one morning run (06:00–10:00).",
   },
   catTitle: {
     uz: "Mahsulot kategoriyalari",
     ru: "Категории продуктов",
+    en: "Product categories",
   },
 };
 
 const categories = [
-  { emoji: "🥬", name: { uz: "Sabzavotlar", ru: "Овощи" }, color: "#10b981" },
-  { emoji: "🥩", name: { uz: "Go'sht", ru: "Мясо" }, color: "#ef4444" },
-  { emoji: "🥛", name: { uz: "Sut mahsulotlari", ru: "Молочные" }, color: "#60a5fa" },
-  { emoji: "🌾", name: { uz: "Bakaleya", ru: "Бакалея" }, color: "#f59e0b" },
-  { emoji: "🧃", name: { uz: "Ichimliklar", ru: "Напитки" }, color: "#a855f7" },
+  { emoji: "🥬", name: { uz: "Sabzavotlar", ru: "Овощи", en: "Vegetables" }, color: "#10b981" },
+  { emoji: "🥩", name: { uz: "Go'sht", ru: "Мясо", en: "Meat" }, color: "#ef4444" },
+  { emoji: "🥛", name: { uz: "Sut mahsulotlari", ru: "Молочные", en: "Dairy" }, color: "#60a5fa" },
+  { emoji: "🌾", name: { uz: "Bakaleya", ru: "Бакалея", en: "Dry goods" }, color: "#f59e0b" },
+  { emoji: "🧃", name: { uz: "Ichimliklar", ru: "Напитки", en: "Beverages" }, color: "#a855f7" },
 ];
 
 const stats = [
-  { value: "22:00", label: { uz: "Buyurtma vaqti", ru: "Время заказа" }, icon: Clock },
-  { value: "06–10", label: { uz: "Yetkazib berish", ru: "Доставка" }, icon: Truck },
-  { value: "1", label: { uz: "Savat - butun ta'minot", ru: "Все закупки в 1 месте" }, icon: Package },
-  { value: "0 so'm", label: { uz: "Yetkazib berish narxi", ru: "Цена доставки" }, icon: Coins },
+  { value: "22:00", label: { uz: "Buyurtma vaqti", ru: "Время заказа", en: "Order deadline" }, icon: Clock },
+  { value: "06–10", label: { uz: "Yetkazib berish", ru: "Доставка", en: "Delivery window" }, icon: Truck },
+  { value: "1", label: { uz: "Savat - butun ta'minot", ru: "Все закупки в 1 месте", en: "Basket for all supply" }, icon: Package },
+  { value: "0 so'm", label: { uz: "Yetkazib berish narxi", ru: "Цена доставки", en: "Delivery cost" }, icon: Coins },
 ];
 
 function Card3D({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
@@ -233,23 +247,23 @@ export function LandingClient({ locale }: LandingClientProps) {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="text-sm font-medium mb-0.5 text-text-secondary" style={{ fontFamily: "Outfit, sans-serif" }}>
-                      {locale === "uz" ? "Buyurtma #" : "Заказ #"}2847
+                      {locale === "uz" ? "Buyurtma #" : locale === "ru" ? "Заказ #" : "Order #"}2847
                     </div>
                     <div className="text-xs text-text-secondary" style={{ fontFamily: "Inter, sans-serif" }}>
-                      {locale === "uz" ? "15 iyun · 06:00–10:00" : "15 июня · 06:00–10:00"}
+                      {locale === "uz" ? "15 iyun · 06:00–10:00" : locale === "ru" ? "15 июня · 06:00–10:00" : "15 June · 06:00–10:00"}
                     </div>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    {locale === "uz" ? "Yetkazildi" : "Доставлено"}
+                    {locale === "uz" ? "Yetkazildi" : locale === "ru" ? "Доставлено" : "Delivered"}
                   </span>
                 </div>
 
                 <div className="space-y-3 mb-5">
                   {[
-                    { emoji: "🧅", name: { uz: "Piyoz · 10 kg", ru: "Лук · 10 кг" }, price: "43 000", sup: "Agro-Fresh" },
-                    { emoji: "🥩", name: { uz: "Mol go'shti · 8 kg", ru: "Говядина · 8 кг" }, price: "813 000", sup: "Toshkent Meat" },
-                    { emoji: "🥬", name: { uz: "Karam · 15 kg", ru: "Капуста · 15 кг" }, price: "67 500", sup: "Agro-Fresh" },
-                    { emoji: "🧄", name: { uz: "Sarimsoq · 2 kg", ru: "Чеснок · 2 кг" }, price: "32 000", sup: "Fermer+" },
+                    { emoji: "🧅", name: { uz: "Piyoz · 10 kg", ru: "Лук · 10 кг", en: "Onion · 10 kg" }, price: "43 000", sup: "Agro-Fresh" },
+                    { emoji: "🥩", name: { uz: "Mol go'shti · 8 kg", ru: "Говядина · 8 кг", en: "Beef · 8 kg" }, price: "813 000", sup: "Toshkent Meat" },
+                    { emoji: "🥬", name: { uz: "Karam · 15 kg", ru: "Капуста · 15 кг", en: "Cabbage · 15 kg" }, price: "67 500", sup: "Agro-Fresh" },
+                    { emoji: "🧄", name: { uz: "Sarimsoq · 2 kg", ru: "Чеснок · 2 кг", en: "Garlic · 2 kg" }, price: "32 000", sup: "Fermer+" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 bg-bg-secondary/50 border border-border-primary">
@@ -269,7 +283,7 @@ export function LandingClient({ locale }: LandingClientProps) {
                 <div className="pt-4 border-t border-border-primary">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-text-secondary" style={{ fontFamily: "Outfit, sans-serif" }}>
-                      {locale === "uz" ? "Jami" : "Итого"}
+                      {locale === "uz" ? "Jami" : locale === "ru" ? "Итого" : "Total"}
                     </span>
                     <span className="font-bold text-emerald-500" style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "1.1rem" }}>
                       955 500 so'm
@@ -327,7 +341,7 @@ export function LandingClient({ locale }: LandingClientProps) {
                   <div className="text-4xl mb-4">{icon}</div>
                   <div className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold mb-3"
                     style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
-                    {locale === "uz" ? `Qadam ${step}` : `Шаг ${step}`}
+                    {locale === "uz" ? `Qadam ${step}` : locale === "ru" ? `Шаг ${step}` : `Step ${step}`}
                   </div>
                   <h3 className="mb-3 text-text-primary" style={{ fontFamily: "Outfit, sans-serif", fontWeight: 700, fontSize: "1.1rem" }}>
                     {title[locale]}

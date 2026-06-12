@@ -19,6 +19,10 @@ model Organization {
   phone     String
   // Supplier staff link their Telegram by sending /start sup_<botCode> to the bot
   botCode   String   @unique @default(cuid())
+  // Public-facing supplier profile (Agent 4). Both fields are nullable so the
+  // additive `db push` is safe on existing dev sqlite + prod Postgres rows.
+  about     String?
+  logoUrl   String?
   createdAt DateTime @default(now())
 
   users          User[]
@@ -192,6 +196,18 @@ model OrderItem {
   qtyActual Float?
   price     Int
   costPrice Int
+}
+
+// Xarid Go (Agent 5) — last reported driver position. One row per driver,
+// upserted by the driver's device every ~10s while a job is active.
+// Position is plain WGS-84 (lat, lng); accuracy is metres (optional).
+model DriverLocation {
+  id        String   @id @default(cuid())
+  driverId  String   @unique
+  lat       Float
+  lng       Float
+  accuracy  Float?
+  updatedAt DateTime @updatedAt
 }
 
 // Phase 0 lead capture from the landing page. role: BUYER | SUPPLIER
