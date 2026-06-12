@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { TelegramProvider } from "@/components/telegram-provider";
 import { BasketProvider } from "@/components/basket-provider";
 import { Header } from "@/components/header";
 import { getLocale } from "@/lib/locale";
+
+const inter = Inter({ subsets: ["latin", "cyrillic"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "Xarid — restoranlar uchun ertalabki ta'minot",
@@ -21,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   return (
     <html lang={locale}>
-      <body>
+      <body className={inter.className}>
         <TelegramProvider>
           <BasketProvider>
             <Header locale={locale} />

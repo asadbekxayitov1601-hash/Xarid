@@ -19,8 +19,11 @@ export function Header({ locale }: { locale: Locale }) {
   return (
     <header className="sticky top-0 z-20 border-b border-stone-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
-        <Link href="/" className="text-lg font-bold text-emerald-700">
-          Xarid
+        <Link href="/" className="flex items-center gap-1.5">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-600 text-sm font-extrabold text-white">
+            X
+          </span>
+          <span className="text-lg font-extrabold tracking-tight text-stone-900">arid</span>
         </Link>
         <nav className="ml-auto flex items-center gap-1 text-sm">
           {tabs.map((tab) => (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useBasket, type BasketItem } from "@/components/basket-provider";
 import { QtyInput } from "@/components/qty-input";
 import { t, unitLabel, uzs, type Locale } from "@/lib/i18n";
+import { productEmoji } from "@/lib/product-emoji";
 
 export function BasketClient({ locale }: { locale: Locale }) {
   const { items, setQty, clear, total } = useBasket();
@@ -67,8 +68,11 @@ export function BasketClient({ locale }: { locale: Locale }) {
           <ul className="divide-y divide-stone-100">
             {list.map((i) => (
               <li key={i.offerId} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-50 to-stone-100 text-xl">
+                  {productEmoji(i.productName, "")}
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{i.productName}</p>
+                  <p className="truncate text-sm font-semibold">{i.productName}</p>
                   <p className="text-xs text-stone-500">
                     {uzs(locale, i.price)} / {unitLabel(locale, i.unit)}
                   </p>

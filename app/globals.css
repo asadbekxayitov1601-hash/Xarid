@@ -7,3 +7,93 @@
 body {
   @apply bg-stone-50 text-stone-900 antialiased;
 }
+
+::selection {
+  background: #059669;
+  color: #fff;
+}
+
+/* ---------- 3D hero scene ---------- */
+
+.scene-perspective {
+  perspective: 1200px;
+}
+
+.scene-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease-out;
+}
+
+.depth-1 { transform: translateZ(30px); }
+.depth-2 { transform: translateZ(70px); }
+.depth-3 { transform: translateZ(110px); }
+
+@keyframes float-y {
+  0%, 100% { margin-top: 0; }
+  50% { margin-top: -14px; }
+}
+@keyframes float-y2 {
+  0%, 100% { margin-top: 0; }
+  50% { margin-top: -22px; }
+}
+.float-a { animation: float-y 5s ease-in-out infinite; }
+.float-b { animation: float-y2 7s ease-in-out infinite; }
+.float-c { animation: float-y 6s ease-in-out 1.2s infinite; }
+
+@keyframes ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ring-spin { animation: ring-spin 24s linear infinite; }
+.ring-spin-reverse { animation: ring-spin 36s linear infinite reverse; }
+
+/* ---------- animated gradient blobs ---------- */
+
+@keyframes blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -30px) scale(1.15); }
+  66% { transform: translate(-30px, 25px) scale(0.95); }
+}
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.55;
+  animation: blob-drift 14s ease-in-out infinite;
+}
+.blob-2 { animation-duration: 18s; animation-delay: 2s; }
+.blob-3 { animation-duration: 22s; animation-delay: 5s; }
+
+/* ---------- scroll reveal ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---------- glass card ---------- */
+
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-a, .float-b, .float-c, .blob, .ring-spin, .ring-spin-reverse {
+    animation: none;
+  }
+  .scene-3d, .reveal {
+    transition: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
