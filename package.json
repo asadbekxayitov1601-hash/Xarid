@@ -10,9 +10,6 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@prisma/client": "^6.8.0",
