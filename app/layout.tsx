@@ -7,6 +7,7 @@ import { BasketProvider } from "@/components/basket-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ClerkGate } from "@/components/clerk-gate";
+import { isClerkEnabled } from "@/lib/clerk";
 import { getLocale } from "@/lib/locale";
 import { getSessionUserId } from "@/lib/session";
 import { prisma } from "@/lib/db";
@@ -38,6 +39,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     if (user) userName = user.name || user.phone || "•";
   }
 
+  // Clerk turns on only when BOTH keys are present (server-only secret included);
+  // pass that single source of truth to the client Header so its Clerk controls
+  // and ClerkGate's <ClerkProvider> are always consistent.
+  const clerkEnabled = isClerkEnabled();
+
   return (
     <html lang={locale} className={theme}>
       <body className={`${inter.className} min-h-screen flex flex-col bg-bg-primary text-text-primary transition-colors duration-300`}>
@@ -46,7 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ClerkGate>
           <TelegramProvider>
             <BasketProvider>
-              <Header locale={locale} userName={userName} />
+              <Header locale={locale} userName={userName} clerkEnabled={clerkEnabled} />
               <main className="w-full flex-1 pb-16">{children}</main>
               <Footer locale={locale} />
             </BasketProvider>

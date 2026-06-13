@@ -11,7 +11,6 @@ import { ShoppingBasket, Receipt, Store, LogIn, LogOut, User } from "lucide-reac
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion-pref";
 import { springSnappy } from "@/lib/motion-presets";
-import { isClerkPublishableConfigured } from "@/lib/clerk";
 import { SignInButton, SignUpButton, UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
 function Show({ when, children }: { when: "signed-in" | "signed-out"; children: React.ReactNode }) {
@@ -21,7 +20,19 @@ function Show({ when, children }: { when: "signed-in" | "signed-out"; children: 
   return <SignedOut>{children}</SignedOut>;
 }
 
-export function Header({ locale, userName }: { locale: Locale; userName: string | null }) {
+export function Header({
+  locale,
+  userName,
+  clerkEnabled,
+}: {
+  locale: Locale;
+  userName: string | null;
+  // True only when BOTH Clerk keys are set (computed server-side in layout.tsx).
+  // Gating the Clerk controls on this — the same condition ClerkGate uses to
+  // render <ClerkProvider> — guarantees a Clerk component is never rendered
+  // without its provider. Default false so any caller that omits it is safe.
+  clerkEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { count } = useBasket();
@@ -127,7 +138,7 @@ export function Header({ locale, userName }: { locale: Locale; userName: string 
           <LanguageSwitcher locale={locale} />
 
           {/* Auth */}
-          {isClerkPublishableConfigured() ? (
+          {clerkEnabled ? (
             <div className="flex items-center gap-2">
               <Show when="signed-out">
                 <div className="flex items-center gap-2">
