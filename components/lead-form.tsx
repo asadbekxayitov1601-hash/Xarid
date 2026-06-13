@@ -49,7 +49,7 @@ export function LeadForm({
           <input name="district" placeholder={t(locale, "ph_district")} className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder-stone-500" />
           <button
             disabled={state === "sending"}
-            className="w-full rounded-xl bg-emerald-500 py-3 font-bold text-stone-950 shadow-lg shadow-emerald-500/10 hover:bg-emerald-400 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
+            className="w-full rounded-xl bg-emerald-500 py-3 font-bold text-white shadow-lg shadow-emerald-500/10 hover:bg-emerald-400 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
           >
             {state === "sending" ? t(locale, "sending") : t(locale, "btn_send")}
           </button>

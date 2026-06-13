@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { useBasket, type BasketItem } from "@/components/basket-provider";
 import { t, unitLabel, uzs, type Locale } from "@/lib/i18n";
 import { productEmoji } from "@/lib/product-emoji";
-import { Minus, Plus, Trash2, ChevronRight, Loader2, Info } from "lucide-react";
+import {
+  DELIVERY_SLOTS,
+  DEFAULT_DELIVERY_SLOT,
+  defaultDeliveryDateInput,
+  resolveDeliveryWindow,
+  toDateInputValue,
+} from "@/lib/delivery";
+import { Minus, Plus, Trash2, ChevronRight, Loader2, Info, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 export function BasketClient({ locale }: { locale: Locale }) {
@@ -18,6 +25,12 @@ export function BasketClient({ locale }: { locale: Locale }) {
   const [org, setOrg] = useState("");
   const [phone, setPhone] = useState("+998 ");
   const [address, setAddress] = useState("");
+  // Customer-chosen delivery window: default to tomorrow's earliest slot.
+  const [deliveryDate, setDeliveryDate] = useState(defaultDeliveryDateInput);
+  const [deliverySlot, setDeliverySlot] = useState(DEFAULT_DELIVERY_SLOT);
+
+  // Today (local) is the minimum selectable delivery day.
+  const minDate = useMemo(() => toDateInputValue(new Date()), []);
 
   const bySupplier = useMemo(() => {
     const m = new Map<string, BasketItem[]>();
@@ -33,6 +46,16 @@ export function BasketClient({ locale }: { locale: Locale }) {
     e.preventDefault();
     if (!org.trim() || !phone.trim() || !address.trim() || items.length === 0) return;
 
+    // Validate the chosen delivery window before sending (server re-checks too).
+    if (!deliveryDate || !deliverySlot) {
+      setError(t(locale, "dt_err_required"));
+      return;
+    }
+    if (!resolveDeliveryWindow(deliveryDate, deliverySlot)) {
+      setError(t(locale, "dt_err_past"));
+      return;
+    }
+
     setState("sending");
     setError(null);
 
@@ -43,6 +66,8 @@ export function BasketClient({ locale }: { locale: Locale }) {
         buyerName: org,
         buyerPhone: phone,
         address,
+        deliveryDate,
+        deliverySlot,
         items: items.map((i) => ({ offerId: i.offerId, qty: i.qty })),
       }),
     }).catch(() => null);
@@ -249,7 +274,7 @@ export function BasketClient({ locale }: { locale: Locale }) {
                 </div>
                 <div className="flex justify-between text-sm text-text-secondary">
                   <span style={{ fontFamily: "var(--font-body, Inter), sans-serif" }}>
-                    {t(locale, "delivery_title")}
+                    {t(locale, "dt_summary_label")}
                   </span>
                   <span
                     className="font-bold"
@@ -320,6 +345,86 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     />
                   </div>
                 ))}
+              </div>
+
+              {/* Delivery time — customer picks day + 2h window */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center gap-2">
+                  <Clock size={15} style={{ color: "var(--accent)" }} aria-hidden="true" />
+                  <span
+                    className="text-sm font-bold text-text-primary"
+                    style={{ fontFamily: "var(--font-display, Outfit), sans-serif" }}
+                  >
+                    {t(locale, "dt_section_title")}
+                  </span>
+                </div>
+                <p
+                  className="text-xs -mt-1 text-text-secondary"
+                  style={{ fontFamily: "Inter, sans-serif" }}
+                >
+                  {t(locale, "dt_section_hint")}
+                </p>
+
+                <div>
+                  <label
+                    htmlFor="delivery-date"
+                    className="block text-xs font-semibold mb-1.5 text-text-secondary"
+                    style={{ fontFamily: "Outfit, sans-serif" }}
+                  >
+                    {t(locale, "dt_date_label")}
+                  </label>
+                  <input
+                    id="delivery-date"
+                    type="date"
+                    required
+                    min={minDate}
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/60 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <span
+                    className="block text-xs font-semibold mb-1.5 text-text-secondary"
+                    style={{ fontFamily: "Outfit, sans-serif" }}
+                  >
+                    {t(locale, "dt_window_label")}
+                  </span>
+                  <div
+                    role="radiogroup"
+                    aria-label={t(locale, "dt_window_aria")}
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    {DELIVERY_SLOTS.map((slot) => {
+                      const active = slot.value === deliverySlot;
+                      return (
+                        <button
+                          key={slot.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => setDeliverySlot(slot.value)}
+                          className="px-2 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                          style={{
+                            fontFamily: "JetBrains Mono, monospace",
+                            background: active
+                              ? "var(--status-success-bg)"
+                              : "var(--bg-secondary)",
+                            borderColor: active
+                              ? "color-mix(in srgb, var(--accent) 45%, transparent)"
+                              : "var(--border-primary)",
+                            color: active
+                              ? "var(--status-success)"
+                              : "var(--text-secondary)",
+                          }}
+                        >
+                          {slot.value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               {/* Payment Note */}

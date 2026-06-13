@@ -8,7 +8,7 @@ import { t, type Locale } from "@/lib/i18n";
 // pills, duplicated x2. Edge-masked. Reduced motion: static wrapped row.
 const SUPPLIERS = [
   "Agro-Fresh",
-  "Toshkent Meat",
+  "Qo'qon Meat",
   "Fermer+",
   "Oziq Savdo",
   "Yangi Bozor",

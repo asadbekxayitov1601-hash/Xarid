@@ -167,7 +167,7 @@ export function TrackingClient({
                   href={`tel:${data.driver.phone}`}
                   aria-label={t(locale, "go_driver_phone_aria")}
                   className="glow-button inline-flex h-12 w-12 items-center justify-center rounded-full font-bold"
-                  style={{ background: "var(--accent)", color: "#0c0a09" }}
+                  style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
                 >
                   <span aria-hidden>☎</span>
                 </a>

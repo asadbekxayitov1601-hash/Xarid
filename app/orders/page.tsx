@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/session";
 import { getLocale } from "@/lib/locale";
 import { OrdersClient } from "@/components/orders-client";
+import { LEGACY_DELIVERY_SLOT } from "@/lib/delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -37,10 +38,12 @@ export default async function OrdersPage({
 
   const formattedOrders = orders.map((o) => ({
     id: o.id,
+    // Show the customer-chosen window; legacy/null orders fall back to the
+    // historic fixed morning window.
     deliveryDate: `${o.deliveryDate.toLocaleDateString(dateLocale, {
       day: "numeric",
       month: "long",
-    })} · 06:00–10:00`,
+    })} · ${o.deliverySlot ?? LEGACY_DELIVERY_SLOT}`,
     status: o.status,
     address: o.address,
     total: o.total,

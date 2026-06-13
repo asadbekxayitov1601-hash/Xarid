@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId, setSession } from "@/lib/session";
+import { resolveDeliveryWindow } from "@/lib/delivery";
 
-// POST: place the morning order. Prices are recomputed from the database —
+// POST: place the order. Prices are recomputed from the database —
 // the client basket is a shopping list, never a source of money truth.
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(items) || items.length === 0 || !buyerName || !buyerPhone || !address) {
     return NextResponse.json({ error: "items, buyerName, buyerPhone, address required" }, { status: 400 });
   }
+
+  // Customer-chosen delivery window. Falls back to tomorrow morning when the
+  // client omits it (legacy callers) so older flows keep working.
+  const window = resolveDeliveryWindow(body?.deliveryDate, body?.deliverySlot);
 
   const offerIds = items.map((i: { offerId: string }) => String(i.offerId));
   const offers = await prisma.supplierOffer.findMany({ where: { id: { in: offerIds }, available: true } });
@@ -44,10 +49,19 @@ export async function POST(req: NextRequest) {
     await setSession(userId);
   }
 
-  // Tomorrow's morning delivery.
-  const deliveryDate = new Date();
-  deliveryDate.setDate(deliveryDate.getDate() + 1);
-  deliveryDate.setHours(10, 0, 0, 0);
+  // Use the customer-chosen window when valid; otherwise fall back to the
+  // historic tomorrow-morning default.
+  let deliveryDate: Date;
+  let deliverySlot: string | null;
+  if (window) {
+    deliveryDate = window.deliveryDate;
+    deliverySlot = window.deliverySlot;
+  } else {
+    deliveryDate = new Date();
+    deliveryDate.setDate(deliveryDate.getDate() + 1);
+    deliveryDate.setHours(10, 0, 0, 0);
+    deliverySlot = null;
+  }
 
   const order = await prisma.order.create({
     data: {
@@ -56,6 +70,7 @@ export async function POST(req: NextRequest) {
       buyerPhone: String(buyerPhone),
       address: String(address),
       deliveryDate,
+      deliverySlot,
       total,
       items: { create: lines },
     },

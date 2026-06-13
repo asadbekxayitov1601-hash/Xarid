@@ -15,6 +15,46 @@
   --color-text-secondary: var(--text-secondary);
   --color-border-primary: var(--border-color);
 
+  --color-accent: var(--accent);
+  --color-accent-glow: var(--accent-glow);
+  --color-accent-2: var(--accent-2);
+  --color-accent-2-glow: var(--accent-2-glow);
+  --color-accent-3: var(--accent-3);
+  --color-accent-3-glow: var(--accent-3-glow);
+
+  /* Brand re-palette — emerald utility ramp remapped to the brand PURPLE
+     (#A556FB at 500). Historic `emerald-*` classes across the app now render
+     as the brand accent without touching every file. See docs/DESIGN_SYSTEM.md
+     §2. Genuine "delivered/success" semantics use the --status-success token
+     (still functional green), not these classes. */
+  --color-emerald-50: #f6effe;
+  --color-emerald-100: #ecdcfd;
+  --color-emerald-200: #dabffb;
+  --color-emerald-300: #c79bf9;
+  --color-emerald-400: #b675fc;
+  --color-emerald-500: #a556fb;
+  --color-emerald-600: #8a3be0;
+  --color-emerald-700: #6f2cba;
+  --color-emerald-800: #5a2599;
+  --color-emerald-900: #4a217d;
+  --color-emerald-950: #2e0f53;
+
+  /* Brand re-palette — amber utility ramp remapped to the brand INDIGO
+     (#4922E5 at 500). Historic `amber-*` brand classes now render as the
+     secondary accent. Genuine "placed/pending/warning" semantics use the
+     --status-warning token (still functional amber), not these classes. */
+  --color-amber-50: #eeeafe;
+  --color-amber-100: #ddd4fd;
+  --color-amber-200: #bcaafb;
+  --color-amber-300: #9a7ff7;
+  --color-amber-400: #7551ef;
+  --color-amber-500: #4922e5;
+  --color-amber-600: #3c1cc0;
+  --color-amber-700: #31179c;
+  --color-amber-800: #28147e;
+  --color-amber-900: #211166;
+  --color-amber-950: #150a42;
+
   /* Typography — DESIGN_SYSTEM.md §3.2. font-body (default) + font-display
      (headlines, stat numbers). Manrope shapes Latin + Cyrillic; falls back to
      Inter then system. These replace the never-wired "Outfit" fallback. */
@@ -23,47 +63,59 @@
 }
 
 :root {
-  --accent: #10b981; /* emerald-500 */
-  --accent-glow: rgba(16, 185, 129, 0.15);
+  --accent: #a556fb;
+  /* brand purple */
+  --accent-glow: rgba(165, 86, 251, 0.15);
 
   /* Dark mode defaults */
   color-scheme: dark;
-  --bg-primary: #0c0a09; /* stone-950 */
-  --bg-secondary: #1c1917; /* stone-900 */
-  --text-primary: #fafaf9; /* stone-50 */
-  --text-secondary: #d6d3d1; /* stone-300 */
+  --bg-primary: #020202;
+  /* brand near-black */
+  --bg-secondary: #0c0a12;
+  /* faintly purple-tinted lifted near-black */
+  --text-primary: #f7f6fb;
+  /* near-white */
+  --text-secondary: #c9c3d6;
+  /* muted lavender-grey */
   --border-color: rgba(255, 255, 255, 0.08);
 
-  --glass-bg: rgba(28, 25, 23, 0.65);
+  --glass-bg: rgba(12, 10, 18, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-hover-border: rgba(16, 185, 129, 0.3);
+  --glass-hover-border: rgba(165, 86, 251, 0.3);
   --glass-hover-shadow: rgba(0, 0, 0, 0.6);
-  --glass-glow: rgba(16, 185, 129, 0.15);
+  --glass-glow: rgba(165, 86, 251, 0.15);
   --input-bg: rgba(255, 255, 255, 0.03);
   --input-border: rgba(255, 255, 255, 0.08);
 
-  --scroll-track: #0c0a09;
-  --scroll-thumb: #2e2a24;
+  --scroll-track: #020202;
+  --scroll-thumb: #2a1d3f;
 }
 
 html.light {
   color-scheme: light;
-  --bg-primary: #f5f5f4; /* stone-100 */
-  --bg-secondary: #e7e5e4; /* stone-200 */
-  --text-primary: #1c1917; /* stone-900 */
-  --text-secondary: #44403c; /* stone-700 */
-  --border-color: rgba(0, 0, 0, 0.08);
+  --accent: #8a3be0;
+  /* brand purple, slightly deepened for AA contrast on light bg */
+  --accent-glow: rgba(165, 86, 251, 0.12);
+  --bg-primary: #f6f4fb;
+  /* near-white, faintly lavender */
+  --bg-secondary: #ece8f6;
+  /* lifted lavender-grey */
+  --text-primary: #1a1430;
+  /* deep indigo-ink */
+  --text-secondary: #4b4661;
+  /* muted indigo-grey */
+  --border-color: rgba(40, 24, 80, 0.1);
 
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-hover-border: rgba(16, 185, 129, 0.4);
-  --glass-hover-shadow: rgba(0, 0, 0, 0.1);
-  --glass-glow: rgba(16, 185, 129, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(40, 24, 80, 0.08);
+  --glass-hover-border: rgba(165, 86, 251, 0.4);
+  --glass-hover-shadow: rgba(40, 24, 80, 0.12);
+  --glass-glow: rgba(165, 86, 251, 0.1);
   --input-bg: rgba(255, 255, 255, 0.85);
-  --input-border: rgba(0, 0, 0, 0.12);
+  --input-border: rgba(40, 24, 80, 0.14);
 
-  --scroll-track: #f5f5f4;
-  --scroll-thumb: #d6d3d1;
+  --scroll-track: #ece8f6;
+  --scroll-thumb: #cdc2e6;
 }
 
 body {
@@ -79,13 +131,14 @@ body {
 .font-display {
   font-family: var(--font-display);
 }
+
 .font-body {
   font-family: var(--font-body);
 }
 
 ::selection {
   background: var(--accent);
-  color: #0c0a09;
+  color: #ffffff;
 }
 
 /* Custom Scrollbar */
@@ -93,13 +146,16 @@ body {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--scroll-track);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--scroll-thumb);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
 }
@@ -116,44 +172,111 @@ body {
   transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.depth-1 { transform: translateZ(35px); }
-.depth-2 { transform: translateZ(75px); }
-.depth-3 { transform: translateZ(120px); }
-.depth-neg-1 { transform: translateZ(-30px); }
+.depth-1 {
+  transform: translateZ(35px);
+}
+
+.depth-2 {
+  transform: translateZ(75px);
+}
+
+.depth-3 {
+  transform: translateZ(120px);
+}
+
+.depth-neg-1 {
+  transform: translateZ(-30px);
+}
 
 /* ---------- Smooth floating and rotation animations ---------- */
 
 @keyframes float-y {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-16px) rotate(1deg); }
-}
-@keyframes float-y2 {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-24px) rotate(-1.5deg); }
-}
-@keyframes float-y3 {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(0.5deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-16px) rotate(1deg);
+  }
 }
 
-.float-a { animation: float-y 6s ease-in-out infinite; }
-.float-b { animation: float-y2 8s ease-in-out infinite; }
-.float-c { animation: float-y3 5s ease-in-out 1.5s infinite; }
+@keyframes float-y2 {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-24px) rotate(-1.5deg);
+  }
+}
+
+@keyframes float-y3 {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(0.5deg);
+  }
+}
+
+.float-a {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+.float-b {
+  animation: float-y2 8s ease-in-out infinite;
+}
+
+.float-c {
+  animation: float-y3 5s ease-in-out 1.5s infinite;
+}
 
 @keyframes ring-spin {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
-.ring-spin { animation: ring-spin 35s linear infinite; }
-.ring-spin-reverse { animation: ring-spin 45s linear infinite reverse; }
+
+.ring-spin {
+  animation: ring-spin 35s linear infinite;
+}
+
+.ring-spin-reverse {
+  animation: ring-spin 45s linear infinite reverse;
+}
 
 /* ---------- Ambient Glowing Blobs ---------- */
 
 @keyframes blob-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); filter: blur(80px); }
-  33% { transform: translate(50px, -40px) scale(1.2); filter: blur(100px); }
-  66% { transform: translate(-40px, 30px) scale(0.85); filter: blur(70px); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    filter: blur(80px);
+  }
+
+  33% {
+    transform: translate(50px, -40px) scale(1.2);
+    filter: blur(100px);
+  }
+
+  66% {
+    transform: translate(-40px, 30px) scale(0.85);
+    filter: blur(70px);
+  }
 }
+
 .blob {
   position: absolute;
   border-radius: 9999px;
@@ -163,8 +286,16 @@ body {
   animation: blob-drift 16s ease-in-out infinite;
   z-index: 0;
 }
-.blob-2 { animation-duration: 20s; animation-delay: 3s; }
-.blob-3 { animation-duration: 24s; animation-delay: 6s; }
+
+.blob-2 {
+  animation-duration: 20s;
+  animation-delay: 3s;
+}
+
+.blob-3 {
+  animation-duration: 24s;
+  animation-delay: 6s;
+}
 
 /* ---------- Scroll Reveal ---------- */
 
@@ -173,6 +304,7 @@ body {
   transform: translateY(32px) scale(0.98);
   transition: opacity 0.8s cubic-bezier(0.215, 0.61, 0.355, 1), transform 0.8s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
+
 .reveal.revealed {
   opacity: 1;
   transform: translateY(0) scale(1);
@@ -199,6 +331,7 @@ body {
   color: var(--text-primary);
   transition: all 0.3s ease;
 }
+
 .glass-input:focus {
   background: var(--input-bg);
   border-color: var(--accent);
@@ -211,10 +344,11 @@ body {
   transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.4s ease;
   transform-style: preserve-3d;
 }
+
 .card-3d:hover {
   transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-6px);
-  border-color: rgba(16, 185, 129, 0.25);
-  box-shadow: 0 28px 56px -20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.1);
+  border-color: rgba(165, 86, 251, 0.25);
+  box-shadow: 0 28px 56px -20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(165, 86, 251, 0.1);
 }
 
 /* ---------- Category Hover Effects ---------- */
@@ -224,17 +358,20 @@ body {
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
+
 .category-item::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(165, 86, 251, 0.1) 0%, rgba(73, 34, 229, 0.05) 100%);
   opacity: 0;
   transition: opacity 0.4s ease;
 }
+
 .category-item:hover::before {
   opacity: 1;
 }
+
 .category-item:hover img {
   transform: scale(1.1) translateZ(20px);
 }
@@ -245,8 +382,9 @@ body {
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 8px 20px -6px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 20px -6px rgba(165, 86, 251, 0.4);
 }
+
 .glow-button::after {
   content: '';
   position: absolute;
@@ -254,18 +392,18 @@ body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 45%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 55%
-  );
+  background: linear-gradient(45deg,
+      transparent 45%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 55%);
   transform: rotate(45deg);
   transition: transform 0.6s ease;
 }
+
 .glow-button:hover {
-  box-shadow: 0 12px 28px -4px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 12px 28px -4px rgba(165, 86, 251, 0.6), 0 0 20px rgba(165, 86, 251, 0.2);
 }
+
 .glow-button:hover::after {
   transform: translate(100%, 100%) rotate(45deg);
 }
@@ -276,27 +414,39 @@ body {
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
+
 .glow-status-confirmed {
   box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
+
 .glow-status-delivered {
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .float-a, .float-b, .float-c, .blob, .ring-spin, .ring-spin-reverse,
+
+  .float-a,
+  .float-b,
+  .float-c,
+  .blob,
+  .ring-spin,
+  .ring-spin-reverse,
   .marquee-track {
     animation: none;
   }
-  .scene-3d, .reveal {
+
+  .scene-3d,
+  .reveal {
     transition: none;
   }
+
   .reveal {
     opacity: 1;
     transform: none;
   }
+
   /* Pointer-follow glow collapses to a faint centered halo (no tracking). */
   .spotlight-card::before {
     opacity: 0.5;
@@ -311,12 +461,16 @@ body {
 
 :root {
   /* Secondary + tertiary accents */
-  --accent-2: #f59e0b;            /* amber-500 — charts series 2, gold highlights */
-  --accent-2-glow: rgba(245, 158, 11, 0.15);
-  --accent-3: #38bdf8;            /* sky-400 — info, links, in-motion */
+  --accent-2: #4922e5;
+  /* brand deep indigo — charts series 2, sub-highlights, gradients */
+  --accent-2-glow: rgba(73, 34, 229, 0.18);
+  --accent-3: #38bdf8;
+  /* sky-400 — kept cool so chart slices stay distinct from the purple/indigo
+     brand and so "in-motion / in-transit" reads as a separate signal */
   --accent-3-glow: rgba(56, 189, 248, 0.15);
 
-  /* Status colors (4 semantic states) */
+  /* Status colors (4 semantic states) — kept FUNCTIONAL (green/amber/red/blue)
+     so order / PO / delivery states stay readable; success is never purple. */
   --status-success: #10b981;
   --status-success-bg: rgba(16, 185, 129, 0.12);
   --status-warning: #f59e0b;
@@ -332,8 +486,8 @@ body {
   --shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.6);
   --shadow-xl: 0 36px 72px -24px rgba(0, 0, 0, 0.7);
-  --shadow-glow-accent: 0 0 32px rgba(16, 185, 129, 0.3);
-  --shadow-glow-accent-2: 0 0 32px rgba(245, 158, 11, 0.25);
+  --shadow-glow-accent: 0 0 32px rgba(165, 86, 251, 0.3);
+  --shadow-glow-accent-2: 0 0 32px rgba(73, 34, 229, 0.25);
   --shadow-glow-info: 0 0 32px rgba(56, 189, 248, 0.25);
   --shadow-glow-danger: 0 0 32px rgba(239, 68, 68, 0.25);
 
@@ -344,9 +498,11 @@ body {
 }
 
 html.light {
-  --accent-2: #d97706;            /* amber-600 — better contrast on light bg */
-  --accent-2-glow: rgba(245, 158, 11, 0.1);
-  --accent-3: #0284c7;            /* sky-600 */
+  --accent-2: #4922e5;
+  /* brand deep indigo — already strong on light bg */
+  --accent-2-glow: rgba(73, 34, 229, 0.12);
+  --accent-3: #0284c7;
+  /* sky-600 — cool tertiary, kept distinct from brand */
   --accent-3-glow: rgba(56, 189, 248, 0.1);
 
   --status-success: #059669;
@@ -363,8 +519,8 @@ html.light {
   --shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.12);
   --shadow-xl: 0 36px 72px -24px rgba(0, 0, 0, 0.16);
-  --shadow-glow-accent: 0 0 32px rgba(16, 185, 129, 0.18);
-  --shadow-glow-accent-2: 0 0 32px rgba(245, 158, 11, 0.15);
+  --shadow-glow-accent: 0 0 32px rgba(165, 86, 251, 0.18);
+  --shadow-glow-accent-2: 0 0 32px rgba(73, 34, 229, 0.15);
   --shadow-glow-info: 0 0 32px rgba(56, 189, 248, 0.15);
   --shadow-glow-danger: 0 0 32px rgba(239, 68, 68, 0.15);
   --marquee-fade: 48px;
@@ -372,18 +528,25 @@ html.light {
 
 /* Marquee fade width — both themes. Defined for :root above (dark); light keeps
    the same edge mask width. */
-:root { --marquee-fade: 48px; }
-html.light { --marquee-fade: 48px; }
+:root {
+  --marquee-fade: 48px;
+}
+
+html.light {
+  --marquee-fade: 48px;
+}
 
 /* Extra status glow utilities — pair with the existing glow-status-* set */
 .glow-status-cancelled {
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
+
 .glow-status-partial {
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.18);
   border: 1px solid rgba(245, 158, 11, 0.28);
 }
+
 .glow-status-delivering {
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
   border: 1px solid rgba(56, 189, 248, 0.32);
@@ -407,29 +570,33 @@ html.light { --marquee-fade: 48px; }
    fades pills at both rims. The .marquee-track animation is gated in the
    reduced-motion block above (motion also stops it via useReducedMotion). */
 .marquee-mask {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 var(--marquee-fade),
-    #000 calc(100% - var(--marquee-fade)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 var(--marquee-fade),
-    #000 calc(100% - var(--marquee-fade)),
-    transparent 100%
-  );
+  -webkit-mask-image: linear-gradient(to right,
+      transparent 0,
+      #000 var(--marquee-fade),
+      #000 calc(100% - var(--marquee-fade)),
+      transparent 100%);
+  mask-image: linear-gradient(to right,
+      transparent 0,
+      #000 var(--marquee-fade),
+      #000 calc(100% - var(--marquee-fade)),
+      transparent 100%);
 }
+
 @keyframes marquee-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
+
 .marquee-track {
   animation: marquee-scroll 34s linear infinite;
   width: max-content;
 }
+
 .marquee-track:hover {
   animation-play-state: paused;
 }
@@ -442,27 +609,39 @@ html.light { --marquee-fade: 48px; }
   --mx: 50%;
   --my: 50%;
 }
+
 .spotlight-card::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(
-    320px circle at var(--mx) var(--my),
-    var(--accent-glow),
-    transparent 60%
-  );
+  background: radial-gradient(320px circle at var(--mx) var(--my),
+      var(--accent-glow),
+      transparent 60%);
   opacity: 0;
   transition: opacity 0.3s var(--ease-glide);
   pointer-events: none;
   z-index: 0;
 }
+
 .spotlight-card:hover::before {
   opacity: 1;
 }
 
 /* Aurora hero backdrop — token-driven blobs (replaces inline off-palette purple).
    Uses the existing .blob class so blob-drift is already reduced-motion gated. */
-.aurora-emerald { background: var(--accent-glow); }
-.aurora-amber { background: var(--accent-2-glow); }
-.aurora-sky { background: var(--accent-3-glow); }
+.aurora-emerald {
+  background: var(--accent-glow);
+}
+
+.aurora-amber {
+  background: var(--accent-2-glow);
+}
+
+.aurora-sky {
+  background: var(--accent-3-glow);
+}
+
+.aurora-sky {
+  background: var(--accent-3-glow);
+}

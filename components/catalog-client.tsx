@@ -46,7 +46,15 @@ const CATEGORY_MAP: Record<
   },
 };
 
-export function CatalogClient({ items, locale }: { items: CatalogProduct[]; locale: Locale }) {
+export function CatalogClient({
+  items,
+  locale,
+  dbError = false,
+}: {
+  items: CatalogProduct[];
+  locale: Locale;
+  dbError?: boolean;
+}) {
   const dbCategories = useMemo(() => [...new Set(items.map((i) => i.category))], [items]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -69,6 +77,61 @@ export function CatalogClient({ items, locale }: { items: CatalogProduct[]; loca
     const q = query.toLowerCase();
     return i.name.toLowerCase().includes(q) || i.altName.toLowerCase().includes(q);
   });
+
+  // DB unreachable (or no catalog yet): show a calm, translated panel instead of
+  // the search UI, which would be meaningless with zero data. The real fix is an
+  // infra step — see docs/CATALOG_FIX.md and /api/health.
+  if (dbError || items.length === 0) {
+    const unavailable = dbError;
+    return (
+      <div className="min-h-screen pt-20 pb-28 relative">
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute rounded-full blur-3xl opacity-10 depth-neg-1"
+            style={{
+              width: 600,
+              height: 600,
+              top: "20%",
+              right: "-10%",
+              background: "var(--accent)",
+            }}
+          />
+        </div>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+          <div
+            role={unavailable ? "alert" : undefined}
+            className="glass-card rounded-3xl text-center px-6 py-16 mt-8"
+          >
+            <div className="text-5xl mb-5" aria-hidden="true">
+              {unavailable ? "🛠️" : "🧺"}
+            </div>
+            <h1
+              className="text-lg font-bold text-text-primary"
+              style={{ fontFamily: "var(--font-display, Outfit), sans-serif" }}
+            >
+              {t(locale, unavailable ? "catalog_unavailable_title" : "catalog_no_products_title")}
+            </h1>
+            <p className="text-sm mt-2 text-text-secondary leading-relaxed">
+              {t(locale, unavailable ? "catalog_unavailable_body" : "catalog_no_products_body")}
+            </p>
+            {unavailable && (
+              <Link
+                href="/catalog"
+                className="inline-flex items-center gap-2 mt-6 px-5 py-3 rounded-2xl text-sm font-bold transition-all glow-button"
+                style={{
+                  background: "var(--accent)",
+                  color: "var(--bg-primary)",
+                  fontFamily: "var(--font-display, Outfit), sans-serif",
+                }}
+              >
+                {t(locale, "catalog_retry")}
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-20 pb-28 relative">

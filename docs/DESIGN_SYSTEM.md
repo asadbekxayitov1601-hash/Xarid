@@ -13,8 +13,8 @@ Xarid is a B2B marketplace where Tashkent restaurant owners order tomorrow's
 inventory while their sous-chef closes the kitchen. The mood is **calm,
 nocturnal, expensive** — closer to Yandex Go's polished operator console than
 to a generic e-commerce dashboard. Surfaces feel like real glass plates
-floating in a softly-lit room: tactile depth, slow ambient motion, emerald
-highlights that read as "supply confirmed". Light mode is the same room with
+floating in a softly-lit room: tactile depth, slow ambient motion, vivid
+purple highlights that read as "supply confirmed". Light mode is the same room with
 the curtains open — same furniture, sunlight instead of lamp light. We
 default dark because most operators use the app at 22:00 placing the morning
 order. Everything must remain readable on a 5-inch phone inside the Telegram
@@ -24,54 +24,75 @@ mini-app webview.
 
 ## 2. Color system
 
-### 2.1 Existing tokens (do not remove)
+> **Brand re-palette (current).** The brand moved from emerald/amber to a
+> vivid **purple / deep indigo / near-black** system. Primary accent is
+> `#A556FB` (purple); secondary accent is `#4922E5` (deep indigo); the darkest
+> dark-mode background is `#020202` (near-black). The historic emerald/amber
+> Tailwind utility ramps are remapped to these brand hues in the `@theme` block
+> of `app/globals.css`, so legacy `emerald-*` / `amber-*` classes now render as
+> the brand. **Functional status colors stay functional** (green = delivered,
+> amber = placed/pending, red = cancelled, blue/sky = confirmed/in-transit) —
+> see §2.2.
 
-`app/globals.css` already defines these — they stay:
+### 2.1 Core tokens (do not remove)
+
+`app/globals.css` defines these — they stay (values are the brand re-palette):
 
 | Token                  | Dark                       | Light                  | Use                              |
 |------------------------|----------------------------|------------------------|----------------------------------|
-| `--accent`             | `#10b981` emerald-500      | (same)                 | Primary action, brand            |
-| `--accent-glow`        | `rgba(16,185,129,.15)`     | (same)                 | Halo behind primary surfaces     |
-| `--bg-primary`         | `#0c0a09` stone-950        | `#f5f5f4` stone-100    | Page background                  |
-| `--bg-secondary`       | `#1c1917` stone-900        | `#e7e5e4` stone-200    | Section / card base              |
-| `--text-primary`       | `#fafaf9` stone-50         | `#1c1917` stone-900    | Headlines, body                  |
-| `--text-secondary`     | `#d6d3d1` stone-300        | `#44403c` stone-700    | Captions, meta                   |
-| `--border-color`       | `rgba(255,255,255,.08)`    | `rgba(0,0,0,.08)`      | Hairline borders                 |
-| `--glass-bg`           | `rgba(28,25,23,.65)`       | `rgba(255,255,255,.7)` | Glass card fill                  |
-| `--glass-hover-border` | `rgba(16,185,129,.3)`      | `rgba(16,185,129,.4)`  | Card hover edge                  |
-| `--glass-glow`         | `rgba(16,185,129,.15)`     | `rgba(16,185,129,.1)`  | Card hover halo                  |
+| `--accent`             | `#A556FB` brand purple     | `#8A3BE0` (deepened)   | Primary action, brand            |
+| `--accent-glow`        | `rgba(165,86,251,.15)`     | `rgba(165,86,251,.12)` | Halo behind primary surfaces     |
+| `--bg-primary`         | `#020202` near-black       | `#f6f4fb` lavender-white| Page background                 |
+| `--bg-secondary`       | `#0c0a12` purple-tinted    | `#ece8f6` lavender-grey| Section / card base              |
+| `--text-primary`       | `#f7f6fb` near-white       | `#1a1430` indigo-ink   | Headlines, body                  |
+| `--text-secondary`     | `#c9c3d6` lavender-grey    | `#4b4661` indigo-grey  | Captions, meta                   |
+| `--border-color`       | `rgba(255,255,255,.08)`    | `rgba(40,24,80,.1)`    | Hairline borders                 |
+| `--glass-bg`           | `rgba(12,10,18,.65)`       | `rgba(255,255,255,.72)`| Glass card fill                  |
+| `--glass-hover-border` | `rgba(165,86,251,.3)`      | `rgba(165,86,251,.4)`  | Card hover edge                  |
+| `--glass-glow`         | `rgba(165,86,251,.15)`     | `rgba(165,86,251,.1)`  | Card hover halo                  |
 
 ### 2.2 NEW tokens (added in section 11 below)
 
 | Token                  | Dark                       | Light                  | Use                              |
 |------------------------|----------------------------|------------------------|----------------------------------|
-| `--accent-2`           | `#f59e0b` amber-500        | `#d97706` amber-600    | Secondary accent (charts, gold)  |
-| `--accent-2-glow`      | `rgba(245,158,11,.15)`     | `rgba(245,158,11,.1)`  | Halo for warning / amber surfaces|
-| `--accent-3`           | `#38bdf8` sky-400          | `#0284c7` sky-600      | Tertiary accent (links, info)    |
-| `--status-success`     | `#10b981`                  | `#059669`              | Delivered, paid, healthy         |
+| `--accent-2`           | `#4922E5` brand indigo     | `#4922E5` brand indigo | Secondary accent (charts, gradients) |
+| `--accent-2-glow`      | `rgba(73,34,229,.18)`      | `rgba(73,34,229,.12)`  | Halo for indigo surfaces         |
+| `--accent-3`           | `#38bdf8` sky-400          | `#0284c7` sky-600      | Tertiary accent (links, info, in-motion) — kept cool so chart slices stay distinct from the purple/indigo brand |
+| `--status-success`     | `#10b981` (functional)     | `#059669`              | Delivered, paid, healthy         |
 | `--status-success-bg`  | `rgba(16,185,129,.12)`     | `rgba(16,185,129,.1)`  | Badge fill                       |
-| `--status-warning`     | `#f59e0b`                  | `#d97706`              | Placed, pending, partial         |
+| `--status-warning`     | `#f59e0b` (functional)     | `#d97706`              | Placed, pending, partial         |
 | `--status-warning-bg`  | `rgba(245,158,11,.12)`     | `rgba(245,158,11,.1)`  | Badge fill                       |
-| `--status-danger`      | `#ef4444`                  | `#dc2626`              | Cancelled, failed                |
+| `--status-danger`      | `#ef4444` (functional)     | `#dc2626`              | Cancelled, failed                |
 | `--status-danger-bg`   | `rgba(239,68,68,.12)`      | `rgba(239,68,68,.1)`   | Badge fill                       |
-| `--status-info`        | `#38bdf8`                  | `#0284c7`              | Confirmed, in-transit            |
+| `--status-info`        | `#38bdf8` (functional)     | `#0284c7`              | Confirmed, in-transit            |
 | `--status-info-bg`     | `rgba(56,189,248,.12)`     | `rgba(56,189,248,.1)`  | Badge fill                       |
 | `--shadow-xs`          | `0 1px 2px rgba(0,0,0,.4)` | `0 1px 2px rgba(0,0,0,.05)` | UI chrome (buttons, inputs)  |
 | `--shadow-sm`          | `0 4px 12px -2px rgba(0,0,0,.5)` | `0 4px 12px -2px rgba(0,0,0,.08)` | Hovered chip / toggle |
 | `--shadow-md`          | `0 12px 28px -8px rgba(0,0,0,.55)` | `0 12px 28px -8px rgba(0,0,0,.1)` | Resting card           |
 | `--shadow-lg`          | `0 24px 48px -16px rgba(0,0,0,.6)` | `0 24px 48px -16px rgba(0,0,0,.12)` | Hovered card / modal |
 | `--shadow-xl`          | `0 36px 72px -24px rgba(0,0,0,.7)` | `0 36px 72px -24px rgba(0,0,0,.16)` | Hero focal element  |
-| `--shadow-glow-accent` | `0 0 32px rgba(16,185,129,.3)` | `0 0 32px rgba(16,185,129,.18)` | Accent halo (CTAs)      |
+| `--shadow-glow-accent` | `0 0 32px rgba(165,86,251,.3)` | `0 0 32px rgba(165,86,251,.18)` | Accent halo (CTAs)      |
 
 ### 2.3 Usage rules
 
 - **Never inline a hex value in JSX.** Use `var(--accent)` or `text-accent` /
-  semantic Tailwind classes referencing the tokens above.
-- Emerald = "Xarid says yes" (CTA, delivered, healthy).
-- Amber = "wait / partial / human attention needed" (placed, partial, payout
-  pending). Also the chart secondary series.
-- Sky = "in motion" (confirmed, delivering, info banner).
-- Red is rare — only cancellation and hard error states.
+  semantic Tailwind classes referencing the tokens above. Raw brand hex only
+  lives in `app/globals.css` (token definitions) and in a handful of
+  non-CSS contexts that cannot read CSS vars (Leaflet map polylines, the
+  standalone `global-error.tsx` and `app/icon.svg`).
+- **Brand purple (`--accent`) = Xarid identity** — primary CTAs, brand marks,
+  active nav, selected chips, the hero. Text on a purple fill is white (the
+  fill is mid-luminance; near-black text fails AA).
+- **Brand indigo (`--accent-2`) = secondary brand** — gradient partner for
+  purple, chart secondary series, sub-highlights, satellite accents.
+- **Status colors are FUNCTIONAL and never brand-tinted:**
+  green = delivered/paid/healthy, amber = placed/pending/partial,
+  red = cancelled/failed, sky/blue = confirmed/in-transit. Use the
+  `--status-*` tokens (or `glow-status-*` utilities) for these — do NOT use the
+  brand accent for a "delivered" pill.
+- Sky (`--accent-3`) doubles as "in motion" (delivering) and the third chart
+  hue; it is deliberately kept cool so chart slices and in-transit states stay
+  distinguishable from the purple/indigo brand.
 
 ---
 
@@ -268,7 +289,7 @@ are the agent's call as long as they reuse the tokens above.
 ### 7.2 Controls
 
 - **GlowButton** — primary CTA. Uses existing `.glow-button` class. Variants:
-  `primary` (emerald), `secondary` (amber), `ghost` (border only).
+  `primary` (brand purple), `secondary` (brand indigo), `ghost` (border only).
 - **ToolbarButton** — square 40×40 icon button with `glass-card` background,
   used in admin / driver surfaces.
 - **GlassInput** — uses existing `.glass-input` class. Always paired with a

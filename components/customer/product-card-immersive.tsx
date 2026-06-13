@@ -169,7 +169,7 @@ export function ImmersiveProductCard({
               style={{
                 background: "var(--accent)",
                 color: "var(--bg-primary)",
-                boxShadow: "var(--shadow-glow-accent, 0 0 12px rgba(16,185,129,0.35))",
+                boxShadow: "var(--shadow-glow-accent, 0 0 12px rgba(165,86,251,0.35))",
                 fontFamily: "var(--font-display, Outfit), sans-serif",
               }}
             >

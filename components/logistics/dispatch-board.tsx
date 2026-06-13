@@ -237,7 +237,7 @@ export function DispatchBoard({
                         type="submit"
                         disabled={isPending}
                         className="glow-button rounded-xl px-3 py-2 text-sm font-bold disabled:opacity-60"
-                        style={{ background: "var(--accent)", color: "#0c0a09" }}
+                        style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
                       >
                         {t(locale, "disp_assign_btn")}
                       </button>

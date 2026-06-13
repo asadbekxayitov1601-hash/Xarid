@@ -96,14 +96,14 @@ export function LandingClient({ locale }: LandingClientProps) {
 
   const stats = [
     { value: "22:00", label: t(locale, "landing_stat_deadline"), Icon: Clock },
-    { value: "06–10", label: t(locale, "landing_stat_window"), Icon: Truck },
+    { value: "✓", label: t(locale, "landing_stat_window"), Icon: Truck },
     { value: "1", label: t(locale, "landing_stat_basket"), Icon: Package },
     { value: "0", suffix: ` ${t(locale, "sum")}`, label: t(locale, "landing_stat_delivery_cost"), Icon: Coins },
   ];
 
   const orderRows = [
     { emoji: "🧅", name: { uz: "Piyoz · 10 kg", ru: "Лук · 10 кг", en: "Onion · 10 kg" }, price: "43 000", sup: "Agro-Fresh" },
-    { emoji: "🥩", name: { uz: "Mol go'shti · 8 kg", ru: "Говядина · 8 кг", en: "Beef · 8 kg" }, price: "813 000", sup: "Toshkent Meat" },
+    { emoji: "🥩", name: { uz: "Mol go'shti · 8 kg", ru: "Говядина · 8 кг", en: "Beef · 8 kg" }, price: "813 000", sup: "Qo'qon Meat" },
     { emoji: "🥬", name: { uz: "Karam · 15 kg", ru: "Капуста · 15 кг", en: "Cabbage · 15 kg" }, price: "67 500", sup: "Agro-Fresh" },
     { emoji: "🧄", name: { uz: "Sarimsoq · 2 kg", ru: "Чеснок · 2 кг", en: "Garlic · 2 kg" }, price: "32 000", sup: "Fermer+" },
   ];
@@ -111,7 +111,8 @@ export function LandingClient({ locale }: LandingClientProps) {
   const steps = [
     { step: "01", title: t(locale, "landing_step1_title"), desc: t(locale, "landing_step1_desc"), Icon: Clock },
     { step: "02", title: t(locale, "landing_step2_title"), desc: t(locale, "landing_step2_desc"), Icon: Moon },
-    { step: "03", title: t(locale, "landing_step3_title"), desc: t(locale, "landing_step3_desc"), Icon: Truck },
+    { step: "03", title: t(locale, "landing_step3_title"), desc: t(locale, "landing_step3_desc"), Icon: Clock },
+    { step: "04", title: t(locale, "landing_step4_title"), desc: t(locale, "landing_step4_desc"), Icon: Truck },
   ];
 
   // B.2 reveal variants (collapse deltas under reduced motion).
@@ -313,72 +314,50 @@ export function LandingClient({ locale }: LandingClientProps) {
       {/* D.2 Supplier trust marquee */}
       <SupplierMarquee locale={locale} />
 
-      {/* How it works — D.1 bento grid */}
+      {/* How it works — balanced header row + even 4-step grid (no empty corner) */}
       <section className="relative py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <motion.h2
+          {/* Header row: eyebrow + title + intro (replaces the lopsided feature cell) */}
+          <motion.div
             initial={{ opacity: 0, y: reduce ? 0 : 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16 text-center font-display text-text-primary"
-            style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: 800, letterSpacing: "-0.025em" }}
+            className="mx-auto mb-14 max-w-2xl text-center"
           >
-            {t(locale, "landing_how_title")}
-          </motion.h2>
+            <span
+              className="mb-4 inline-block rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.14em]"
+              style={{ background: "var(--accent-glow)", color: "var(--accent)", borderColor: "var(--glass-hover-border)" }}
+            >
+              {t(locale, "landing_how_eyebrow")}
+            </span>
+            <h2
+              className="mb-4 font-display text-text-primary"
+              style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: 800, letterSpacing: "-0.025em" }}
+            >
+              {t(locale, "landing_how_title")}
+            </h2>
+            <p className="text-base leading-relaxed text-text-secondary">{t(locale, "landing_how_intro")}</p>
+          </motion.div>
 
+          {/* Even grid — 1 / 2 / 4 columns: four equal cards, no empty corner */}
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
             transition={{ staggerChildren: reduce ? 0 : 0.1 }}
-            className="grid auto-rows-[minmax(0,1fr)] grid-cols-2 gap-4 md:grid-cols-4"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
-            {/* Feature cell — tall, spotlight + segmented range demo */}
-            <motion.div variants={revealItem} className="col-span-2 md:col-span-2 md:row-span-2">
-              <SpotlightCard
-                className="glass-card h-full rounded-3xl p-7"
-                contentClassName="flex flex-col justify-between"
-              >
-                <div>
-                  <span
-                    className="mb-4 inline-block rounded-full border px-2.5 py-0.5 text-xs font-bold"
-                    style={{ background: "var(--accent-glow)", color: "var(--accent)", borderColor: "var(--glass-hover-border)" }}
-                  >
-                    {t(locale, "landing_step_prefix")} 00
-                  </span>
-                  <h3 className="mb-3 font-display text-text-primary" style={{ fontWeight: 700, fontSize: "1.5rem" }}>
-                    {t(locale, "landing_feature_title")}
-                  </h3>
-                  <p className="max-w-md text-sm leading-relaxed text-text-secondary">
-                    {t(locale, "landing_feature_desc")}
-                  </p>
-                </div>
-
-                <div className="mt-6">
-                  <SegmentedControl
-                    segments={ranges.map((r) => ({ id: r.id, label: r.label }))}
-                    value={range}
-                    onChange={setRange}
-                    ariaLabel={t(locale, "landing_feature_title")}
-                    className="mb-3 w-full"
-                  />
-                  <div className="font-display text-4xl font-bold tabular-nums" style={{ color: "var(--accent)" }}>
-                    <AnimatedNumber value={activeRange.value} />
-                  </div>
-                </div>
-              </SpotlightCard>
-            </motion.div>
-
-            {/* Three step cells */}
             {steps.map(({ step, title, desc, Icon }) => (
-              <motion.div key={step} variants={revealItem} className="col-span-2 md:col-span-1 md:row-span-1">
+              <motion.div key={step} variants={revealItem}>
                 <Card3D className="glass-card relative h-full overflow-hidden rounded-3xl border border-border-primary p-6">
-                  <div
-                    className="absolute right-4 top-4 font-display text-5xl font-black opacity-[0.06]"
-                    style={{ color: "var(--accent)" }}
+                  {/* Large step index — clearly visible watermark (token accent, readable opacity) */}
+                  <span
+                    aria-hidden
+                    className="absolute right-4 top-3 font-display text-5xl font-black leading-none tabular-nums"
+                    style={{ color: "var(--accent)", opacity: 0.28 }}
                   >
                     {step}
-                  </div>
+                  </span>
                   <span
                     className="mb-3 grid h-11 w-11 place-items-center rounded-2xl"
                     style={{ background: "var(--accent-glow)", color: "var(--accent)" }}
@@ -398,6 +377,39 @@ export function LandingClient({ locale }: LandingClientProps) {
                 </Card3D>
               </motion.div>
             ))}
+          </motion.div>
+
+          {/* Relocated community stat strip — segmented range + animated counter,
+              clearly labelled so it belongs (was mis-placed inside step "00"). */}
+          <motion.div
+            initial={{ opacity: 0, y: reduce ? 0 : 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="mt-4"
+          >
+            <SpotlightCard
+              className="glass-card rounded-3xl p-6 sm:p-7"
+              contentClassName="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <div className="font-display text-xs font-bold uppercase tracking-[0.14em] text-text-secondary">
+                  {t(locale, "landing_statstrip_title")}
+                </div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="font-display text-4xl font-bold tabular-nums" style={{ color: "var(--accent)" }}>
+                    <AnimatedNumber value={activeRange.value} />
+                  </span>
+                  <span className="text-sm text-text-secondary">{t(locale, "landing_statstrip_orders")}</span>
+                </div>
+              </div>
+              <SegmentedControl
+                segments={ranges.map((r) => ({ id: r.id, label: r.label }))}
+                value={range}
+                onChange={setRange}
+                ariaLabel={t(locale, "landing_statstrip_title")}
+                className="w-full sm:w-auto"
+              />
+            </SpotlightCard>
           </motion.div>
         </div>
       </section>

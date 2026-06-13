@@ -17,7 +17,7 @@ export function TiltCard({ children, className = "" }: { children: React.ReactNo
     const ry = px * 16;
     setStyle({
       transform: `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-6px) translateZ(15px)`,
-      boxShadow: `${-px * 20}px ${-py * 20 + 20}px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(16, 185, 129, 0.1)`,
+      boxShadow: `${-px * 20}px ${-py * 20 + 20}px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(165, 86, 251, 0.1)`,
     });
   }
 
