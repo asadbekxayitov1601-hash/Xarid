@@ -13,11 +13,11 @@ export const dynamic = "force-dynamic";
  * id is the shareable secret (same model as a parcel tracking link). Don't
  * leak items / costPrice from this endpoint.
  */
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ orderId: string }> }) {
-  const { orderId } = await ctx.params;
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
 
   const order = await prisma.order.findUnique({
-    where: { id: orderId },
+    where: { id },
     include: {
       driver: { include: { user: { select: { id: true } } } },
       items: { select: { id: true } },
@@ -80,15 +80,15 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ orderId: s
  * (cash + POD photo + ledger). This endpoint only flips the state string
  * so the live-tracking surface reacts.
  */
-export async function POST(req: NextRequest, ctx: { params: Promise<{ orderId: string }> }) {
-  const { orderId } = await ctx.params;
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
   const driver = await getCurrentDriver();
   if (!driver) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
   const body = (await req.json().catch(() => null)) as { status?: string } | null;
   const target = String(body?.status ?? "");
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const order = await prisma.order.findUnique({ where: { id } });
   if (!order || order.driverId !== driver.id) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
@@ -98,6 +98,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ orderId: s
     return NextResponse.json({ ok: false, error: "bad_transition", from: order.status, expected }, { status: 409 });
   }
 
-  await prisma.order.update({ where: { id: orderId }, data: { status: target } });
+  await prisma.order.update({ where: { id }, data: { status: target } });
   return NextResponse.json({ ok: true, status: target });
 }
