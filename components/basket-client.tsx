@@ -61,12 +61,22 @@ export function BasketClient({ locale }: { locale: Locale }) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-7xl mb-6">🛒</div>
-          <h2 style={{ fontFamily: "Outfit, sans-serif", fontWeight: 700, color: "var(--text-primary)", fontSize: "1.5rem" }}>
+          <div className="text-7xl mb-6" aria-hidden="true">🛒</div>
+          <h2
+            style={{
+              fontFamily: "var(--font-display, Outfit), sans-serif",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              fontSize: "1.5rem",
+            }}
+          >
             {t(locale, "basket_empty")}
           </h2>
-          <p className="mt-2 text-text-secondary" style={{ fontFamily: "Inter, sans-serif" }}>
-            {locale === "uz" ? "Mahsulotlarni katalogdan qo'shing" : "Добавьте товары из каталога"}
+          <p
+            className="mt-2 text-text-secondary"
+            style={{ fontFamily: "var(--font-body, Inter), sans-serif" }}
+          >
+            {t(locale, "basket_empty_hint")}
           </p>
         </div>
       </div>
@@ -78,7 +88,7 @@ export function BasketClient({ locale }: { locale: Locale }) {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute rounded-full blur-3xl opacity-8"
-          style={{ width: 500, height: 500, top: "-5%", left: "-10%", background: "#10b981" }}
+          style={{ width: 500, height: 500, top: "-5%", left: "-10%", background: "var(--accent)" }}
         />
       </div>
 
@@ -114,8 +124,14 @@ export function BasketClient({ locale }: { locale: Locale }) {
                       >
                         {supplier}
                       </span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/12 text-emerald-400">
-                        {list.length} {locale === "uz" ? "ta" : "поз."}
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full"
+                        style={{
+                          background: "var(--status-success-bg)",
+                          color: "var(--status-success)",
+                        }}
+                      >
+                        {list.length} {t(locale, "basket_items_short")}
                       </span>
                     </div>
                   </div>
@@ -158,8 +174,8 @@ export function BasketClient({ locale }: { locale: Locale }) {
                           <div
                             className="flex items-center gap-2 rounded-full px-2 py-1 flex-shrink-0 select-none"
                             style={{
-                              background: "rgba(16,185,129,0.1)",
-                              border: "1px solid rgba(16,185,129,0.2)",
+                              background: "var(--status-success-bg)",
+                              border: "1px solid color-mix(in srgb, var(--accent) 25%, transparent)",
                             }}
                           >
                             <button
@@ -211,9 +227,9 @@ export function BasketClient({ locale }: { locale: Locale }) {
             >
               <h2
                 className="text-text-primary text-base font-extrabold flex items-center gap-2"
-                style={{ fontFamily: "Outfit, sans-serif" }}
+                style={{ fontFamily: "var(--font-display, Outfit), sans-serif" }}
               >
-                {locale === "uz" ? "Buyurtma rasmiylashtirish" : "Оформление заказа"}
+                {t(locale, "basket_checkout_title")}
               </h2>
 
               {/* Price Summary */}
@@ -221,22 +237,28 @@ export function BasketClient({ locale }: { locale: Locale }) {
                 className="space-y-2 pb-4 border-b border-border-primary"
               >
                 <div className="flex justify-between text-sm text-text-secondary">
-                  <span style={{ fontFamily: "Inter, sans-serif" }}>
-                    {locale === "uz" ? "Mahsulotlar" : "Товары"} ({totalItems})
+                  <span style={{ fontFamily: "var(--font-body, Inter), sans-serif" }}>
+                    {t(locale, "basket_items_label")} ({totalItems})
                   </span>
-                  <span style={{ fontFamily: "JetBrains Mono, monospace" }}>
+                  <span
+                    className="tabular-nums"
+                    style={{ fontFamily: "var(--font-display, JetBrains Mono), monospace" }}
+                  >
                     {uzs(locale, total)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm text-text-secondary">
-                  <span style={{ fontFamily: "Inter, sans-serif" }}>
+                  <span style={{ fontFamily: "var(--font-body, Inter), sans-serif" }}>
                     {t(locale, "delivery_title")}
                   </span>
                   <span
-                    className="font-bold text-emerald-500"
-                    style={{ fontFamily: "Outfit, sans-serif" }}
+                    className="font-bold"
+                    style={{
+                      fontFamily: "var(--font-display, Outfit), sans-serif",
+                      color: "var(--status-success)",
+                    }}
                   >
-                    {locale === "uz" ? "Bepul" : "Бесплатно"}
+                    {t(locale, "basket_delivery_free")}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-2">
@@ -247,9 +269,10 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     {t(locale, "total")}
                   </span>
                   <span
+                    className="tabular-nums"
                     style={{
-                      fontFamily: "JetBrains Mono, monospace",
-                      color: "#10b981",
+                      fontFamily: "var(--font-display, JetBrains Mono), monospace",
+                      color: "var(--accent)",
                       fontSize: "1.25rem",
                       fontWeight: 700,
                     }}
@@ -263,19 +286,19 @@ export function BasketClient({ locale }: { locale: Locale }) {
               <div className="space-y-3">
                 {[
                   {
-                    label: locale === "uz" ? "Tashkilot nomi" : "Название организации",
+                    label: t(locale, "basket_field_org"),
                     value: org,
                     set: setOrg,
                     placeholder: t(locale, "ph_org"),
                   },
                   {
-                    label: locale === "uz" ? "Telefon raqami" : "Номер телефона",
+                    label: t(locale, "basket_field_phone"),
                     value: phone,
                     set: setPhone,
-                    placeholder: "+998 90 123 45 67",
+                    placeholder: t(locale, "ph_phone"),
                   },
                   {
-                    label: locale === "uz" ? "Yetkazib berish manzili" : "Адрес доставки",
+                    label: t(locale, "basket_field_address"),
                     value: address,
                     set: setAddress,
                     placeholder: t(locale, "ph_address"),
@@ -301,7 +324,12 @@ export function BasketClient({ locale }: { locale: Locale }) {
 
               {/* Payment Note */}
               <div
-                className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/8 border border-amber-500/20 text-amber-500"
+                className="flex items-start gap-2.5 p-3 rounded-xl"
+                style={{
+                  background: "var(--status-warning-bg)",
+                  border: "1px solid color-mix(in srgb, var(--status-warning) 25%, transparent)",
+                  color: "var(--status-warning)",
+                }}
               >
                 <Info size={16} className="mt-0.5 flex-shrink-0" />
                 <p className="text-xs leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>
@@ -313,17 +341,17 @@ export function BasketClient({ locale }: { locale: Locale }) {
 
               {/* Place Order Button */}
               <motion.button
-                whileHover={{ scale: 1.02, boxShadow: "0 0 32px rgba(16,185,129,0.55)" }}
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 type="submit"
                 disabled={state === "sending" || !org || !phone || !address}
                 className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer"
                 style={{
-                  background: "#10b981",
-                  color: "#0c0a09",
-                  fontFamily: "Outfit, sans-serif",
+                  background: "var(--accent)",
+                  color: "var(--bg-primary)",
+                  fontFamily: "var(--font-display, Outfit), sans-serif",
                   fontSize: "1rem",
-                  boxShadow: "0 0 20px rgba(16,185,129,0.4)",
+                  boxShadow: "var(--shadow-md), var(--shadow-glow-accent)",
                 }}
               >
                 {state === "sending" ? (

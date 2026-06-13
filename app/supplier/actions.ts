@@ -5,6 +5,14 @@ import { prisma } from "@/lib/db";
 import { requireSupplier } from "@/lib/supplier";
 import { sellPrice } from "@/lib/pricing";
 
+// Bound the profile fields so a misbehaving client cannot stuff novels into
+// the description or a 50KB data URL into the logo field.
+const ABOUT_MAX = 2000;
+const NAME_MAX = 120;
+const DISTRICT_MAX = 80;
+const PHONE_MAX = 32;
+const LOGO_MAX = 512;
+
 // Suppliers edit THEIR price (costPrice = their payout); the buyer-facing
 // price is derived with the take rate and never shown to them.
 
@@ -39,14 +47,43 @@ export async function addMyOffer(formData: FormData) {
   revalidatePath("/supplier");
 }
 
+// Edit the public-facing supplier profile (name, district, phone, about,
+// logo URL). Persisted on Organization; both `about` and `logoUrl` are
+// nullable columns added by Agent 4 — see prisma/schema.prisma.
+export async function updateMyProfile(formData: FormData) {
+  const { org } = await requireSupplier();
+  const name = String(formData.get("name") ?? "").trim().slice(0, NAME_MAX);
+  const district = String(formData.get("district") ?? "").trim().slice(0, DISTRICT_MAX);
+  const phone = String(formData.get("phone") ?? "").trim().slice(0, PHONE_MAX);
+  const about = String(formData.get("about") ?? "").trim().slice(0, ABOUT_MAX);
+  const logoUrl = String(formData.get("logoUrl") ?? "").trim().slice(0, LOGO_MAX);
+
+  if (!name || !district || !phone) return { ok: false as const, error: "missing" };
+
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: {
+      name,
+      district,
+      phone,
+      about: about ? about : null,
+      logoUrl: logoUrl ? logoUrl : null,
+    },
+  });
+  revalidatePath("/supplier/profile");
+  revalidatePath("/supplier");
+  return { ok: true as const };
+}
+
 export async function resolvePoWeb(poId: string, action: "confirm" | "reject") {
   const { org } = await requireSupplier();
 
   const po = await prisma.purchaseOrder.findUnique({
     where: { id: poId },
   });
-  if (!po || po.supplierId !== org.id) return { error: "Ruxsat yo'q" };
-  if (po.status !== "SENT") return { error: "Allaqachon javob berilgan" };
+  // Stable error codes — the client maps them to sp_err_* i18n keys.
+  if (!po || po.supplierId !== org.id) return { error: "forbidden" as const };
+  if (po.status !== "SENT") return { error: "already_resolved" as const };
 
   await prisma.purchaseOrder.update({
     where: { id: poId },

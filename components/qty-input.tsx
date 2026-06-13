@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { t, type Locale } from "@/lib/i18n";
 
 // Editable quantity: type a value directly or use the −/+ buttons.
 // Commits on blur/Enter; committing 0 (or emptying the field) removes the
 // item; values below minQty are clamped up; non-KG units are whole numbers.
+// `locale` is optional so call sites that have not threaded it yet still
+// render a translated (uz) label instead of a hard-coded string.
 export function QtyInput({
   qty,
   minQty,
   integer,
   unitLabel,
   onChange,
+  locale = "uz",
 }: {
   qty: number;
   minQty: number;
   integer: boolean;
   unitLabel: string;
   onChange: (qty: number) => void;
+  locale?: Locale;
 }) {
   const [text, setText] = useState(String(qty));
 
@@ -55,7 +60,7 @@ export function QtyInput({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
         className="w-14 rounded-lg border border-border-primary bg-bg-secondary/60 py-1 text-center text-sm font-bold text-text-primary outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
-        aria-label="Miqdor"
+        aria-label={t(locale, "qty_aria")}
       />
       <span className="w-9 shrink-0 text-xs font-semibold text-text-secondary pl-1">{unitLabel}</span>
       <button

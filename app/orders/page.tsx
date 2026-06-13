@@ -33,12 +33,14 @@ export default async function OrdersPage({
       })
     : [];
 
+  const dateLocale = locale === "ru" ? "ru-RU" : locale === "en" ? "en-US" : "uz-UZ";
+
   const formattedOrders = orders.map((o) => ({
     id: o.id,
-    deliveryDate: `${o.deliveryDate.toLocaleDateString(
-      locale === "ru" ? "ru-RU" : "uz-UZ",
-      { day: "numeric", month: "long" }
-    )} · 06:00–10:00`,
+    deliveryDate: `${o.deliveryDate.toLocaleDateString(dateLocale, {
+      day: "numeric",
+      month: "long",
+    })} · 06:00–10:00`,
     status: o.status,
     address: o.address,
     total: o.total,

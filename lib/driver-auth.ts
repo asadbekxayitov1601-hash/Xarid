@@ -15,3 +15,13 @@ export async function requireDriver() {
   }
   redirect("/");
 }
+
+/**
+ * Non-redirecting variant for API routes — returns the driver row or null.
+ * Use this from JSON endpoints where a 401 is the right response.
+ */
+export async function getCurrentDriver() {
+  const userId = await getSessionUserId();
+  if (!userId) return null;
+  return prisma.driver.findFirst({ where: { userId, active: true } });
+}
