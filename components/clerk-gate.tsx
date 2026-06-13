@@ -1,32 +1,29 @@
 // ClerkGate — conditionally wraps children in <ClerkProvider>.
 //
-// ADDITIVE + ENV-GATED. When the Clerk publishable key is UNSET this renders
-// children unwrapped, so the app builds and runs with zero Clerk surface. When
-// the key is present it wraps with <ClerkProvider>, themed to Xarid's dark
-// glass look via Clerk's `appearance` variables (semantic CSS tokens, no raw
-// hex literals in JSX logic — the values come from globals.css at runtime).
+// ADDITIVE + ENV-GATED. Clerk activates only when BOTH Clerk keys are present
+// (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY) — the SAME condition the
+// header (via the clerkEnabled prop) and middleware.ts use. That keeps the
+// provider, the Clerk UI controls, and the Clerk middleware turning on together,
+// never a half-enabled state that renders a Clerk component (e.g. <SignedOut>)
+// with no <ClerkProvider> around it. When the keys are unset this renders
+// children unwrapped, so the app builds and runs on the existing session +
+// Telegram auth with zero Clerk surface.
 //
-// We import @clerk/nextjs lazily so a missing package (before the verify phase
-// installs it) never breaks the build. This is a server component.
+// @clerk/nextjs is a normal installed dependency, so ClerkProvider is imported
+// statically. (An earlier lazy `webpackIgnore` dynamic import of the bare package
+// failed to resolve in the production server bundle, leaving the provider absent
+// while the header still rendered <SignedOut> — that mismatch crashed every page
+// with "SignedOut can only be used within the <ClerkProvider /> component". This
+// file now fixes it.)
+//
+// This is a server component, so it can read the server-only CLERK_SECRET_KEY.
 
-import { isClerkPublishableConfigured } from "@/lib/clerk";
+import { ClerkProvider } from "@clerk/nextjs";
+import { isClerkEnabled } from "@/lib/clerk";
 
-export async function ClerkGate({ children }: { children: React.ReactNode }) {
-  if (!isClerkPublishableConfigured()) {
-    // No key → no Clerk. Existing auth (lib/session.ts + Telegram) is untouched.
-    return <>{children}</>;
-  }
-
-  // Variable specifier so the bundler does not hard-require the package when
-  // Clerk is disabled / not yet installed.
-  const pkg = "@clerk/nextjs";
-  const mod = await import(/* webpackIgnore: true */ pkg).catch(() => null);
-  const ClerkProvider = mod?.ClerkProvider as
-    | React.ComponentType<{ children: React.ReactNode; appearance?: unknown }>
-    | undefined;
-
-  if (!ClerkProvider) {
-    // Key set but package not installed yet — fail open to the existing auth.
+export function ClerkGate({ children }: { children: React.ReactNode }) {
+  if (!isClerkEnabled()) {
+    // Keys absent → no Clerk. Existing auth (lib/session.ts + Telegram) untouched.
     return <>{children}</>;
   }
 
