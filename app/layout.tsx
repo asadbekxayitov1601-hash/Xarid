@@ -6,6 +6,7 @@ import { TelegramProvider } from "@/components/telegram-provider";
 import { BasketProvider } from "@/components/basket-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { ClerkGate } from "@/components/clerk-gate";
 import { getLocale } from "@/lib/locale";
 import { getSessionUserId } from "@/lib/session";
 import { prisma } from "@/lib/db";
@@ -40,13 +41,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} className={theme}>
       <body className={`${inter.className} min-h-screen flex flex-col bg-bg-primary text-text-primary transition-colors duration-300`}>
-        <TelegramProvider>
-          <BasketProvider>
-            <Header locale={locale} userName={userName} />
-            <main className="w-full flex-1 pb-16">{children}</main>
-            <Footer locale={locale} />
-          </BasketProvider>
-        </TelegramProvider>
+        {/* ClerkGate is a no-op pass-through unless the Clerk publishable key is
+            set; existing TelegramProvider / session auth is unchanged. */}
+        <ClerkGate>
+          <TelegramProvider>
+            <BasketProvider>
+              <Header locale={locale} userName={userName} />
+              <main className="w-full flex-1 pb-16">{children}</main>
+              <Footer locale={locale} />
+            </BasketProvider>
+          </TelegramProvider>
+        </ClerkGate>
       </body>
     </html>
   );

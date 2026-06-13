@@ -8,13 +8,16 @@ import { LanguageSwitcher } from "./language-switcher";
 import { ThemeSwitcher } from "./theme-switcher";
 import { t, type Locale } from "@/lib/i18n";
 import { ShoppingBasket, Receipt, Store, LogIn, LogOut, User } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/lib/use-reduced-motion-pref";
+import { springSnappy } from "@/lib/motion-presets";
 
 export function Header({ locale, userName }: { locale: Locale; userName: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const { count } = useBasket();
   const [scrolled, setScrolled] = useState(false);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -54,17 +57,17 @@ export function Header({ locale, userName }: { locale: Locale; userName: string 
         >
           <motion.div
             whileHover={{ scale: 1.08 }}
-            className="relative w-9 h-9 rounded-xl flex items-center justify-center"
+            className="relative flex h-9 w-9 items-center justify-center rounded-xl"
             style={{
-              background: "linear-gradient(135deg, #10b981, #059669)",
-              boxShadow: "0 0 20px rgba(16,185,129,0.4)",
+              background: "linear-gradient(135deg, var(--accent), var(--accent))",
+              boxShadow: "var(--shadow-glow-accent)",
             }}
           >
-            <span className="text-white font-black text-lg leading-none" style={{ fontFamily: "Outfit, sans-serif" }}>X</span>
+            <span className="font-display text-lg font-black leading-none" style={{ color: "var(--bg-primary)" }}>X</span>
           </motion.div>
           <span
-            className="text-lg font-bold tracking-tight transition-colors duration-200 group-hover:text-emerald-500"
-            style={{ fontFamily: "Outfit, sans-serif", color: "var(--text-primary)" }}
+            className="font-display text-lg font-bold tracking-tight transition-colors duration-200 group-hover:text-[color:var(--accent)]"
+            style={{ color: "var(--text-primary)" }}
           >
             arid
           </span>
@@ -78,22 +81,27 @@ export function Header({ locale, userName }: { locale: Locale; userName: string 
               <Link
                 key={id}
                 href={href}
-                className="relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"
-                style={{
-                  background: active ? "#10b981" : "transparent",
-                  color: active ? "#0c0a09" : "var(--text-secondary)",
-                  boxShadow: active ? "0 0 16px rgba(16,185,129,0.35)" : "none",
-                  fontFamily: "Outfit, sans-serif",
-                }}
+                aria-current={active ? "page" : undefined}
+                className="relative flex items-center gap-1.5 rounded-full px-3 py-2 font-display text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] sm:px-4"
+                style={{ color: active ? "var(--bg-primary)" : "var(--text-secondary)" }}
               >
-                <Icon size={15} />
-                <span className="hidden sm:block">{label}</span>
+                {active && (
+                  <motion.span
+                    layoutId="nav-active"
+                    transition={reduce ? { duration: 0 } : springSnappy}
+                    aria-hidden
+                    className="absolute inset-0 -z-[1] rounded-full"
+                    style={{ background: "var(--accent)", boxShadow: "var(--shadow-glow-accent)" }}
+                  />
+                )}
+                <Icon size={15} className="relative z-[1]" />
+                <span className="relative z-[1] hidden sm:block">{label}</span>
                 {id === "basket" && count > 0 && (
                   <motion.span
-                    initial={{ scale: 0 }}
+                    initial={{ scale: reduce ? 1 : 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{ background: "#f59e0b", color: "#0c0a09" }}
+                    className="absolute -right-1 -top-1 z-[2] flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold"
+                    style={{ background: "var(--accent-2)", color: "var(--bg-primary)" }}
                   >
                     {count > 9 ? "9+" : count}
                   </motion.span>
@@ -115,8 +123,8 @@ export function Header({ locale, userName }: { locale: Locale; userName: string 
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-border-primary bg-bg-secondary/80"
                 style={{ color: "var(--text-primary)" }}
               >
-                <User size={14} className="text-emerald-500" />
-                <span style={{ fontFamily: "Outfit, sans-serif" }} className="max-w-24 truncate">{userName}</span>
+                <User size={14} style={{ color: "var(--accent)" }} />
+                <span className="font-display max-w-24 truncate">{userName}</span>
               </div>
               <button
                 onClick={logout}
@@ -129,8 +137,8 @@ export function Header({ locale, userName }: { locale: Locale; userName: string 
           ) : (
             <Link
               href="/auth"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:text-emerald-500"
-              style={{ color: "var(--text-secondary)", fontFamily: "Outfit, sans-serif" }}
+              className="font-display flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+              style={{ color: "var(--text-secondary)" }}
             >
               <LogIn size={15} />
               <span className="hidden sm:block">{t(locale, "auth_signin")}</span>
