@@ -115,10 +115,10 @@ export function MapCard({
   useEffect(() => {
     const map = mapRef.current as
       | {
-          removeLayer: (l: unknown) => void;
-          fitBounds: (b: unknown, o?: object) => void;
-          setView: (c: [number, number], z: number) => void;
-        }
+        removeLayer: (l: unknown) => void;
+        fitBounds: (b: unknown, o?: object) => void;
+        setView: (c: [number, number], z: number) => void;
+      }
       | null;
     if (!map || failedRef.current) return;
 
@@ -178,7 +178,7 @@ export function MapCard({
             [line.from.lat, line.from.lng],
             [line.to.lat, line.to.lng],
           ],
-          { color: "#10b981", weight: 3, opacity: 0.7, dashArray: "6 8" }
+          { color: "#a556fb", weight: 3, opacity: 0.7, dashArray: "6 8" }
         );
         created.addTo(map);
         lineRef.current = created;

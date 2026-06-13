@@ -66,19 +66,20 @@ export function Header({ locale, userName }: { locale: Locale; userName: string 
         >
           <motion.div
             whileHover={{ scale: 1.08 }}
+            aria-hidden
             className="relative flex h-9 w-9 items-center justify-center rounded-xl"
             style={{
               background: "linear-gradient(135deg, var(--accent), var(--accent))",
               boxShadow: "var(--shadow-glow-accent)",
             }}
           >
-            <span className="font-display text-lg font-black leading-none" style={{ color: "var(--bg-primary)" }}>X</span>
+            <ShoppingBasket size={18} strokeWidth={2.5} style={{ color: "var(--bg-primary)" }} />
           </motion.div>
           <span
-            className="font-display text-lg font-bold tracking-tight transition-colors duration-200 group-hover:text-[color:var(--accent)]"
+            className="font-display text-lg font-extrabold tracking-tight transition-colors duration-200 group-hover:text-[color:var(--accent)]"
             style={{ color: "var(--text-primary)" }}
           >
-            arid
+            Xarid
           </span>
         </Link>
 

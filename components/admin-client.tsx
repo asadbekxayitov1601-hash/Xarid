@@ -30,11 +30,11 @@ type AdminClientProps = {
 };
 
 const NAV_ITEMS = [
-  { id: "dashboard",  label: "Dashboard",          icon: LayoutDashboard },
-  { id: "orders",     label: "Buyurtmalar",         icon: ClipboardList },
-  { id: "routes",     label: "Marshrut varaqlari",  icon: Route },
-  { id: "suppliers",  label: "Yetkazib beruvchilar",icon: Users },
-  { id: "finance",    label: "Moliya",              icon: Wallet },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "orders", label: "Buyurtmalar", icon: ClipboardList },
+  { id: "routes", label: "Marshrut varaqlari", icon: Route },
+  { id: "suppliers", label: "Yetkazib beruvchilar", icon: Users },
+  { id: "finance", label: "Moliya", icon: Wallet },
 ];
 
 const STATUS_CONFIG: Record<
@@ -78,7 +78,7 @@ export function AdminClient({
   const formatPrice = (n: number) => n.toLocaleString("ru-RU") + " so'm";
 
   const cards = [
-    { label: "Faol buyurtmalar", value: `${activeOrdersCount} ta`, sub: "Bugungi navbat", icon: Package, color: "#10b981" },
+    { label: "Faol buyurtmalar", value: `${activeOrdersCount} ta`, sub: "Bugungi navbat", icon: Package, color: "var(--accent)" },
     { label: "Faol GMV", value: formatPrice(activeGmv), sub: "Bozor aylanmasi", icon: TrendingUp, color: "#60a5fa" },
     { label: "Tasdiq kutilmoqda (PO)", value: `${pendingPosCount} ta`, sub: "Yetkazib beruvchilarda", icon: Clock, color: "#f59e0b" },
     { label: "Leadlar", value: `${leadsCount} ta`, sub: "Yangi arizalar", icon: Users, color: "#818cf8" },
@@ -114,8 +114,8 @@ export function AdminClient({
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center"
                   style={{
-                    background: "linear-gradient(135deg,#10b981,#059669)",
-                    boxShadow: "0 0 12px rgba(16,185,129,0.4)",
+                    background: "linear-gradient(135deg,var(--accent),var(--accent-2))",
+                    boxShadow: "0 0 12px rgba(165,86,251,0.4)",
                   }}
                 >
                   <span className="text-white font-black text-sm" style={{ fontFamily: "Outfit" }}>X</span>
@@ -136,9 +136,9 @@ export function AdminClient({
                     onClick={() => setActiveSection(id)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left cursor-pointer"
                     style={{
-                      background: active ? "rgba(16,185,129,0.15)" : "transparent",
-                      color: active ? "#10b981" : "var(--text-secondary)",
-                      border: active ? "1px solid rgba(16,185,129,0.25)" : "1px solid transparent",
+                      background: active ? "rgba(165,86,251,0.15)" : "transparent",
+                      color: active ? "var(--accent)" : "var(--text-secondary)",
+                      border: active ? "1px solid rgba(165,86,251,0.25)" : "1px solid transparent",
                       fontFamily: "Outfit",
                     }}
                   >
@@ -153,8 +153,8 @@ export function AdminClient({
             <div className="px-4 py-4 border-t border-border-primary">
               <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-bg-secondary/40 border border-border-primary/50">
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-stone-950"
-                  style={{ background: "linear-gradient(135deg,#10b981,#059669)" }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                  style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-2))" }}
                 >
                   A
                 </div>
@@ -252,7 +252,7 @@ export function AdminClient({
                         initial={{ height: 0 }}
                         animate={{ height: `${pct}%` }}
                         transition={{ delay: idx * 0.05, duration: 0.6 }}
-                        className="w-8 sm:w-10 rounded-t-lg bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)] group-hover:bg-emerald-400 transition-colors"
+                        className="w-8 sm:w-10 rounded-t-lg bg-emerald-500 shadow-[0_0_12px_rgba(165,86,251,0.3)] group-hover:bg-emerald-400 transition-colors"
                       />
                       <div className="text-xs text-text-secondary font-medium font-sans">
                         {d.day}
@@ -282,7 +282,7 @@ export function AdminClient({
                   type="button"
                   disabled={cutoffRunning || awaitingCutoffCount === 0}
                   onClick={handleCutoff}
-                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 text-stone-950 hover:bg-amber-400 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 text-white hover:bg-amber-400 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                   style={{ fontFamily: "Outfit" }}
                 >
                   {cutoffRunning ? "Bajarilmoqda..." : "Cutoffni hozir ishga tushirish"}

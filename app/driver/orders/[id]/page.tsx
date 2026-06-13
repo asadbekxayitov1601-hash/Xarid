@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireDriver } from "@/lib/driver-auth";
 import { uzs, UNIT_LABELS } from "@/lib/format";
+import { LEGACY_DELIVERY_SLOT } from "@/lib/delivery";
 import { saveDriverActuals } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,9 @@ export default async function DriverOrderPage({ params }: { params: Promise<{ id
           </h1>
           <p className="text-xs text-text-secondary mt-1" style={{ fontFamily: "Inter" }}>
             {order.buyerName} · {order.address}
+          </p>
+          <p className="text-xs font-semibold mt-1.5" style={{ fontFamily: "Inter", color: "var(--accent)" }}>
+            Yetkazib berish: {order.deliveryDate.toLocaleDateString("uz-UZ", { day: "numeric", month: "long" })} · {order.deliverySlot ?? LEGACY_DELIVERY_SLOT}
           </p>
         </div>
 
@@ -71,7 +75,7 @@ export default async function DriverOrderPage({ params }: { params: Promise<{ id
             </span>
             <button
               type="submit"
-              className="rounded-xl bg-emerald-500 text-stone-950 px-5 py-2.5 font-bold hover:bg-emerald-400 cursor-pointer transition-all select-none"
+              className="rounded-xl bg-emerald-500 text-white px-5 py-2.5 font-bold hover:bg-emerald-400 cursor-pointer transition-all select-none"
               style={{ fontFamily: "Outfit" }}
             >
               Saqlash

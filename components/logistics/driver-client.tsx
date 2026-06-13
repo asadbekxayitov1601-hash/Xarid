@@ -232,7 +232,7 @@ export function DriverClient({
                 onClick={onStep}
                 disabled={busy}
                 className="glow-button w-full rounded-2xl py-4 text-base font-bold transition-all disabled:opacity-60"
-                style={{ background: "var(--accent)", color: "#0c0a09", minHeight: 56 }}
+                style={{ background: "var(--accent)", color: "var(--bg-primary)", minHeight: 56 }}
               >
                 {stepLabel}
               </button>

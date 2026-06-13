@@ -106,6 +106,12 @@ model Order {
   address      String
   status       String   @default("PLACED")
   deliveryDate DateTime
+  // Customer-chosen arrival window (Agent 2 / time-at-checkout). Nullable so
+  // the additive `db push` is safe on existing Postgres rows. `deliveryDate`
+  // carries the chosen day + start time; `deliverySlot` stores the human
+  // window label, e.g. "06:00-08:00". Legacy/null orders fall back to the
+  // historic fixed "06:00-10:00" morning window in the UI.
+  deliverySlot String?
   total        Int
   driverId     String?
   driver       Driver?  @relation(fields: [driverId], references: [id])

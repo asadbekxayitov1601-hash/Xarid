@@ -98,7 +98,7 @@ export function FancyLoader({
               duration: reduce ? 1.8 : 2.2,
             }}
           >
-            <span className="text-2xl font-extrabold leading-none text-stone-950">
+            <span className="text-2xl font-extrabold leading-none text-white">
               X
             </span>
             {/* amber accent dot — the brand's signature */}

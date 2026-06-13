@@ -64,7 +64,7 @@ export function Hero3D({
           </ul>
           <div className="mt-5 flex items-center justify-between border-t border-border-primary pt-4">
             <span className="text-xs text-text-secondary font-medium">{totalLabel}</span>
-            <span className="rounded-full bg-emerald-500 hover:bg-emerald-400 text-stone-950 px-3.5 py-1 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all duration-300">{deliveredLabel} ✓</span>
+            <span className="rounded-full bg-emerald-500 hover:bg-emerald-400 text-white px-3.5 py-1 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all duration-300">{deliveredLabel} ✓</span>
           </div>
         </div>
 

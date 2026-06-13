@@ -28,7 +28,7 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
         onClick={() => selectLocale("uz")}
         className="relative z-10 flex-1 text-center text-xs font-bold transition-colors duration-200 cursor-pointer h-full flex items-center justify-center"
         style={{
-          color: locale === "uz" ? "#0c0a09" : "var(--text-secondary)",
+          color: locale === "uz" ? "var(--bg-primary)" : "var(--text-secondary)",
           fontFamily: "Outfit, sans-serif",
         }}
       >
@@ -39,7 +39,7 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
         onClick={() => selectLocale("ru")}
         className="relative z-10 flex-1 text-center text-xs font-bold transition-colors duration-200 cursor-pointer h-full flex items-center justify-center"
         style={{
-          color: locale === "ru" ? "#0c0a09" : "var(--text-secondary)",
+          color: locale === "ru" ? "var(--bg-primary)" : "var(--text-secondary)",
           fontFamily: "Outfit, sans-serif",
         }}
       >

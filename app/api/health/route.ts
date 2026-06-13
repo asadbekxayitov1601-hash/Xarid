@@ -6,6 +6,12 @@ export const dynamic = "force-dynamic";
 
 // Deployment self-diagnosis: open /api/health in a browser to see exactly
 // what is and isn't configured. Reports presence of env vars (never values).
+//
+// HARDENED (Agent 3): this endpoint must NEVER return a 500. A 500 here is
+// useless — it hides the very problem you came to diagnose. Everything runs
+// inside try/catch and the route always answers HTTP 200 with a JSON report.
+// `db` is "ok" when SELECT 1 succeeds, "error" when the DB is unreachable, and
+// "unconfigured" when DATABASE_URL is missing entirely.
 export async function GET() {
   const env = {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
@@ -16,6 +22,15 @@ export async function GET() {
     ADMIN_TELEGRAM_ID: Boolean(process.env.ADMIN_TELEGRAM_ID),
   };
 
+  // Names of required env vars that are not set — so the report is actionable
+  // without leaking any values.
+  const missingEnv = (["DATABASE_URL", "SESSION_SECRET"] as const).filter(
+    (k) => !env[k],
+  );
+
+  // `db`: "ok" | "error" | "unconfigured" (machine-readable, requested shape).
+  // `database`: legacy human label kept for backward compatibility.
+  let db: "ok" | "error" | "unconfigured" = "unconfigured";
   let database = "unreachable";
   let tables = false;
   let products = 0;
@@ -24,25 +39,62 @@ export async function GET() {
 
   if (env.DATABASE_URL) {
     try {
+      // Lightweight connectivity probe — cheapest possible round-trip.
       await prisma.$queryRaw`SELECT 1`;
+      db = "ok";
       database = "connected";
-      tables = await tablesExist(prisma);
-      if (tables) {
-        products = await prisma.product.count();
-        suppliers = await prisma.organization.count({ where: { type: "SUPPLIER" } });
+
+      // These can each fail independently (e.g. schema not pushed yet); guard
+      // them so a missing table never turns the whole health check into a 500.
+      try {
+        tables = await tablesExist(prisma);
+        if (tables) {
+          products = await prisma.product.count();
+          suppliers = await prisma.organization.count({ where: { type: "SUPPLIER" } });
+        }
+      } catch (inner) {
+        error = inner instanceof Error ? inner.message.split("\n")[0] : String(inner);
       }
     } catch (e) {
+      db = "error";
       error = e instanceof Error ? e.message.split("\n")[0] : String(e);
     }
   }
 
   const hints: string[] = [];
-  if (!env.DATABASE_URL) hints.push("Set DATABASE_URL in the platform's environment variables, then REDEPLOY.");
-  if (env.DATABASE_URL && database !== "connected")
-    hints.push("DATABASE_URL is set but unreachable — check the connection string (use Neon's pooled URL on Vercel).");
-  if (database === "connected" && !tables) hints.push("No tables yet — open /api/setup?key=<ADMIN_PASSWORD> to create and seed them.");
-  if (tables && products === 0) hints.push("Tables exist but catalog is empty — open /api/setup?key=<ADMIN_PASSWORD> to seed.");
-  if (hints.length === 0) hints.push("All good.");
+  if (!env.DATABASE_URL) {
+    hints.push("DATABASE_URL is not set. Add it to the environment (Neon pooled URL) and REDEPLOY.");
+  }
+  if (env.DATABASE_URL && db === "error") {
+    hints.push(
+      "DATABASE_URL is set but the database is unreachable. Check the connection string starts with postgresql:// (not file:/sqlite), and use Neon's POOLED URL on Vercel.",
+    );
+  }
+  if (db === "ok" && !tables) {
+    hints.push("Connected, but no tables yet. Run `npx prisma db push`, or open /api/setup?key=<ADMIN_PASSWORD> to create and seed them.");
+  }
+  if (tables && products === 0) {
+    hints.push("Tables exist but the catalog is empty. Run `npx prisma db seed` or open /api/setup?key=<ADMIN_PASSWORD> to seed.");
+  }
+  if (missingEnv.length > 0) {
+    hints.push(`Missing required env vars: ${missingEnv.join(", ")}.`);
+  }
+  if (hints.length === 0) {
+    hints.push("All good.");
+  }
 
-  return NextResponse.json({ env, database, tables, products, suppliers, error, hints });
+  // Always HTTP 200 — the body carries the diagnosis. A non-200 here would
+  // defeat the purpose of a health endpoint.
+  return NextResponse.json({
+    ok: db === "ok" && tables && products > 0,
+    db,
+    database,
+    tables,
+    products,
+    suppliers,
+    env,
+    missingEnv,
+    error,
+    hints,
+  });
 }

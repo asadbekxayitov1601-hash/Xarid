@@ -122,7 +122,7 @@ export function NotFoundScene({ locale }: { locale: Locale }) {
               boxShadow: "var(--shadow-glow-accent)",
             }}
           >
-            <span className="relative text-xl font-extrabold leading-none text-stone-950">
+            <span className="relative text-xl font-extrabold leading-none text-white">
               X
               <span
                 aria-hidden
@@ -155,7 +155,7 @@ export function NotFoundScene({ locale }: { locale: Locale }) {
           <div className="mt-8 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
             <Link
               href="/catalog"
-              className="glow-button inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-stone-950"
+              className="glow-button inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white"
               style={{ background: "var(--accent)" }}
             >
               <i className="fa-solid fa-store text-xs" aria-hidden />

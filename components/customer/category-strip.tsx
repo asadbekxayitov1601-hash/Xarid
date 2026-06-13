@@ -68,7 +68,7 @@ export function CategoryStrip({
           background: !active ? "var(--accent)" : "var(--glass-bg)",
           color: !active ? "var(--bg-primary)" : "var(--text-secondary)",
           border: "1px solid var(--glass-border)",
-          boxShadow: !active ? "var(--shadow-glow-accent, 0 0 16px rgba(16,185,129,0.35))" : "none",
+          boxShadow: !active ? "var(--shadow-glow-accent, 0 0 16px rgba(165,86,251,0.35))" : "none",
           fontFamily: "var(--font-display, Outfit), sans-serif",
           backdropFilter: "blur(16px)",
         }}
@@ -89,7 +89,7 @@ export function CategoryStrip({
               color: selected ? "var(--bg-primary)" : "var(--text-secondary)",
               border: "1px solid var(--glass-border)",
               boxShadow: selected
-                ? "var(--shadow-glow-accent, 0 0 16px rgba(16,185,129,0.35))"
+                ? "var(--shadow-glow-accent, 0 0 16px rgba(165,86,251,0.35))"
                 : "none",
               fontFamily: "var(--font-display, Outfit), sans-serif",
               backdropFilter: "blur(16px)",

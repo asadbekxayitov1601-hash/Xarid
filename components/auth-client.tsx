@@ -45,8 +45,8 @@ export function AuthClient({ locale }: { locale: Locale }) {
       data?.error === "taken"
         ? t(locale, "auth_taken")
         : data?.error === "phone"
-        ? t(locale, "auth_bad_phone")
-        : t(locale, "auth_invalid")
+          ? t(locale, "auth_bad_phone")
+          : t(locale, "auth_invalid")
     );
     setBusy(false);
   }
@@ -55,9 +55,9 @@ export function AuthClient({ locale }: { locale: Locale }) {
     <div className="min-h-screen flex items-center justify-center px-4 pt-16 relative overflow-hidden">
       {/* Ambient blobs */}
       {[
-        { color: "rgba(16,185,129,0.15)", x: "-10%", y: "-10%", size: 500, delay: 0 },
-        { color: "rgba(124,58,237,0.1)", x: "60%", y: "50%", size: 400, delay: 3 },
-        { color: "rgba(245,158,11,0.08)", x: "20%", y: "70%", size: 350, delay: 6 },
+        { color: "rgba(165,86,251,0.15)", x: "-10%", y: "-10%", size: 500, delay: 0 },
+        { color: "rgba(73,34,229,0.12)", x: "60%", y: "50%", size: 400, delay: 3 },
+        { color: "rgba(165,86,251,0.08)", x: "20%", y: "70%", size: 350, delay: 6 },
       ].map((b, i) => (
         <motion.div
           key={i}
@@ -83,8 +83,8 @@ export function AuthClient({ locale }: { locale: Locale }) {
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-                boxShadow: "0 0 20px rgba(16,185,129,0.4)",
+                background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+                boxShadow: "0 0 20px rgba(165,86,251,0.4)",
               }}
             >
               <span className="text-white font-black text-lg" style={{ fontFamily: "Outfit, sans-serif" }}>X</span>
@@ -100,7 +100,7 @@ export function AuthClient({ locale }: { locale: Locale }) {
               animate={{ x: mode === "signin" ? 0 : "100%" }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="absolute top-1 bottom-1 rounded-full"
-              style={{ width: "calc(50% - 4px)", left: 4, background: "#10b981" }}
+              style={{ width: "calc(50% - 4px)", left: 4, background: "var(--accent)" }}
             />
             {(["signin", "signup"] as const).map((m) => (
               <button
@@ -112,7 +112,7 @@ export function AuthClient({ locale }: { locale: Locale }) {
                 }}
                 className="relative z-10 flex-1 py-2 text-sm font-bold rounded-full transition-colors duration-200 cursor-pointer"
                 style={{
-                  color: mode === m ? "#0c0a09" : "var(--text-secondary)",
+                  color: mode === m ? "var(--bg-primary)" : "var(--text-secondary)",
                   fontFamily: "Outfit, sans-serif",
                 }}
               >
@@ -203,16 +203,16 @@ export function AuthClient({ locale }: { locale: Locale }) {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(16,185,129,0.5)" }}
+              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(165,86,251,0.5)" }}
               whileTap={{ scale: 0.97 }}
               type="submit"
               disabled={busy}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-base mt-2 disabled:opacity-50 select-none cursor-pointer"
               style={{
-                background: "#10b981",
-                color: "#0c0a09",
+                background: "var(--accent)",
+                color: "var(--bg-primary)",
                 fontFamily: "Outfit, sans-serif",
-                boxShadow: "0 0 20px rgba(16,185,129,0.4)",
+                boxShadow: "0 0 20px rgba(165,86,251,0.4)",
               }}
             >
               {busy ? (
