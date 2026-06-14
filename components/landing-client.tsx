@@ -8,7 +8,7 @@ import {
   useTransform,
   useScroll,
 } from "motion/react";
-import { ArrowRight, ChevronRight, Clock, Truck, Package, Coins, Moon } from "lucide-react";
+import { ArrowRight, ChevronRight, Clock, Truck, Package, Coins } from "lucide-react";
 import { t, type Locale } from "@/lib/i18n";
 import { useReducedMotion } from "@/lib/use-reduced-motion-pref";
 import { easeSpring } from "@/lib/motion-presets";
@@ -22,12 +22,16 @@ interface LandingClientProps {
   locale: Locale;
 }
 
+// Consumer grocery taxonomy — mirrors the DB category strings in lib/seed.ts /
+// CATEGORY_MAP (B2C pivot, section 5). Clicking a pill deep-links to /catalog.
 const categories = [
+  { emoji: "🍎", key: "fruits", name: { uz: "Mevalar", ru: "Фрукты", en: "Fruits" } },
   { emoji: "🥬", key: "vegetables", name: { uz: "Sabzavotlar", ru: "Овощи", en: "Vegetables" } },
+  { emoji: "🥛", key: "dairy", name: { uz: "Sut va tuxum", ru: "Молочное и яйца", en: "Dairy & Eggs" } },
+  { emoji: "🥖", key: "bakery", name: { uz: "Non mahsulotlari", ru: "Выпечка", en: "Bakery" } },
   { emoji: "🥩", key: "meat", name: { uz: "Go'sht", ru: "Мясо", en: "Meat" } },
-  { emoji: "🥛", key: "dairy", name: { uz: "Sut mahsulotlari", ru: "Молочные", en: "Dairy" } },
   { emoji: "🌾", key: "dry", name: { uz: "Bakaleya", ru: "Бакалея", en: "Dry goods" } },
-  { emoji: "🧃", key: "drinks", name: { uz: "Ichimliklar", ru: "Напитки", en: "Beverages" } },
+  { emoji: "🧃", key: "drinks", name: { uz: "Ichimliklar", ru: "Напитки", en: "Drinks" } },
 ];
 
 // Mouse-tilt card (kept; tilt range <= 8deg per DESIGN_SYSTEM §5.3).
@@ -94,25 +98,28 @@ export function LandingClient({ locale }: LandingClientProps) {
   const [range, setRange] = useState("week");
   const activeRange = ranges.find((r) => r.id === range) ?? ranges[1];
 
+  // Consumer stats — fast ETA, freshness, wide catalog, cash on delivery.
   const stats = [
-    { value: "22:00", label: t(locale, "landing_stat_deadline"), Icon: Clock },
-    { value: "✓", label: t(locale, "landing_stat_window"), Icon: Truck },
-    { value: "1", label: t(locale, "landing_stat_basket"), Icon: Package },
+    { value: "30-60", suffix: " min", label: t(locale, "landing_stat_deadline"), Icon: Truck },
+    { value: "✓", label: t(locale, "landing_stat_window"), Icon: Clock },
+    { value: "40+", label: t(locale, "landing_stat_basket"), Icon: Package },
     { value: "0", suffix: ` ${t(locale, "sum")}`, label: t(locale, "landing_stat_delivery_cost"), Icon: Coins },
   ];
 
+  // Consumer-scale basket — everyday quantities from one fulfilling shop.
+  const shopName = "Qo'qon Bozor";
   const orderRows = [
-    { emoji: "🧅", name: { uz: "Piyoz · 10 kg", ru: "Лук · 10 кг", en: "Onion · 10 kg" }, price: "43 000", sup: "Agro-Fresh" },
-    { emoji: "🥩", name: { uz: "Mol go'shti · 8 kg", ru: "Говядина · 8 кг", en: "Beef · 8 kg" }, price: "813 000", sup: "Qo'qon Meat" },
-    { emoji: "🥬", name: { uz: "Karam · 15 kg", ru: "Капуста · 15 кг", en: "Cabbage · 15 kg" }, price: "67 500", sup: "Agro-Fresh" },
-    { emoji: "🧄", name: { uz: "Sarimsoq · 2 kg", ru: "Чеснок · 2 кг", en: "Garlic · 2 kg" }, price: "32 000", sup: "Fermer+" },
+    { emoji: "🍎", name: { uz: "Olma · 1 kg", ru: "Яблоки · 1 кг", en: "Apples · 1 kg" }, price: "12 000", sup: shopName },
+    { emoji: "🥛", name: { uz: "Sut · 1 L", ru: "Молоко · 1 л", en: "Milk · 1 L" }, price: "12 000", sup: shopName },
+    { emoji: "🍞", name: { uz: "Non · 2 dona", ru: "Лепёшка · 2 шт", en: "Bread · 2 pcs" }, price: "8 000", sup: shopName },
+    { emoji: "🥒", name: { uz: "Bodring · 0.5 kg", ru: "Огурцы · 0.5 кг", en: "Cucumber · 0.5 kg" }, price: "5 000", sup: shopName },
   ];
 
+  // 3-step consumer flow: Browse -> Order -> Fast delivery (B2C pivot).
   const steps = [
-    { step: "01", title: t(locale, "landing_step1_title"), desc: t(locale, "landing_step1_desc"), Icon: Clock },
-    { step: "02", title: t(locale, "landing_step2_title"), desc: t(locale, "landing_step2_desc"), Icon: Moon },
-    { step: "03", title: t(locale, "landing_step3_title"), desc: t(locale, "landing_step3_desc"), Icon: Clock },
-    { step: "04", title: t(locale, "landing_step4_title"), desc: t(locale, "landing_step4_desc"), Icon: Truck },
+    { step: "01", title: t(locale, "landing_step1_title"), desc: t(locale, "landing_step1_desc"), Icon: Package },
+    { step: "02", title: t(locale, "landing_step2_title"), desc: t(locale, "landing_step2_desc"), Icon: Coins },
+    { step: "03", title: t(locale, "landing_step3_title"), desc: t(locale, "landing_step3_desc"), Icon: Truck },
   ];
 
   // B.2 reveal variants (collapse deltas under reduced motion).
@@ -229,7 +236,10 @@ export function LandingClient({ locale }: LandingClientProps) {
                           {suffix}
                         </>
                       ) : (
-                        value
+                        <>
+                          {value}
+                          {suffix}
+                        </>
                       )}
                     </div>
                     <div className="mt-0.5 text-xs text-text-secondary">{label}</div>
@@ -290,7 +300,7 @@ export function LandingClient({ locale }: LandingClientProps) {
                     <div className="flex items-center justify-between">
                       <span className="font-display text-sm font-medium text-text-secondary">{t(locale, "landing_total")}</span>
                       <span className="font-display text-lg font-bold tabular-nums" style={{ color: "var(--accent)" }}>
-                        955 500 {t(locale, "sum")}
+                        37 000 {t(locale, "sum")}
                       </span>
                     </div>
                   </div>
@@ -339,13 +349,13 @@ export function LandingClient({ locale }: LandingClientProps) {
             <p className="text-base leading-relaxed text-text-secondary">{t(locale, "landing_how_intro")}</p>
           </motion.div>
 
-          {/* Even grid — 1 / 2 / 4 columns: four equal cards, no empty corner */}
+          {/* Even grid — 1 / 3 columns: three equal consumer steps, no empty corner */}
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
             transition={{ staggerChildren: reduce ? 0 : 0.1 }}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-3"
           >
             {steps.map(({ step, title, desc, Icon }) => (
               <motion.div key={step} variants={revealItem}>

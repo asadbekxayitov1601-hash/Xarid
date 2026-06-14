@@ -112,6 +112,13 @@ model Order {
   // window label, e.g. "06:00-08:00". Legacy/null orders fall back to the
   // historic fixed "06:00-10:00" morning window in the UI.
   deliverySlot String?
+  // Consumer pivot (Yandex-Eats style): "ASAP" (on-demand, ~30-60 min) or
+  // "SCHEDULED" (deliver-later window). Nullable + defaulted for a safe additive
+  // `db push` on existing Neon rows. ASAP orders carry a deliveryDate of
+  // now + ~60 min and a null deliverySlot; SCHEDULED orders carry the chosen
+  // window in deliverySlot. Legacy null rows are treated as SCHEDULED when they
+  // have a deliverySlot, otherwise ASAP.
+  deliverMode  String?  @default("ASAP")
   total        Int
   driverId     String?
   driver       Driver?  @relation(fields: [driverId], references: [id])

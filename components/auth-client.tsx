@@ -92,6 +92,11 @@ export function AuthClient({ locale }: { locale: Locale }) {
             <span className="text-lg font-bold text-text-primary" style={{ fontFamily: "Outfit, sans-serif" }}>arid</span>
           </div>
 
+          {/* Consumer subtitle — frames the page as a shopper login, not a B2B portal. */}
+          <p className="-mt-4 mb-8 text-sm text-text-secondary" style={{ fontFamily: "Inter, sans-serif" }}>
+            {t(locale, "b2c_auth_subtitle")}
+          </p>
+
           {/* Mode Switcher */}
           <div
             className="relative flex mb-8 rounded-full p-1 border border-border-primary/50 bg-bg-secondary/40"
@@ -135,13 +140,13 @@ export function AuthClient({ locale }: { locale: Locale }) {
                     className="block text-xs font-semibold mb-1.5 text-text-secondary"
                     style={{ fontFamily: "Outfit, sans-serif" }}
                   >
-                    {t(locale, "ph_person_name")}
+                    {t(locale, "b2c_auth_name_label")}
                   </label>
                   <input
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={locale === "uz" ? "Cafe Gulbahor" : "Кафе Гульбахор"}
+                    placeholder={t(locale, "b2c_auth_name_ph")}
                     className="w-full px-4 py-3 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/80 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder-text-secondary/40"
                   />
                 </motion.div>
@@ -153,7 +158,7 @@ export function AuthClient({ locale }: { locale: Locale }) {
                 className="block text-xs font-semibold mb-1.5 text-text-secondary"
                 style={{ fontFamily: "Outfit, sans-serif" }}
               >
-                {locale === "uz" ? "Telefon raqami" : "Номер телефона"}
+                {t(locale, "b2c_auth_phone_label")}
               </label>
               <input
                 required
@@ -169,7 +174,7 @@ export function AuthClient({ locale }: { locale: Locale }) {
                 className="block text-xs font-semibold mb-1.5 text-text-secondary"
                 style={{ fontFamily: "Outfit, sans-serif" }}
               >
-                {locale === "uz" ? "Parol" : "Пароль"}
+                {t(locale, "b2c_auth_pass_label")}
               </label>
               <div className="relative">
                 <input

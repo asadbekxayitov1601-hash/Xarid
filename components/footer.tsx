@@ -3,11 +3,18 @@ import { ShoppingBasket } from "lucide-react";
 import { t, type Locale } from "@/lib/i18n";
 
 export function Footer({ locale }: { locale: Locale }) {
+  // Consumer links stay prominent.
   const navLinks = [
     { href: "/catalog", label: t(locale, "nav_catalog") },
     { href: "/orders", label: t(locale, "nav_orders") },
-    { href: "/supplier", label: t(locale, "supplier_portal_title") },
     { href: "/auth", label: t(locale, "auth_signin") },
+  ];
+
+  // De-emphasized fulfillment-side entry points (Yandex-style: shops + couriers
+  // behind the consumer storefront). Reachable, but secondary.
+  const businessLinks = [
+    { href: "/supplier", label: t(locale, "b2c_foot_business") },
+    { href: "/driver", label: t(locale, "b2c_foot_couriers") },
   ];
 
   return (
@@ -34,9 +41,24 @@ export function Footer({ locale }: { locale: Locale }) {
           </Link>
         ))}
       </nav>
-      <p className="mt-2 text-xs font-semibold text-text-secondary">
-        {t(locale, "hero_title_pre")} {t(locale, "hero_title_accent")}
+
+      <p className="mt-4 text-xs font-semibold text-text-secondary">
+        {t(locale, "b2c_foot_tagline")}
       </p>
+
+      {/* Demoted business / courier cluster — smaller, dimmer than consumer nav. */}
+      <nav className="mx-auto mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+        {businessLinks.map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="text-[11px] font-semibold text-text-secondary/60 transition-colors hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] rounded"
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+
       <p className="mt-4 text-[10px] font-bold text-text-secondary/50">
         © {new Date().getFullYear()} Xarid · {t(locale, "footer_rights")}
       </p>

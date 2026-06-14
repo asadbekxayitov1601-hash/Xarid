@@ -16,9 +16,9 @@ import { cookies } from "next/headers";
 const inter = Inter({ subsets: ["latin", "cyrillic"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Xarid — restoranlar uchun ertalabki ta'minot",
+  title: "Xarid — Qo'qonda tez yetkazib berish",
   description:
-    "Restoran, kafe va choyxonalar uchun B2B bozor: barcha mahsulotlar bitta savatda, ertalab soat 10:00 gacha yetkazib beriladi.",
+    "Qo'qonda kunlik mahsulotlarni eshigingizgacha tez yetkazib berish: meva, sabzavot, sut, non va boshqalar. 30-60 daqiqada, naqd pul bilan to'lov. Grocery delivery in Kokand.",
 };
 
 export const viewport: Viewport = {
