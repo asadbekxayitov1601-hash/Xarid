@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { t, type Locale } from "@/lib/i18n";
-import { Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, AlertCircle, ShoppingBag, Store } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 export function AuthClient({ locale }: { locale: Locale }) {
@@ -12,6 +12,8 @@ export function AuthClient({ locale }: { locale: Locale }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPass, setShowPass] = useState(false);
+  // Signup account type: a buyer (consumer) or a seller (shop/vendor).
+  const [accountType, setAccountType] = useState<"buyer" | "seller">("buyer");
 
   // Form states
   const [name, setName] = useState("");
@@ -28,19 +30,22 @@ export function AuthClient({ locale }: { locale: Locale }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode,
+        accountType: mode === "signup" ? accountType : undefined,
         phone: phone.trim(),
         password,
         name: mode === "signup" ? name.trim() : undefined,
       }),
     }).catch(() => null);
 
+    const data = await res?.json().catch(() => null);
+
     if (res?.ok) {
-      router.push("/catalog");
+      // Server routes by account type: sellers -> /supplier, buyers -> /catalog.
+      router.push(data?.redirect || "/catalog");
       router.refresh();
       return;
     }
 
-    const data = await res?.json().catch(() => null);
     setError(
       data?.error === "taken"
         ? t(locale, "auth_taken")
@@ -131,24 +136,76 @@ export function AuthClient({ locale }: { locale: Locale }) {
             <AnimatePresence mode="popLayout">
               {mode === "signup" && (
                 <motion.div
-                  key="name"
+                  key="signup-extra"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 overflow-hidden"
                 >
-                  <label
-                    className="block text-xs font-semibold mb-1.5 text-text-secondary"
-                    style={{ fontFamily: "Outfit, sans-serif" }}
-                  >
-                    {t(locale, "b2c_auth_name_label")}
-                  </label>
-                  <input
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t(locale, "b2c_auth_name_ph")}
-                    className="w-full px-4 py-3 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/80 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder-text-secondary/40"
-                  />
+                  {/* Account type: buyer (consumer) or seller (shop/vendor). */}
+                  <div>
+                    <label
+                      className="block text-xs font-semibold mb-1.5 text-text-secondary"
+                      style={{ fontFamily: "Outfit, sans-serif" }}
+                    >
+                      {t(locale, "auth_acct_label")}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2" role="radiogroup">
+                      {(
+                        [
+                          { v: "buyer", Icon: ShoppingBag, label: "auth_acct_buyer", hint: "auth_acct_buyer_hint" },
+                          { v: "seller", Icon: Store, label: "auth_acct_seller", hint: "auth_acct_seller_hint" },
+                        ] as const
+                      ).map(({ v, Icon, label, hint }) => {
+                        const active = accountType === v;
+                        return (
+                          <button
+                            key={v}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setAccountType(v)}
+                            className="flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all cursor-pointer"
+                            style={{
+                              borderColor: active ? "var(--accent)" : "var(--border-color)",
+                              background: active
+                                ? "color-mix(in srgb, var(--accent) 12%, transparent)"
+                                : "var(--bg-secondary)",
+                              boxShadow: active ? "0 0 16px rgba(165,86,251,0.25)" : "none",
+                            }}
+                          >
+                            <Icon size={18} style={{ color: active ? "var(--accent)" : "var(--text-secondary)" }} />
+                            <span
+                              className="text-sm font-bold text-text-primary"
+                              style={{ fontFamily: "Outfit, sans-serif" }}
+                            >
+                              {t(locale, label)}
+                            </span>
+                            <span className="text-[11px] leading-tight text-text-secondary">
+                              {t(locale, hint)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Name for buyers, shop name for sellers. */}
+                  <div>
+                    <label
+                      className="block text-xs font-semibold mb-1.5 text-text-secondary"
+                      style={{ fontFamily: "Outfit, sans-serif" }}
+                    >
+                      {t(locale, accountType === "seller" ? "auth_shop_name_label" : "b2c_auth_name_label")}
+                    </label>
+                    <input
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={t(locale, accountType === "seller" ? "auth_shop_name_ph" : "b2c_auth_name_ph")}
+                      className="w-full px-4 py-3 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/80 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder-text-secondary/40"
+                    />
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
