@@ -6,8 +6,9 @@ import { useBasket } from "./basket-provider";
 import { t, unitLabel, uzs, type Locale } from "@/lib/i18n";
 import { productEmoji } from "@/lib/product-emoji";
 import { paynetPayUrl, uzumPayUrl } from "@/lib/payments/links";
-import { ChevronDown, ChevronUp, RefreshCw, CreditCard, CheckCircle, Clock, Truck, PackageCheck, XCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, CreditCard, CheckCircle, Clock, Truck, PackageCheck, XCircle, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
 
 type OrderItemWithDetails = {
   id: string;
@@ -31,13 +32,40 @@ type OrderItemWithDetails = {
 
 type OrderWithItems = {
   id: string;
-  deliveryDate: string; // pre-formatted or parsed
+  // Consumer pivot: "ASAP" renders a live relative ETA; "SCHEDULED" renders the
+  // pre-formatted chosen day + window (`scheduledLabel`).
+  deliverMode: "ASAP" | "SCHEDULED";
+  deliveryTargetMs: number; // epoch ms target time (for ASAP ETA)
+  scheduledLabel: string; // pre-formatted day + window (for SCHEDULED)
   status: string;
   address: string;
   total: number;
   paidAt: boolean;
   items: OrderItemWithDetails[];
 };
+
+// Statuses that mean the courier is actively bringing the order — used to show
+// the consumer "on the way" banner + a live-tracking link.
+const ON_THE_WAY = new Set(["DELIVERING"]);
+
+/**
+ * Consumer-facing delivery line for an order. ASAP orders show a live relative
+ * ETA ("Today, in ~45 min"); once the target passes (or for in-flight orders)
+ * we soften to "Today, very soon". Scheduled orders show their chosen window.
+ */
+function deliveryLine(locale: Locale, order: OrderWithItems): string {
+  if (order.deliverMode !== "ASAP") return order.scheduledLabel;
+  const diffMs = order.deliveryTargetMs - Date.now();
+  const mins = Math.round(diffMs / 60000);
+  // Terminal states don't need a countdown.
+  if (order.status === "DELIVERED" || order.status === "CANCELLED") {
+    return t(locale, "b2c_ord_asap");
+  }
+  if (mins < 5) return t(locale, "b2c_ord_asap_soon");
+  // Round up to the nearest 5 minutes for a friendly, non-jittery estimate.
+  const rounded = Math.min(90, Math.ceil(mins / 5) * 5);
+  return t(locale, "b2c_ord_asap_eta", { min: rounded });
+}
 
 // Status pill colors pull from the design-system semantic tokens
 // (docs/DESIGN_SYSTEM.md): amber = waiting / partial, sky = in motion,
@@ -119,11 +147,17 @@ export function OrdersClient({
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <h1
-          className="mb-8 font-extrabold text-2xl tracking-tight text-text-primary"
+          className="mb-1 font-extrabold text-2xl tracking-tight text-text-primary"
           style={{ fontFamily: "Outfit, sans-serif" }}
         >
           {t(locale, "orders_title")}
         </h1>
+        <p
+          className="mb-8 text-sm text-text-secondary"
+          style={{ fontFamily: "Inter, sans-serif" }}
+        >
+          {t(locale, "b2c_ord_subtitle")}
+        </p>
 
         {placed && (
           <motion.div
@@ -138,7 +172,7 @@ export function OrdersClient({
             }}
           >
             <CheckCircle size={16} aria-hidden="true" />
-            {t(locale, "order_placed_banner")}
+            {t(locale, "b2c_ord_placed_banner")}
           </motion.div>
         )}
 
@@ -148,6 +182,8 @@ export function OrdersClient({
             const StatusIcon = sc.icon;
             const isOpen = expanded === order.id;
             const statusKey = `status_${order.status}`;
+            const deliveryText = deliveryLine(locale, order);
+            const isOnTheWay = ON_THE_WAY.has(order.status);
 
             return (
               <motion.div
@@ -175,7 +211,7 @@ export function OrdersClient({
                       className="text-xs text-text-secondary"
                       style={{ fontFamily: "Inter, sans-serif" }}
                     >
-                      {order.deliveryDate} · {order.address}
+                      {deliveryText} · {order.address}
                     </div>
                   </div>
 
@@ -215,6 +251,33 @@ export function OrdersClient({
                     >
                       <div className="px-5 pb-5">
                         <div className="border-t border-border-primary mb-4" />
+
+                        {/* "On the way" banner + live tracking link */}
+                        {isOnTheWay && (
+                          <Link
+                            href={`/track/${order.id}`}
+                            className="mb-4 flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all hover:opacity-90"
+                            style={{
+                              background: "var(--accent-3-glow)",
+                              borderColor: "color-mix(in srgb, var(--accent-3) 30%, transparent)",
+                            }}
+                          >
+                            <Truck size={18} style={{ color: "var(--accent-3)" }} aria-hidden="true" />
+                            <span
+                              className="flex-1 text-sm font-semibold"
+                              style={{ color: "var(--accent-3)", fontFamily: "Outfit, sans-serif" }}
+                            >
+                              {t(locale, "b2c_ord_on_the_way")}
+                            </span>
+                            <span
+                              className="flex items-center gap-1 text-xs font-bold"
+                              style={{ color: "var(--accent-3)", fontFamily: "Outfit, sans-serif" }}
+                            >
+                              <MapPin size={12} aria-hidden="true" />
+                              {t(locale, "b2c_ord_track")}
+                            </span>
+                          </Link>
+                        )}
 
                         {/* Items */}
                         <div className="space-y-3 mb-5">

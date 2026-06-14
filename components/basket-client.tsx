@@ -8,11 +8,13 @@ import { productEmoji } from "@/lib/product-emoji";
 import {
   DELIVERY_SLOTS,
   DEFAULT_DELIVERY_SLOT,
+  DEFAULT_DELIVER_MODE,
+  type DeliverMode,
   defaultDeliveryDateInput,
   resolveDeliveryWindow,
   toDateInputValue,
 } from "@/lib/delivery";
-import { Minus, Plus, Trash2, ChevronRight, Loader2, Info, Clock } from "lucide-react";
+import { Minus, Plus, Trash2, ChevronRight, Loader2, Info, Clock, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 export function BasketClient({ locale }: { locale: Locale }) {
@@ -21,11 +23,15 @@ export function BasketClient({ locale }: { locale: Locale }) {
   const [state, setState] = useState<"idle" | "sending">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  // Form values
+  // Form values — `org` keeps its internal name but is now the recipient's
+  // person name (sent as buyerName to the API; the API field is unchanged).
   const [org, setOrg] = useState("");
   const [phone, setPhone] = useState("+998 ");
   const [address, setAddress] = useState("");
-  // Customer-chosen delivery window: default to tomorrow's earliest slot.
+  // Delivery mode: ASAP (on-demand, default) or SCHEDULED (deliver-later window).
+  const [deliverMode, setDeliverMode] = useState<DeliverMode>(DEFAULT_DELIVER_MODE);
+  // Customer-chosen delivery window (only used when deliverMode === SCHEDULED):
+  // default to tomorrow's earliest slot.
   const [deliveryDate, setDeliveryDate] = useState(defaultDeliveryDateInput);
   const [deliverySlot, setDeliverySlot] = useState(DEFAULT_DELIVERY_SLOT);
 
@@ -46,14 +52,19 @@ export function BasketClient({ locale }: { locale: Locale }) {
     e.preventDefault();
     if (!org.trim() || !phone.trim() || !address.trim() || items.length === 0) return;
 
-    // Validate the chosen delivery window before sending (server re-checks too).
-    if (!deliveryDate || !deliverySlot) {
-      setError(t(locale, "dt_err_required"));
-      return;
-    }
-    if (!resolveDeliveryWindow(deliveryDate, deliverySlot)) {
-      setError(t(locale, "dt_err_past"));
-      return;
+    const scheduled = deliverMode === "SCHEDULED";
+
+    // Only the "deliver later" branch needs a validated day + window. ASAP just
+    // sends the mode; the server computes a ~30-60 min ETA.
+    if (scheduled) {
+      if (!deliveryDate || !deliverySlot) {
+        setError(t(locale, "dt_err_required"));
+        return;
+      }
+      if (!resolveDeliveryWindow(deliveryDate, deliverySlot)) {
+        setError(t(locale, "dt_err_past"));
+        return;
+      }
     }
 
     setState("sending");
@@ -66,8 +77,9 @@ export function BasketClient({ locale }: { locale: Locale }) {
         buyerName: org,
         buyerPhone: phone,
         address,
-        deliveryDate,
-        deliverySlot,
+        deliverMode,
+        // Only send the window for "deliver later"; ASAP omits it.
+        ...(scheduled ? { deliveryDate, deliverySlot } : {}),
         items: items.map((i) => ({ offerId: i.offerId, qty: i.qty })),
       }),
     }).catch(() => null);
@@ -311,24 +323,27 @@ export function BasketClient({ locale }: { locale: Locale }) {
               <div className="space-y-3">
                 {[
                   {
-                    label: t(locale, "basket_field_org"),
+                    label: t(locale, "b2c_co_name_label"),
                     value: org,
                     set: setOrg,
-                    placeholder: t(locale, "ph_org"),
+                    placeholder: t(locale, "b2c_co_name_ph"),
+                    hint: null as string | null,
                   },
                   {
                     label: t(locale, "basket_field_phone"),
                     value: phone,
                     set: setPhone,
                     placeholder: t(locale, "ph_phone"),
+                    hint: null as string | null,
                   },
                   {
                     label: t(locale, "basket_field_address"),
                     value: address,
                     set: setAddress,
                     placeholder: t(locale, "ph_address"),
+                    hint: t(locale, "b2c_co_addr_hint"),
                   },
-                ].map(({ label, value, set, placeholder }) => (
+                ].map(({ label, value, set, placeholder, hint }) => (
                   <div key={label}>
                     <label
                       className="block text-xs font-semibold mb-1.5 text-text-secondary"
@@ -343,11 +358,19 @@ export function BasketClient({ locale }: { locale: Locale }) {
                       placeholder={placeholder}
                       className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/60 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder-text-secondary/40"
                     />
+                    {hint && (
+                      <p
+                        className="text-xs mt-1 text-text-secondary/70"
+                        style={{ fontFamily: "Inter, sans-serif" }}
+                      >
+                        {hint}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
 
-              {/* Delivery time — customer picks day + 2h window */}
+              {/* Delivery mode — ASAP (default) vs "deliver later" window */}
               <div className="space-y-3 pt-1">
                 <div className="flex items-center gap-2">
                   <Clock size={15} style={{ color: "var(--accent)" }} aria-hidden="true" />
@@ -355,76 +378,167 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     className="text-sm font-bold text-text-primary"
                     style={{ fontFamily: "var(--font-display, Outfit), sans-serif" }}
                   >
-                    {t(locale, "dt_section_title")}
+                    {t(locale, "b2c_deliv_section")}
                   </span>
                 </div>
-                <p
-                  className="text-xs -mt-1 text-text-secondary"
-                  style={{ fontFamily: "Inter, sans-serif" }}
+
+                <div
+                  role="radiogroup"
+                  aria-label={t(locale, "b2c_deliv_section")}
+                  className="grid grid-cols-1 gap-2"
                 >
-                  {t(locale, "dt_section_hint")}
-                </p>
-
-                <div>
-                  <label
-                    htmlFor="delivery-date"
-                    className="block text-xs font-semibold mb-1.5 text-text-secondary"
-                    style={{ fontFamily: "Outfit, sans-serif" }}
+                  {/* ASAP */}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={deliverMode === "ASAP"}
+                    onClick={() => setDeliverMode("ASAP")}
+                    className="flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    style={{
+                      background:
+                        deliverMode === "ASAP" ? "var(--status-success-bg)" : "var(--bg-secondary)",
+                      borderColor:
+                        deliverMode === "ASAP"
+                          ? "color-mix(in srgb, var(--accent) 45%, transparent)"
+                          : "var(--border-primary)",
+                    }}
                   >
-                    {t(locale, "dt_date_label")}
-                  </label>
-                  <input
-                    id="delivery-date"
-                    type="date"
-                    required
-                    min={minDate}
-                    value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/60 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
-                  />
+                    <Zap
+                      size={16}
+                      className="flex-shrink-0"
+                      style={{
+                        color:
+                          deliverMode === "ASAP" ? "var(--status-success)" : "var(--text-secondary)",
+                      }}
+                      aria-hidden="true"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span
+                        className="block text-sm font-bold text-text-primary"
+                        style={{ fontFamily: "Outfit, sans-serif" }}
+                      >
+                        {t(locale, "b2c_deliv_asap")}
+                      </span>
+                      <span
+                        className="block text-xs text-text-secondary"
+                        style={{ fontFamily: "Inter, sans-serif" }}
+                      >
+                        {t(locale, "b2c_deliv_asap_eta")}
+                      </span>
+                    </span>
+                  </button>
+
+                  {/* Deliver later */}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={deliverMode === "SCHEDULED"}
+                    onClick={() => setDeliverMode("SCHEDULED")}
+                    className="flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    style={{
+                      background:
+                        deliverMode === "SCHEDULED"
+                          ? "var(--status-success-bg)"
+                          : "var(--bg-secondary)",
+                      borderColor:
+                        deliverMode === "SCHEDULED"
+                          ? "color-mix(in srgb, var(--accent) 45%, transparent)"
+                          : "var(--border-primary)",
+                    }}
+                  >
+                    <Clock
+                      size={16}
+                      className="flex-shrink-0"
+                      style={{
+                        color:
+                          deliverMode === "SCHEDULED"
+                            ? "var(--status-success)"
+                            : "var(--text-secondary)",
+                      }}
+                      aria-hidden="true"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span
+                        className="block text-sm font-bold text-text-primary"
+                        style={{ fontFamily: "Outfit, sans-serif" }}
+                      >
+                        {t(locale, "b2c_deliv_later")}
+                      </span>
+                      <span
+                        className="block text-xs text-text-secondary"
+                        style={{ fontFamily: "Inter, sans-serif" }}
+                      >
+                        {t(locale, "b2c_deliv_later_hint")}
+                      </span>
+                    </span>
+                  </button>
                 </div>
 
-                <div>
-                  <span
-                    className="block text-xs font-semibold mb-1.5 text-text-secondary"
-                    style={{ fontFamily: "Outfit, sans-serif" }}
-                  >
-                    {t(locale, "dt_window_label")}
-                  </span>
-                  <div
-                    role="radiogroup"
-                    aria-label={t(locale, "dt_window_aria")}
-                    className="grid grid-cols-2 gap-2"
-                  >
-                    {DELIVERY_SLOTS.map((slot) => {
-                      const active = slot.value === deliverySlot;
-                      return (
-                        <button
-                          key={slot.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={active}
-                          onClick={() => setDeliverySlot(slot.value)}
-                          className="px-2 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                          style={{
-                            fontFamily: "JetBrains Mono, monospace",
-                            background: active
-                              ? "var(--status-success-bg)"
-                              : "var(--bg-secondary)",
-                            borderColor: active
-                              ? "color-mix(in srgb, var(--accent) 45%, transparent)"
-                              : "var(--border-primary)",
-                            color: active
-                              ? "var(--status-success)"
-                              : "var(--text-secondary)",
-                          }}
-                        >
-                          {slot.value}
-                        </button>
-                      );
-                    })}
+                {/* The existing day + 2h window picker — only for "deliver later" */}
+                {deliverMode === "SCHEDULED" && (
+                  <div className="space-y-3 pt-1">
+                    <div>
+                      <label
+                        htmlFor="delivery-date"
+                        className="block text-xs font-semibold mb-1.5 text-text-secondary"
+                        style={{ fontFamily: "Outfit, sans-serif" }}
+                      >
+                        {t(locale, "dt_date_label")}
+                      </label>
+                      <input
+                        id="delivery-date"
+                        type="date"
+                        required
+                        min={minDate}
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/60 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <span
+                        className="block text-xs font-semibold mb-1.5 text-text-secondary"
+                        style={{ fontFamily: "Outfit, sans-serif" }}
+                      >
+                        {t(locale, "dt_window_label")}
+                      </span>
+                      <div
+                        role="radiogroup"
+                        aria-label={t(locale, "dt_window_aria")}
+                        className="grid grid-cols-2 gap-2"
+                      >
+                        {DELIVERY_SLOTS.map((slot) => {
+                          const active = slot.value === deliverySlot;
+                          return (
+                            <button
+                              key={slot.value}
+                              type="button"
+                              role="radio"
+                              aria-checked={active}
+                              onClick={() => setDeliverySlot(slot.value)}
+                              className="px-2 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                              style={{
+                                fontFamily: "JetBrains Mono, monospace",
+                                background: active
+                                  ? "var(--status-success-bg)"
+                                  : "var(--bg-secondary)",
+                                borderColor: active
+                                  ? "color-mix(in srgb, var(--accent) 45%, transparent)"
+                                  : "var(--border-primary)",
+                                color: active
+                                  ? "var(--status-success)"
+                                  : "var(--text-secondary)",
+                              }}
+                            >
+                              {slot.value}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Payment Note */}
@@ -438,7 +552,7 @@ export function BasketClient({ locale }: { locale: Locale }) {
               >
                 <Info size={16} className="mt-0.5 flex-shrink-0" />
                 <p className="text-xs leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>
-                  {t(locale, "pay_note")}
+                  {t(locale, "b2c_co_pay_cash")}
                 </p>
               </div>
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useBasket } from "./basket-provider";
-import { t, uzs, type Locale } from "@/lib/i18n";
+import { t, uzs, type Locale, type MessageKey } from "@/lib/i18n";
 import { Search, ShoppingBasket } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImmersiveProductCard } from "./customer/product-card-immersive";
@@ -23,27 +23,22 @@ export type CatalogProduct = {
   offerCount: number;
 };
 
-// Category labels still hard-coded by SKU category — these match seeded data.
-// The UI labels for the three locales are kept here so the seed strings stay
-// in one place; rendering is handled by CategoryStrip which only sees `label`.
-const CATEGORY_MAP: Record<
-  string,
-  { emoji: string; label: { uz: string; ru: string; en: string } }
-> = {
-  Sabzavotlar: { emoji: "🥬", label: { uz: "Sabzavotlar", ru: "Овощи", en: "Vegetables" } },
-  "Go'sht": { emoji: "🥩", label: { uz: "Go'sht", ru: "Мясо", en: "Meat" } },
-  "Sut mahsulotlari": {
-    emoji: "🥛",
-    label: { uz: "Sut", ru: "Молочные", en: "Dairy" },
-  },
-  "Quruq mahsulotlar": {
-    emoji: "🌾",
-    label: { uz: "Bakaleya", ru: "Бакалея", en: "Dry goods" },
-  },
-  Ichimliklar: {
-    emoji: "🧃",
-    label: { uz: "Ichimliklar", ru: "Напитки", en: "Beverages" },
-  },
+// Category metadata keyed by the exact `category` string stored on Product
+// (the seed's canonical Latin-Uzbek strings — see docs/B2C_PIVOT.md section 5).
+// Each entry carries a Lavka-style emoji + an i18n key resolved through t() so
+// the three locales live in lib/i18n.ts (b2c_cat_* namespace), never inline.
+// Any category not listed here falls back to the raw DB string + box emoji, so
+// this map MUST stay in sync with the seeded categories.
+const CATEGORY_MAP: Record<string, { emoji: string; key: MessageKey }> = {
+  Mevalar: { emoji: "🍎", key: "b2c_cat_mevalar" },
+  Sabzavotlar: { emoji: "🥬", key: "b2c_cat_sabzavotlar" },
+  "Sut va tuxum": { emoji: "🥛", key: "b2c_cat_sut_tuxum" },
+  Non: { emoji: "🥖", key: "b2c_cat_non" },
+  "Go'sht": { emoji: "🥩", key: "b2c_cat_gosht" },
+  "Quruq mahsulotlar": { emoji: "🌾", key: "b2c_cat_quruq" },
+  Ichimliklar: { emoji: "🧃", key: "b2c_cat_ichimliklar" },
+  // Legacy dairy string kept so older seeded data never hits the box fallback.
+  "Sut mahsulotlari": { emoji: "🥛", key: "b2c_cat_sut" },
 };
 
 export function CatalogClient({
@@ -66,7 +61,7 @@ export function CatalogClient({
       return {
         id: c,
         emoji: mapped?.emoji ?? "📦",
-        label: mapped?.label[locale] ?? c,
+        label: mapped ? t(locale, mapped.key) : c,
       };
     });
   }, [dbCategories, locale]);

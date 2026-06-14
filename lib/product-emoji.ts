@@ -1,8 +1,21 @@
 // Product thumbnails without photos: an emoji per SKU, matched by name
 // keywords with a per-category fallback. Cheap, fast, and surprisingly
-// effective for a produce catalog.
+// effective for a grocery catalog.
+//
+// Order matters: more specific patterns come before broader ones (e.g.
+// "ko'k choy" before a bare "choy", "sariyog'" before "yog'i").
 
 const KEYWORDS: [RegExp, string][] = [
+  // Fruits (Mevalar)
+  [/olma|яблок/i, "🍎"],
+  [/banan|банан/i, "🍌"],
+  [/tarvuz|арбуз/i, "🍉"],
+  [/qovun|дын/i, "🍈"],
+  [/uzum|виноград/i, "🍇"],
+  [/apelsin|апельсин/i, "🍊"],
+  [/limon|лимон/i, "🍋"],
+  [/nok|груш/i, "🍐"],
+  // Vegetables (Sabzavotlar)
   [/piyoz|лук/i, "🧅"],
   [/kartoshka|картоф/i, "🥔"],
   [/pomidor|помидор/i, "🍅"],
@@ -13,31 +26,43 @@ const KEYWORDS: [RegExp, string][] = [
   [/baqlajon|баклажан/i, "🍆"],
   [/sarimsoq|чеснок/i, "🧄"],
   [/ko'kat|зелень/i, "🌿"],
+  // Meat (Go'sht)
   [/mol go'shti|говядин|qiyma|фарш/i, "🥩"],
   [/qo'y|баранин|dumba|курдюч/i, "🍖"],
   [/tovuq|куриц|filesi|филе/i, "🍗"],
-  [/sut|молоко/i, "🥛"],
+  // Dairy & eggs (Sut va tuxum)
+  [/tuxum|яйц/i, "🥚"],
+  [/kefir|кефир/i, "🥛"],
+  [/yogurt|йогурт/i, "🥛"],
+  [/sariyog|масло сливоч/i, "🧈"],
   [/qaymoq|сметан/i, "🥣"],
   [/tvorog|творог/i, "🫕"],
   [/pishloq|сыр/i, "🧀"],
-  [/tuxum|яйц/i, "🥚"],
-  [/sariyog|масло сливоч/i, "🧈"],
+  [/sut|молоко/i, "🥛"],
+  // Bakery (Non)
+  [/non|лепёшк|baton|батон|bulochka|булочк|lavash|лаваш|хлеб/i, "🍞"],
+  // Dry goods / grains (Quruq mahsulotlar)
   [/guruch|рис/i, "🍚"],
+  [/makaron|макарон/i, "🍝"],
   [/un |мука|^un$/i, "🌾"],
-  [/yog'i|масло/i, "🫗"],
   [/shakar|сахар/i, "🍬"],
   [/tuz|соль/i, "🧂"],
-  [/makaron|макарон/i, "🍝"],
+  [/yog'i|масло/i, "🫗"],
+  // Drinks (Ichimliklar)
   [/choy|чай/i, "🍵"],
+  [/sharbat|сок/i, "🧃"],
+  [/gazli|газиров/i, "🥤"],
   [/suv|вода/i, "💧"],
 ];
 
 const CATEGORY_FALLBACK: Record<string, string> = {
+  Mevalar: "🍎",
   Sabzavotlar: "🥬",
+  "Sut va tuxum": "🥛",
+  Non: "🍞",
   "Go'sht": "🥩",
-  "Sut mahsulotlari": "🥛",
   "Quruq mahsulotlar": "🌾",
-  Ichimliklar: "🍵",
+  Ichimliklar: "🧃",
 };
 
 export function productEmoji(name: string, category: string): string {

@@ -88,3 +88,31 @@ export function resolveDeliveryWindow(
 
   return { deliveryDate, deliverySlot: slot.value };
 }
+
+// --- B2C consumer pivot: ASAP (on-demand) delivery ----------------------------
+//
+// The consumer storefront (Yandex-Eats style) defaults to "ASAP": deliver as
+// soon as possible, ~30-60 min. The existing day + 2h window picker above stays
+// available as the "deliver later" (SCHEDULED) option. None of the scheduled
+// logic is removed — this is purely additive.
+
+export type DeliverMode = "ASAP" | "SCHEDULED";
+
+/** Default delivery mode for the consumer checkout. */
+export const DEFAULT_DELIVER_MODE: DeliverMode = "ASAP";
+
+/** ASAP target window in minutes — drives the ETA pill + deliveryDate. */
+export const ASAP_ETA_MIN = 30;
+export const ASAP_ETA_MAX = 60;
+
+/** deliveryDate for an ASAP order: now + ASAP_ETA_MAX minutes. */
+export function asapDeliveryDate(now: Date = new Date()): Date {
+  const d = new Date(now);
+  d.setMinutes(d.getMinutes() + ASAP_ETA_MAX);
+  return d;
+}
+
+/** Narrows an arbitrary value to a valid DeliverMode, defaulting to ASAP. */
+export function normalizeDeliverMode(value: unknown): DeliverMode {
+  return value === "SCHEDULED" ? "SCHEDULED" : DEFAULT_DELIVER_MODE;
+}

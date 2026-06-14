@@ -11,90 +11,171 @@ type Sku = {
   baseCost: number;
 };
 
+// Consumer grocery catalog (B2C pivot). Canonical DB `category` strings are
+// stable Latin-Uzbek; localized labels live in components/catalog-client.tsx
+// (CATEGORY_MAP), the landing categories array, and lib/product-emoji.ts
+// (CATEGORY_FALLBACK). Keep all four in sync — see docs/B2C_PIVOT.md section 5.
+//
+//   Mevalar           -> Fruits
+//   Sabzavotlar       -> Vegetables
+//   Sut va tuxum      -> Dairy & Eggs
+//   Non               -> Bakery
+//   Go'sht            -> Meat
+//   Quruq mahsulotlar -> Dry goods / Grains
+//   Ichimliklar       -> Drinks
 const SKUS: Sku[] = [
+  // Mevalar (fruits)
+  { nameUz: "Olma", nameRu: "Яблоки", category: "Mevalar", unit: "KG", baseCost: 12000 },
+  { nameUz: "Banan", nameRu: "Бананы", category: "Mevalar", unit: "KG", baseCost: 22000 },
+  { nameUz: "Tarvuz", nameRu: "Арбуз", category: "Mevalar", unit: "KG", baseCost: 5000 },
+  { nameUz: "Qovun", nameRu: "Дыня", category: "Mevalar", unit: "KG", baseCost: 7000 },
+  { nameUz: "Uzum", nameRu: "Виноград", category: "Mevalar", unit: "KG", baseCost: 18000 },
+  { nameUz: "Apelsin", nameRu: "Апельсины", category: "Mevalar", unit: "KG", baseCost: 20000 },
+  { nameUz: "Limon", nameRu: "Лимоны", category: "Mevalar", unit: "KG", baseCost: 24000 },
+  { nameUz: "Nok", nameRu: "Груши", category: "Mevalar", unit: "KG", baseCost: 16000 },
   // Sabzavotlar (vegetables)
-  { nameUz: "Piyoz (sariq)", nameRu: "Лук репчатый", category: "Sabzavotlar", unit: "KG", baseCost: 4000 },
-  { nameUz: "Kartoshka", nameRu: "Картофель", category: "Sabzavotlar", unit: "KG", baseCost: 6000 },
-  { nameUz: "Pomidor", nameRu: "Помидоры", category: "Sabzavotlar", unit: "KG", baseCost: 12000 },
   { nameUz: "Bodring", nameRu: "Огурцы", category: "Sabzavotlar", unit: "KG", baseCost: 10000 },
+  { nameUz: "Pomidor", nameRu: "Помидоры", category: "Sabzavotlar", unit: "KG", baseCost: 12000 },
+  { nameUz: "Kartoshka", nameRu: "Картофель", category: "Sabzavotlar", unit: "KG", baseCost: 6000 },
+  { nameUz: "Piyoz", nameRu: "Лук репчатый", category: "Sabzavotlar", unit: "KG", baseCost: 4000 },
   { nameUz: "Sabzi", nameRu: "Морковь", category: "Sabzavotlar", unit: "KG", baseCost: 5000 },
-  { nameUz: "Karam", nameRu: "Капуста", category: "Sabzavotlar", unit: "KG", baseCost: 4500 },
-  { nameUz: "Bulg'or qalampiri", nameRu: "Болгарский перец", category: "Sabzavotlar", unit: "KG", baseCost: 18000 },
-  { nameUz: "Baqlajon", nameRu: "Баклажаны", category: "Sabzavotlar", unit: "KG", baseCost: 9000 },
   { nameUz: "Sarimsoq", nameRu: "Чеснок", category: "Sabzavotlar", unit: "KG", baseCost: 25000 },
-  { nameUz: "Ko'katlar to'plami", nameRu: "Зелень (набор)", category: "Sabzavotlar", unit: "PIECE", baseCost: 5000 },
+  { nameUz: "Bulg'or qalampiri", nameRu: "Болгарский перец", category: "Sabzavotlar", unit: "KG", baseCost: 18000 },
+  { nameUz: "Ko'katlar", nameRu: "Зелень", category: "Sabzavotlar", unit: "PIECE", baseCost: 5000 },
+  // Sut va tuxum (dairy & eggs)
+  { nameUz: "Sut (1L)", nameRu: "Молоко (1л)", category: "Sut va tuxum", unit: "PIECE", baseCost: 12000 },
+  { nameUz: "Kefir (1L)", nameRu: "Кефир (1л)", category: "Sut va tuxum", unit: "PIECE", baseCost: 13000 },
+  { nameUz: "Qaymoq (500g)", nameRu: "Сметана (500г)", category: "Sut va tuxum", unit: "PIECE", baseCost: 18000 },
+  { nameUz: "Tvorog", nameRu: "Творог", category: "Sut va tuxum", unit: "KG", baseCost: 35000 },
+  { nameUz: "Pishloq", nameRu: "Сыр", category: "Sut va tuxum", unit: "KG", baseCost: 85000 },
+  { nameUz: "Sariyog'", nameRu: "Масло сливочное", category: "Sut va tuxum", unit: "KG", baseCost: 95000 },
+  { nameUz: "Tuxum (10 dona)", nameRu: "Яйца (10 шт)", category: "Sut va tuxum", unit: "BLOCK", baseCost: 16000 },
+  { nameUz: "Yogurt", nameRu: "Йогурт", category: "Sut va tuxum", unit: "PIECE", baseCost: 8000 },
+  // Non (bakery)
+  { nameUz: "Non (patir)", nameRu: "Лепёшка", category: "Non", unit: "PIECE", baseCost: 4000 },
+  { nameUz: "Baton non", nameRu: "Батон", category: "Non", unit: "PIECE", baseCost: 5000 },
+  { nameUz: "Bulochka", nameRu: "Булочка", category: "Non", unit: "PIECE", baseCost: 3000 },
+  { nameUz: "Lavash", nameRu: "Лаваш", category: "Non", unit: "PIECE", baseCost: 4000 },
   // Go'sht (meat)
-  { nameUz: "Mol go'shti (son)", nameRu: "Говядина (задняя часть)", category: "Go'sht", unit: "KG", baseCost: 95000 },
+  { nameUz: "Mol go'shti", nameRu: "Говядина", category: "Go'sht", unit: "KG", baseCost: 95000 },
   { nameUz: "Qo'y go'shti", nameRu: "Баранина", category: "Go'sht", unit: "KG", baseCost: 110000 },
   { nameUz: "Tovuq (butun)", nameRu: "Курица (целая)", category: "Go'sht", unit: "KG", baseCost: 38000 },
   { nameUz: "Tovuq filesi", nameRu: "Куриное филе", category: "Go'sht", unit: "KG", baseCost: 52000 },
-  { nameUz: "Qiyma (mol)", nameRu: "Фарш говяжий", category: "Go'sht", unit: "KG", baseCost: 85000 },
-  { nameUz: "Dumba", nameRu: "Курдючный жир", category: "Go'sht", unit: "KG", baseCost: 70000 },
-  // Sut mahsulotlari (dairy)
-  { nameUz: "Sut (1L)", nameRu: "Молоко (1л)", category: "Sut mahsulotlari", unit: "PIECE", baseCost: 12000 },
-  { nameUz: "Qaymoq (500g)", nameRu: "Сметана (500г)", category: "Sut mahsulotlari", unit: "PIECE", baseCost: 18000 },
-  { nameUz: "Tvorog", nameRu: "Творог", category: "Sut mahsulotlari", unit: "KG", baseCost: 35000 },
-  { nameUz: "Pishloq (gollandskiy)", nameRu: "Сыр голландский", category: "Sut mahsulotlari", unit: "KG", baseCost: 85000 },
-  { nameUz: "Tuxum (30 dona)", nameRu: "Яйца (30 шт)", category: "Sut mahsulotlari", unit: "BLOCK", baseCost: 38000 },
-  { nameUz: "Sariyog'", nameRu: "Масло сливочное", category: "Sut mahsulotlari", unit: "KG", baseCost: 95000 },
-  // Quruq mahsulotlar (dry goods)
-  { nameUz: "Guruch (lazer)", nameRu: "Рис лазер", category: "Quruq mahsulotlar", unit: "KG", baseCost: 16000 },
-  { nameUz: "Guruch (devzira)", nameRu: "Рис девзира", category: "Quruq mahsulotlar", unit: "KG", baseCost: 32000 },
+  { nameUz: "Qiyma", nameRu: "Фарш", category: "Go'sht", unit: "KG", baseCost: 85000 },
+  // Quruq mahsulotlar (dry goods / grains)
   { nameUz: "Un (oliy nav)", nameRu: "Мука высший сорт", category: "Quruq mahsulotlar", unit: "KG", baseCost: 7000 },
-  { nameUz: "Paxta yog'i (5L)", nameRu: "Хлопковое масло (5л)", category: "Quruq mahsulotlar", unit: "PIECE", baseCost: 95000 },
-  { nameUz: "O'simlik yog'i (5L)", nameRu: "Подсолнечное масло (5л)", category: "Quruq mahsulotlar", unit: "PIECE", baseCost: 85000 },
+  { nameUz: "Guruch (lazer)", nameRu: "Рис лазер", category: "Quruq mahsulotlar", unit: "KG", baseCost: 16000 },
   { nameUz: "Shakar", nameRu: "Сахар", category: "Quruq mahsulotlar", unit: "KG", baseCost: 12500 },
   { nameUz: "Tuz", nameRu: "Соль", category: "Quruq mahsulotlar", unit: "KG", baseCost: 2500 },
   { nameUz: "Makaron", nameRu: "Макароны", category: "Quruq mahsulotlar", unit: "KG", baseCost: 11000 },
-  // Ichimliklar (beverages)
-  { nameUz: "Ko'k choy (Samarqand, 80g)", nameRu: "Чай зелёный №95 (80г)", category: "Ichimliklar", unit: "PIECE", baseCost: 9000 },
+  { nameUz: "O'simlik yog'i (1L)", nameRu: "Подсолнечное масло (1л)", category: "Quruq mahsulotlar", unit: "PIECE", baseCost: 22000 },
+  // Ichimliklar (drinks)
+  { nameUz: "Suv (1.5L)", nameRu: "Вода (1.5л)", category: "Ichimliklar", unit: "PIECE", baseCost: 5000 },
+  { nameUz: "Ko'k choy (80g)", nameRu: "Чай зелёный (80г)", category: "Ichimliklar", unit: "PIECE", baseCost: 9000 },
   { nameUz: "Qora choy (80g)", nameRu: "Чай чёрный (80г)", category: "Ichimliklar", unit: "PIECE", baseCost: 9500 },
-  { nameUz: "Mineral suv (1.5L, blok)", nameRu: "Минеральная вода (1.5л, блок)", category: "Ichimliklar", unit: "BLOCK", baseCost: 30000 },
+  { nameUz: "Sharbat (1L)", nameRu: "Сок (1л)", category: "Ichimliklar", unit: "PIECE", baseCost: 14000 },
+  { nameUz: "Gazli ichimlik (1.5L)", nameRu: "Газировка (1.5л)", category: "Ichimliklar", unit: "PIECE", baseCost: 12000 },
 ];
 
+// Fulfilling shops (Yandex-style: a consumer storefront over real shops +
+// couriers). Stored as Organization type=SUPPLIER. The cart groups items by
+// the shop that fulfils them. Every category is covered by at least one shop
+// so every SKU gets >=1 offer (the catalog only shows products with offers).
 const SUPPLIERS = [
-  { name: "Chorsu Agro", district: "Olmazor", phone: "+998901112233", categories: ["Sabzavotlar", "Quruq mahsulotlar"], priceFactor: 1.0 },
-  { name: "Halol Go'sht Savdo", district: "Chilonzor", phone: "+998902223344", categories: ["Go'sht"], priceFactor: 1.0 },
-  { name: "Toshkent Sut", district: "Yunusobod", phone: "+998903334455", categories: ["Sut mahsulotlari", "Ichimliklar"], priceFactor: 1.0 },
-  { name: "Farhod Ulgurji", district: "Chilonzor", phone: "+998904445566", categories: ["Sabzavotlar", "Quruq mahsulotlar", "Ichimliklar"], priceFactor: 1.04 },
+  {
+    name: "Qo'qon Bozor",
+    district: "Qo'qon",
+    phone: "+998901112233",
+    categories: ["Mevalar", "Sabzavotlar", "Go'sht", "Quruq mahsulotlar"],
+    priceFactor: 1.0,
+  },
+  {
+    name: "Lavka Fresh",
+    district: "Qo'qon",
+    phone: "+998902223344",
+    categories: ["Mevalar", "Sut va tuxum", "Non", "Ichimliklar"],
+    priceFactor: 1.0,
+  },
+  {
+    name: "Oila Market",
+    district: "Qo'qon",
+    phone: "+998903334455",
+    categories: ["Sut va tuxum", "Quruq mahsulotlar", "Ichimliklar", "Non"],
+    priceFactor: 1.04,
+  },
 ];
 
 // Round UZS prices to the nearest 100 — nobody quotes 12_437 UZS at a bazaar.
 const round100 = (n: number) => Math.round(n / 100) * 100;
 
-/** Seeds the demo catalog. Wipes existing catalog/order data first. */
+/**
+ * Seeds the demo grocery catalog. Idempotent and safe to re-run against the
+ * live DB: products and supplier shops are upserted by a stable natural key
+ * (product by nameUz+category, shop by name), offers by the unique
+ * (supplierId, productId) pair. Existing orders are NOT touched — re-running
+ * only inserts new SKUs and refreshes prices, never duplicates or wipes data.
+ */
 export async function seedCatalog(prisma: PrismaClient) {
-  await prisma.orderItem.deleteMany();
-  await prisma.purchaseOrder.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.supplierOffer.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.organization.deleteMany({ where: { type: "SUPPLIER" } });
-
-  const products = [];
+  // Upsert products by their stable natural key (nameUz + category). Product
+  // has no DB unique constraint, so we look up then create/update in app code.
+  const productByIndex: { id: string }[] = [];
   for (const [i, sku] of SKUS.entries()) {
-    products.push(
-      await prisma.product.create({
+    const existing = await prisma.product.findFirst({
+      where: { nameUz: sku.nameUz, category: sku.category },
+      select: { id: true },
+    });
+    if (existing) {
+      const updated = await prisma.product.update({
+        where: { id: existing.id },
+        data: { nameRu: sku.nameRu, unit: sku.unit, sortKey: i },
+        select: { id: true },
+      });
+      productByIndex[i] = updated;
+    } else {
+      const created = await prisma.product.create({
         data: { nameUz: sku.nameUz, nameRu: sku.nameRu, category: sku.category, unit: sku.unit, sortKey: i },
-      })
-    );
+        select: { id: true },
+      });
+      productByIndex[i] = created;
+    }
   }
 
   for (const s of SUPPLIERS) {
-    const supplier = await prisma.organization.create({
-      data: { type: "SUPPLIER", name: s.name, district: s.district, phone: s.phone },
+    // Upsert the fulfilling shop by name (type SUPPLIER). botCode auto-fills on
+    // create and is left intact on re-run.
+    let supplier = await prisma.organization.findFirst({
+      where: { type: "SUPPLIER", name: s.name },
+      select: { id: true },
     });
+    if (supplier) {
+      supplier = await prisma.organization.update({
+        where: { id: supplier.id },
+        data: { district: s.district, phone: s.phone },
+        select: { id: true },
+      });
+    } else {
+      supplier = await prisma.organization.create({
+        data: { type: "SUPPLIER", name: s.name, district: s.district, phone: s.phone },
+        select: { id: true },
+      });
+    }
+
     for (const [i, sku] of SKUS.entries()) {
       if (!s.categories.includes(sku.category)) continue;
       const costPrice = round100(sku.baseCost * s.priceFactor);
-      await prisma.supplierOffer.create({
-        data: {
+      const price = round100(costPrice * (1 + TAKE_RATE));
+      const minQty = sku.unit === "KG" ? 1 : 0;
+      // Offer has a unique (supplierId, productId) — upsert is duplicate-safe.
+      await prisma.supplierOffer.upsert({
+        where: { supplierId_productId: { supplierId: supplier.id, productId: productByIndex[i].id } },
+        update: { costPrice, price, available: true, minQty },
+        create: {
           supplierId: supplier.id,
-          productId: products[i].id,
+          productId: productByIndex[i].id,
           costPrice,
-          price: round100(costPrice * (1 + TAKE_RATE)),
+          price,
           available: true,
-          minQty: sku.unit === "KG" ? 1 : 0,
+          minQty,
         },
       });
     }

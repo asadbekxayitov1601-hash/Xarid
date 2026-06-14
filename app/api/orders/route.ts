@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId, setSession } from "@/lib/session";
-import { resolveDeliveryWindow } from "@/lib/delivery";
+import { asapDeliveryDate, resolveDeliveryWindow, normalizeDeliverMode } from "@/lib/delivery";
 
 // POST: place the order. Prices are recomputed from the database —
 // the client basket is a shopping list, never a source of money truth.
@@ -13,9 +13,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "items, buyerName, buyerPhone, address required" }, { status: 400 });
   }
 
-  // Customer-chosen delivery window. Falls back to tomorrow morning when the
-  // client omits it (legacy callers) so older flows keep working.
-  const window = resolveDeliveryWindow(body?.deliveryDate, body?.deliverySlot);
+  // Consumer pivot: "ASAP" (on-demand, default) vs "SCHEDULED" (deliver-later
+  // window). Legacy callers omit deliverMode -> ASAP, the new default.
+  const deliverMode = normalizeDeliverMode(body?.deliverMode);
+
+  // Customer-chosen delivery window (only relevant for SCHEDULED).
+  const window = deliverMode === "SCHEDULED"
+    ? resolveDeliveryWindow(body?.deliveryDate, body?.deliverySlot)
+    : null;
 
   const offerIds = items.map((i: { offerId: string }) => String(i.offerId));
   const offers = await prisma.supplierOffer.findMany({ where: { id: { in: offerIds }, available: true } });
@@ -49,18 +54,21 @@ export async function POST(req: NextRequest) {
     await setSession(userId);
   }
 
-  // Use the customer-chosen window when valid; otherwise fall back to the
-  // historic tomorrow-morning default.
+  // Resolve the delivery target. SCHEDULED orders use the customer-chosen
+  // day + window; if it is missing/invalid we fall back to ASAP (cleaner for
+  // consumers than the old tomorrow-morning default). ASAP orders arrive in
+  // ~30-60 min, so deliveryDate = now + ASAP_ETA_MAX and no slot label.
   let deliveryDate: Date;
   let deliverySlot: string | null;
-  if (window) {
+  let resolvedMode: "ASAP" | "SCHEDULED";
+  if (deliverMode === "SCHEDULED" && window) {
     deliveryDate = window.deliveryDate;
     deliverySlot = window.deliverySlot;
+    resolvedMode = "SCHEDULED";
   } else {
-    deliveryDate = new Date();
-    deliveryDate.setDate(deliveryDate.getDate() + 1);
-    deliveryDate.setHours(10, 0, 0, 0);
+    deliveryDate = asapDeliveryDate();
     deliverySlot = null;
+    resolvedMode = "ASAP";
   }
 
   const order = await prisma.order.create({
@@ -71,6 +79,7 @@ export async function POST(req: NextRequest) {
       address: String(address),
       deliveryDate,
       deliverySlot,
+      deliverMode: resolvedMode,
       total,
       items: { create: lines },
     },
