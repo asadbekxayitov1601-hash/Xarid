@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId, setSession } from "@/lib/session";
+import { normalizePhone } from "@/lib/password";
 import { asapDeliveryDate, resolveDeliveryTime, normalizeDeliverMode } from "@/lib/delivery";
 
 // POST: place the order. Prices are recomputed from the database —
@@ -44,11 +45,14 @@ export async function POST(req: NextRequest) {
   // Attach to the session user (Telegram-authenticated) or create one by phone.
   let userId = await getSessionUserId();
   if (userId && !(await prisma.user.findUnique({ where: { id: userId } }))) userId = null;
+  // Normalize the phone so a guest checkout and a later sign-up with the SAME
+  // number resolve to the same user (keeps order history on "claim").
+  const phoneKey = normalizePhone(String(buyerPhone)) ?? String(buyerPhone);
   if (!userId) {
     const user = await prisma.user.upsert({
-      where: { phone: String(buyerPhone) },
+      where: { phone: phoneKey },
       update: { name: String(buyerName) },
-      create: { phone: String(buyerPhone), name: String(buyerName) },
+      create: { phone: phoneKey, name: String(buyerName) },
     });
     userId = user.id;
     await setSession(userId);
