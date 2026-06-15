@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useBasket, type BasketItem } from "@/components/basket-provider";
 import { t, unitLabel, uzs, type Locale } from "@/lib/i18n";
 import { productEmoji } from "@/lib/product-emoji";
+import { formatUzPhone } from "@/lib/format";
 import {
   DEFAULT_DELIVER_MODE,
   type DeliverMode,
@@ -338,6 +339,8 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     set: setOrg,
                     placeholder: t(locale, "b2c_co_name_ph"),
                     hint: null as string | null,
+                    format: undefined as ((v: string) => string) | undefined,
+                    inputMode: "text" as "text" | "tel",
                   },
                   {
                     label: t(locale, "basket_field_phone"),
@@ -345,6 +348,8 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     set: setPhone,
                     placeholder: t(locale, "ph_phone"),
                     hint: null as string | null,
+                    format: formatUzPhone as ((v: string) => string) | undefined,
+                    inputMode: "tel" as "text" | "tel",
                   },
                   {
                     label: t(locale, "basket_field_address"),
@@ -352,8 +357,10 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     set: setAddress,
                     placeholder: t(locale, "ph_address"),
                     hint: t(locale, "b2c_co_addr_hint"),
+                    format: undefined as ((v: string) => string) | undefined,
+                    inputMode: "text" as "text" | "tel",
                   },
-                ].map(({ label, value, set, placeholder, hint }) => (
+                ].map(({ label, value, set, placeholder, hint, format, inputMode }) => (
                   <div key={label}>
                     <label
                       className="block text-xs font-semibold mb-1.5 text-text-secondary"
@@ -364,7 +371,8 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     <input
                       required
                       value={value}
-                      onChange={(e) => set(e.target.value)}
+                      inputMode={inputMode}
+                      onChange={(e) => set(format ? format(e.target.value) : e.target.value)}
                       placeholder={placeholder}
                       className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/60 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder-text-secondary/40"
                     />

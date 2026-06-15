@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { t, type Locale } from "@/lib/i18n";
+import { formatUzPhone } from "@/lib/format";
 import { Eye, EyeOff, ArrowRight, Loader2, AlertCircle, ShoppingBag, Store } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -219,9 +220,11 @@ export function AuthClient({ locale }: { locale: Locale }) {
               </label>
               <input
                 required
+                type="tel"
+                inputMode="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+998 90 123 45 67"
+                onChange={(e) => setPhone(formatUzPhone(e.target.value))}
+                placeholder="+998 90-123-45-67"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none border border-border-primary bg-bg-secondary/80 text-text-primary focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder-text-secondary/40"
               />
             </div>
