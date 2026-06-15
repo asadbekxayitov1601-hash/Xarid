@@ -11,27 +11,13 @@ import { ShoppingBasket, Receipt, Store, LogIn, LogOut, User } from "lucide-reac
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion-pref";
 import { springSnappy } from "@/lib/motion-presets";
-import { SignInButton, SignUpButton, UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
-
-function Show({ when, children }: { when: "signed-in" | "signed-out"; children: React.ReactNode }) {
-  if (when === "signed-in") {
-    return <SignedIn>{children}</SignedIn>;
-  }
-  return <SignedOut>{children}</SignedOut>;
-}
 
 export function Header({
   locale,
   userName,
-  clerkEnabled,
 }: {
   locale: Locale;
   userName: string | null;
-  // True only when BOTH Clerk keys are set (computed server-side in layout.tsx).
-  // Gating the Clerk controls on this — the same condition ClerkGate uses to
-  // render <ClerkProvider> — guarantees a Clerk component is never rendered
-  // without its provider. Default false so any caller that omits it is safe.
-  clerkEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -137,35 +123,8 @@ export function Header({
           <ThemeSwitcher />
           <LanguageSwitcher locale={locale} />
 
-          {/* Auth */}
-          {clerkEnabled ? (
-            <div className="flex items-center gap-2">
-              <Show when="signed-out">
-                <div className="flex items-center gap-2">
-                  <SignInButton mode="modal">
-                    <button
-                      className="font-display flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all hover:text-[color:var(--accent)] cursor-pointer"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      <LogIn size={15} />
-                      <span className="hidden sm:block">{t(locale, "auth_signin")}</span>
-                    </button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <button
-                      className="font-display flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all bg-[color:var(--accent)] hover:opacity-90 cursor-pointer"
-                      style={{ color: "var(--bg-primary)", boxShadow: "var(--shadow-glow-accent)" }}
-                    >
-                      <span>{t(locale, "auth_signup")}</span>
-                    </button>
-                  </SignUpButton>
-                </div>
-              </Show>
-              <Show when="signed-in">
-                <UserButton />
-              </Show>
-            </div>
-          ) : userName ? (
+          {/* Auth — custom phone/password session (lib/session.ts). */}
+          {userName ? (
             <div className="flex items-center gap-2">
               <div
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-border-primary bg-bg-secondary/80"
