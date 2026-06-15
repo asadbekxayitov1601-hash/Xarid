@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useBasket } from "./basket-provider";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeSwitcher } from "./theme-switcher";
 import { t, type Locale } from "@/lib/i18n";
-import { ShoppingBasket, Receipt, Store, LogIn, LogOut, User } from "lucide-react";
-import { motion } from "motion/react";
+import { ShoppingBasket, Receipt, Store, LogIn, LogOut, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion-pref";
 import { springSnappy } from "@/lib/motion-presets";
 
@@ -23,13 +23,39 @@ export function Header({
   const router = useRouter();
   const { count } = useBasket();
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const reduce = useReducedMotion();
+  const accountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  // Close the account menu on outside-click and Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  // Close the menu whenever the route changes (e.g. tapping "My orders").
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const tabs = [
     { href: "/catalog", id: "catalog", label: t(locale, "nav_catalog"), icon: Store },
@@ -38,6 +64,7 @@ export function Header({
   ];
 
   async function logout() {
+    setMenuOpen(false);
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     router.refresh();
   }
@@ -125,21 +152,101 @@ export function Header({
 
           {/* Auth — custom phone/password session (lib/session.ts). */}
           {userName ? (
-            <div className="flex items-center gap-2">
-              <div
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-border-primary bg-bg-secondary/80"
+            <div className="relative" ref={accountRef}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-label={t(locale, "acct_menu_label")}
+                className="flex items-center gap-1.5 rounded-full py-1 pl-1 pr-1.5 text-sm font-medium border border-border-primary bg-bg-secondary/80 transition-colors hover:border-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] cursor-pointer sm:pr-2"
                 style={{ color: "var(--text-primary)" }}
               >
-                <User size={14} style={{ color: "var(--accent)" }} />
-                <span className="font-display max-w-24 truncate">{userName}</span>
-              </div>
-              <button
-                onClick={logout}
-                className="p-2 rounded-full hover:bg-red-500/10 transition-colors cursor-pointer"
-                title={t(locale, "logout")}
-              >
-                <LogOut size={16} className="text-red-400" />
+                <span
+                  aria-hidden
+                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-display text-xs font-bold uppercase"
+                  style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                >
+                  {userName.trim().charAt(0) || "?"}
+                </span>
+                <span className="font-display hidden max-w-24 truncate sm:block">{userName}</span>
+                <ChevronDown
+                  size={14}
+                  aria-hidden
+                  className="hidden flex-shrink-0 transition-transform duration-200 sm:block"
+                  style={{
+                    color: "var(--text-secondary)",
+                    transform: menuOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                />
               </button>
+
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div
+                    role="menu"
+                    aria-label={t(locale, "acct_menu_label")}
+                    initial={reduce ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.96 }}
+                    animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+                    exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.96 }}
+                    transition={reduce ? { duration: 0.1 } : springSnappy}
+                    className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 origin-top-right overflow-hidden rounded-2xl border border-border-primary p-1.5 shadow-xl"
+                    style={{
+                      background: "var(--glass-bg)",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
+                    }}
+                  >
+                    <div
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+                      role="presentation"
+                    >
+                      <span
+                        aria-hidden
+                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full font-display text-sm font-bold uppercase"
+                        style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                      >
+                        {userName.trim().charAt(0) || "?"}
+                      </span>
+                      <span
+                        className="font-display min-w-0 flex-1 truncate text-sm font-semibold"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {userName}
+                      </span>
+                    </div>
+
+                    <div
+                      className="my-1 h-px"
+                      role="separator"
+                      aria-hidden
+                      style={{ background: "var(--border-color)" }}
+                    />
+
+                    <Link
+                      href="/orders"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      <Receipt size={16} style={{ color: "var(--accent)" }} aria-hidden />
+                      <span className="font-display">{t(locale, "acct_menu_my_orders")}</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={logout}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] cursor-pointer"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      <LogOut size={16} className="text-red-400" aria-hidden />
+                      <span className="font-display">{t(locale, "acct_menu_logout")}</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <Link

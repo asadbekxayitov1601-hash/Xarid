@@ -77,6 +77,11 @@ export async function getSupplierAnalytics(
 
   // Join OrderItem -> SupplierOffer (supplierId) -> Order (status, createdAt,
   // buyerUserId for the active-customers count) -> Product (display names).
+  // `select` (not `include`) so we transfer ONLY the columns the aggregation
+  // loop below actually reads — qty/qtyActual/costPrice plus the order's
+  // createdAt+buyerUserId and the product display names. With `include` Prisma
+  // also pulls every other OrderItem column (id, prices, snapshots, ...) for
+  // every row in the 30-day window, which is wasted bytes on a hot path.
   const items = await prisma.orderItem.findMany({
     where: {
       offer: { supplierId },
@@ -85,8 +90,11 @@ export async function getSupplierAnalytics(
         createdAt: { gte: start, lte: end },
       },
     },
-    include: {
-      order: { select: { id: true, status: true, createdAt: true, buyerUserId: true } },
+    select: {
+      qty: true,
+      qtyActual: true,
+      costPrice: true,
+      order: { select: { createdAt: true, buyerUserId: true } },
       offer: {
         select: {
           product: { select: { id: true, nameUz: true, nameRu: true } },

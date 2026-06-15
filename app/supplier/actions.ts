@@ -11,7 +11,9 @@ const ABOUT_MAX = 2000;
 const NAME_MAX = 120;
 const DISTRICT_MAX = 80;
 const PHONE_MAX = 32;
-const LOGO_MAX = 512;
+// Logos are uploaded as a compressed JPEG data URL (~20-40KB, like product
+// images), not a plain URL — so this cap must hold a full data URL.
+const LOGO_MAX = 300_000;
 
 // Suppliers edit THEIR price (costPrice = their payout); the buyer-facing
 // price is derived with the take rate and never shown to them.
@@ -45,6 +47,72 @@ export async function addMyOffer(formData: FormData) {
     create: { supplierId: org.id, productId, costPrice, price: sellPrice(costPrice), available: true },
   });
   revalidatePath("/supplier");
+}
+
+// Bounds for a supplier-created product so a misbehaving client cannot stuff a
+// novel into the name or a multi-MB string into the photo data URL.
+const PRODUCT_NAME_MAX = 80;
+const PRODUCT_IMAGE_MAX = 200_000;
+const ALLOWED_UNITS = new Set(["KG", "PIECE", "LITER", "BLOCK"]);
+const ALLOWED_CATEGORIES = new Set([
+  "Mevalar",
+  "Sabzavotlar",
+  "Sut va tuxum",
+  "Non",
+  "Go'sht",
+  "Quruq mahsulotlar",
+  "Ichimliklar",
+  "Sut mahsulotlari",
+]);
+
+// Create a brand-new catalog Product owned/offered by this supplier, plus the
+// SupplierOffer that carries the typed price. The seller fills name, optional
+// Russian name, category, unit, an optional compressed photo (data URL), and a
+// plain typed price. Returns a stable error code; the client maps it to
+// product_new_err_* i18n keys.
+export async function createMyProduct(
+  formData: FormData
+): Promise<{ ok: true; productId: string } | { ok: false; error: "name" | "price" }> {
+  const { org } = await requireSupplier();
+
+  const nameUz = String(formData.get("nameUz") ?? "").trim().slice(0, PRODUCT_NAME_MAX);
+  const nameRuRaw = String(formData.get("nameRu") ?? "").trim().slice(0, PRODUCT_NAME_MAX);
+  const nameRu = nameRuRaw || nameUz;
+  const categoryRaw = String(formData.get("category") ?? "").trim();
+  const unitRaw = String(formData.get("unit") ?? "").trim();
+  const costPrice = Math.round(Number(formData.get("costPrice")));
+  const imageUrlRaw = String(formData.get("imageUrl") ?? "").trim();
+
+  if (!nameUz) return { ok: false as const, error: "name" as const };
+  if (!Number.isFinite(costPrice) || costPrice <= 0) {
+    return { ok: false as const, error: "price" as const };
+  }
+
+  const category = ALLOWED_CATEGORIES.has(categoryRaw) ? categoryRaw : "Quruq mahsulotlar";
+  const unit = ALLOWED_UNITS.has(unitRaw) ? unitRaw : "KG";
+  const imageUrl =
+    /^data:image\/(jpeg|png|webp);base64,/.test(imageUrlRaw) &&
+    imageUrlRaw.length <= PRODUCT_IMAGE_MAX
+      ? imageUrlRaw
+      : null;
+
+  const product = await prisma.product.create({
+    data: { nameUz, nameRu, category, unit, imageUrl },
+  });
+
+  await prisma.supplierOffer.create({
+    data: {
+      supplierId: org.id,
+      productId: product.id,
+      costPrice,
+      price: sellPrice(costPrice),
+      available: true,
+    },
+  });
+
+  revalidatePath("/supplier");
+  revalidatePath("/supplier/products/new");
+  return { ok: true as const, productId: product.id };
 }
 
 // Edit the public-facing supplier profile (name, district, phone, about,
