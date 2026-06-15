@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -10,11 +11,9 @@ import {
   Loader2,
   Coins,
   Plus,
-  Save,
 } from "lucide-react";
 import { productEmoji } from "@/lib/product-emoji";
-import { updateMyOffer, addMyOffer, resolvePoWeb } from "@/app/supplier/actions";
-import { ProductImageUpload } from "@/components/product-image-upload";
+import { resolvePoWeb } from "@/app/supplier/actions";
 import type { Locale } from "@/lib/i18n";
 import { t, unitLabel, uzs } from "@/lib/i18n";
 
@@ -61,20 +60,12 @@ type WebOffer = {
   };
 };
 
-type WebProduct = {
-  id: string;
-  nameUz: string;
-  nameRu: string;
-  unit: string;
-};
-
 type SupplierClientProps = {
   locale: Locale;
   payoutGross: number;
   payoutOrders: number;
   payoutLines: number;
   initialOffers: WebOffer[];
-  otherProducts: WebProduct[];
   purchaseOrders: WebPurchaseOrder[];
 };
 
@@ -87,7 +78,6 @@ export function SupplierClient({
   payoutOrders,
   payoutLines,
   initialOffers,
-  otherProducts,
   purchaseOrders,
 }: SupplierClientProps) {
   const [activeTab, setActiveTab] = useState<"orders" | "offers">("orders");
@@ -403,81 +393,83 @@ export function SupplierClient({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            className="space-y-6"
+            className="space-y-4"
           >
-            {/* Offers list */}
+            {/* Read-only price list. Adding/editing products lives only under
+                the Mahsulotlar tab — see ProductUploadForm. */}
             <div className="glass-card rounded-2xl border border-border-primary overflow-hidden shadow-md">
-              <div className="px-4 py-3 border-b border-border-primary bg-bg-secondary/40">
+              <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border-primary bg-bg-secondary/40">
                 <h3
                   className="text-xs font-semibold text-text-secondary uppercase tracking-wider"
                   style={{ fontFamily: "var(--font-display, Inter)" }}
                 >
                   {t(locale, "sp_my_products_header")}
                 </h3>
+                <Link
+                  href="/supplier/products/new"
+                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold"
+                  style={{
+                    background: "var(--accent-glow)",
+                    color: "var(--accent)",
+                    fontFamily: "var(--font-display, Inter)",
+                  }}
+                >
+                  <Plus size={13} aria-hidden />
+                  {t(locale, "sp_manage_products_cta")}
+                </Link>
               </div>
               <ul className="divide-y divide-border-primary/40">
                 {initialOffers.map((o) => (
-                  <li key={o.id} className="px-4 py-3">
-                    <form action={updateMyOffer} className="flex flex-wrap items-center gap-3 text-sm">
-                      <input type="hidden" name="offerId" value={o.id} />
-                      {o.product.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={o.product.imageUrl}
-                          alt=""
-                          className="h-9 w-9 shrink-0 rounded-xl object-cover border border-border-primary"
-                        />
-                      ) : (
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-bg-secondary/50 border border-border-primary text-lg">
-                          {productEmoji(o.product.nameUz, o.product.category)}
-                        </span>
-                      )}
-                      <ProductImageUpload productId={o.productId} />
-
-                      <span
-                        className="min-w-0 flex-1 truncate font-semibold text-text-primary"
-                        style={{ fontFamily: "var(--font-display, Inter)" }}
-                      >
-                        {localized(o.product)}
-                        <span className="text-xs font-normal text-text-secondary">
-                          {" "}
-                          / {unitLabel(locale, o.product.unit)}
-                        </span>
-                      </span>
-
-                      <input
-                        name="costPrice"
-                        type="number"
-                        inputMode="numeric"
-                        defaultValue={o.costPrice}
-                        required
-                        aria-label={t(locale, "product_new_cost")}
-                        className="glass-input w-24 sm:w-28 rounded-lg px-2.5 py-1.5 text-right tabular-nums"
+                  <li
+                    key={o.id}
+                    className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
+                  >
+                    {o.product.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={o.product.imageUrl}
+                        alt=""
+                        className="h-9 w-9 shrink-0 rounded-xl object-cover border border-border-primary"
                       />
+                    ) : (
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-bg-secondary/50 border border-border-primary text-lg">
+                        {productEmoji(o.product.nameUz, o.product.category)}
+                      </span>
+                    )}
 
-                      <label className="flex items-center gap-1.5 text-xs text-text-secondary select-none cursor-pointer">
-                        <input
-                          name="available"
-                          type="checkbox"
-                          defaultChecked={o.available}
-                          className="rounded border-border-primary bg-bg-secondary"
-                          style={{ accentColor: "var(--accent)" }}
-                        />
-                        <span>{t(locale, "sp_available")}</span>
-                      </label>
+                    <span
+                      className="min-w-0 flex-1 truncate font-semibold text-text-primary"
+                      style={{ fontFamily: "var(--font-display, Inter)" }}
+                    >
+                      {localized(o.product)}
+                      <span className="text-xs font-normal text-text-secondary">
+                        {" "}
+                        / {unitLabel(locale, o.product.unit)}
+                      </span>
+                    </span>
 
-                      <button
-                        className="glow-button flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer select-none"
-                        style={{
-                          background: "var(--accent)",
-                          color: "var(--bg-primary)",
-                          fontFamily: "var(--font-display, Inter)",
-                        }}
-                      >
-                        <Save size={12} />
-                        {t(locale, "profile_save")}
-                      </button>
-                    </form>
+                    <span className="font-bold tabular-nums text-text-primary">
+                      {uzs(locale, o.costPrice)}
+                    </span>
+
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                      style={
+                        o.available
+                          ? {
+                              background: "var(--status-success-bg)",
+                              color: "var(--status-success)",
+                            }
+                          : {
+                              background: "var(--status-danger-bg)",
+                              color: "var(--status-danger)",
+                            }
+                      }
+                    >
+                      {o.available
+                        ? t(locale, "sp_available")
+                        : t(locale, "sp_unavailable")}
+                    </span>
                   </li>
                 ))}
                 {initialOffers.length === 0 && (
@@ -487,55 +479,6 @@ export function SupplierClient({
                 )}
               </ul>
             </div>
-
-            {/* Add offer form */}
-            {otherProducts.length > 0 && (
-              <form
-                action={addMyOffer}
-                className="glass-card rounded-2xl border border-border-primary p-5 shadow-md space-y-4"
-              >
-                <h3
-                  className="font-bold text-text-primary flex items-center gap-2"
-                  style={{ fontFamily: "var(--font-display, Inter)" }}
-                >
-                  <Plus size={16} style={{ color: "var(--accent)" }} />
-                  {t(locale, "sp_add_from_catalog")}
-                </h3>
-                <div className="flex flex-wrap gap-3 text-sm">
-                  <select
-                    name="productId"
-                    required
-                    aria-label={t(locale, "product_new_pick")}
-                    className="glass-input min-w-[180px] flex-1 rounded-xl px-3 py-2.5"
-                  >
-                    {otherProducts.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {localized(p)} / {unitLabel(locale, p.unit)}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    name="costPrice"
-                    type="number"
-                    inputMode="numeric"
-                    required
-                    placeholder={t(locale, "product_new_cost")}
-                    className="glass-input w-44 rounded-xl px-3 py-2.5 tabular-nums"
-                  />
-                  <button
-                    type="submit"
-                    className="glow-button rounded-xl px-5 py-2.5 font-bold cursor-pointer select-none"
-                    style={{
-                      background: "var(--accent)",
-                      color: "var(--bg-primary)",
-                      fontFamily: "var(--font-display, Inter)",
-                    }}
-                  >
-                    {t(locale, "product_new_submit")}
-                  </button>
-                </div>
-              </form>
-            )}
           </motion.div>
         )}
       </AnimatePresence>

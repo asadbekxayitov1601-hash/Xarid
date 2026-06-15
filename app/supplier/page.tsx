@@ -19,12 +19,6 @@ export default async function SupplierPortalPage() {
     orderBy: { product: { sortKey: "asc" } },
   });
 
-  const offeredIds = new Set(offers.map((o) => o.productId));
-  const otherProducts = await prisma.product.findMany({
-    where: { id: { notIn: [...offeredIds] } },
-    orderBy: { sortKey: "asc" },
-  });
-
   const start = weekStart(new Date());
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
@@ -91,13 +85,6 @@ export default async function SupplierPortalPage() {
     },
   }));
 
-  const formattedOtherProducts = otherProducts.map((p) => ({
-    id: p.id,
-    nameUz: p.nameUz,
-    nameRu: p.nameRu,
-    unit: p.unit,
-  }));
-
   return (
     <SupplierShell locale={locale} orgName={org.name}>
       <SupplierClient
@@ -106,7 +93,6 @@ export default async function SupplierPortalPage() {
         payoutOrders={myRow?.orders ?? 0}
         payoutLines={myRow?.lines ?? 0}
         initialOffers={formattedOffers}
-        otherProducts={formattedOtherProducts}
         purchaseOrders={formattedPurchaseOrders}
       />
     </SupplierShell>
