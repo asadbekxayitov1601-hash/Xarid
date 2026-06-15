@@ -116,3 +116,59 @@ export function asapDeliveryDate(now: Date = new Date()): Date {
 export function normalizeDeliverMode(value: unknown): DeliverMode {
   return value === "SCHEDULED" ? "SCHEDULED" : DEFAULT_DELIVER_MODE;
 }
+
+// --- Typeable exact delivery time (replaces the fixed 2h-window buttons) ------
+//
+// "Deliver later" now lets the customer TYPE an exact time (HH:MM) within
+// opening hours instead of picking a preset window. The typed time is stored in
+// Order.deliverySlot (e.g. "14:30") and combined with the chosen day to build
+// the precise deliveryDate. DELIVERY_SLOTS above stays exported for any legacy
+// reader, but the picker no longer uses it.
+
+/** Opening hours for a typed delivery time (inclusive), 06:00-22:00. */
+export const DELIVERY_OPEN_HOUR = 6;
+export const DELIVERY_CLOSE_HOUR = 22;
+
+/** Default typed time for a fresh "deliver later" checkout. */
+export const DEFAULT_DELIVERY_TIME = "10:00";
+
+/**
+ * Validates a chosen day + a typed HH:MM time on the SERVER (and reused on the
+ * client). Returns the precise delivery Date and the time label (stored in
+ * Order.deliverySlot), or null if invalid (bad date/time, outside opening
+ * hours, or in the past).
+ */
+export function resolveDeliveryTime(
+  dateInput: unknown,
+  timeInput: unknown
+): { deliveryDate: Date; deliverySlot: string } | null {
+  if (typeof dateInput !== "string" || typeof timeInput !== "string") return null;
+  const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateInput);
+  const tm = /^(\d{2}):(\d{2})$/.exec(timeInput);
+  if (!dm || !tm) return null;
+
+  const year = Number(dm[1]);
+  const month = Number(dm[2]);
+  const day = Number(dm[3]);
+  const hour = Number(tm[1]);
+  const minute = Number(tm[2]);
+  if (minute > 59) return null;
+
+  const totalMin = hour * 60 + minute;
+  if (totalMin < DELIVERY_OPEN_HOUR * 60 || totalMin > DELIVERY_CLOSE_HOUR * 60) {
+    return null;
+  }
+
+  const deliveryDate = new Date(year, month - 1, day, hour, minute, 0, 0);
+  if (Number.isNaN(deliveryDate.getTime())) return null;
+  if (
+    deliveryDate.getFullYear() !== year ||
+    deliveryDate.getMonth() !== month - 1 ||
+    deliveryDate.getDate() !== day
+  ) {
+    return null;
+  }
+  if (deliveryDate.getTime() <= Date.now()) return null;
+
+  return { deliveryDate, deliverySlot: `${tm[1]}:${tm[2]}` };
+}
