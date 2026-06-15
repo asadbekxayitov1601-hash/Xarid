@@ -44,11 +44,23 @@ export function BasketClient({ locale }: { locale: Locale }) {
     return [...m.entries()];
   }, [items]);
 
-  const totalItems = items.reduce((s, b) => s + b.qty, 0);
+  // "Mahsulotlar (N)" = number of DISTINCT products. Quantities are per-item
+  // (kg / pieces), so summing them across products would be misleading.
+  const totalItems = items.length;
+
+  // What the customer still needs to fill in before the order can be placed.
+  // Surfaced under the button so a disabled button is never a mystery.
+  const phoneDigits = phone.replace(/\D/g, "");
+  const phoneOk = phoneDigits.length >= 12; // +998 followed by a 9-digit number
+  const missing: string[] = [];
+  if (!org.trim()) missing.push(t(locale, "co_need_name"));
+  if (!phoneOk) missing.push(t(locale, "co_need_phone"));
+  if (!address.trim()) missing.push(t(locale, "co_need_address"));
+  const canPlace = items.length > 0 && missing.length === 0 && state !== "sending";
 
   async function handlePlace(e: React.FormEvent) {
     e.preventDefault();
-    if (!org.trim() || !phone.trim() || !address.trim() || items.length === 0) return;
+    if (!canPlace) return;
 
     const scheduled = deliverMode === "SCHEDULED";
 
@@ -539,12 +551,21 @@ export function BasketClient({ locale }: { locale: Locale }) {
 
               {error && <p className="text-sm text-red-400 font-semibold">{error}</p>}
 
+              {/* Tell the customer exactly what is still missing so a disabled
+                  place-order button is never a dead end. */}
+              {items.length > 0 && missing.length > 0 && (
+                <p className="text-xs text-center text-text-secondary">
+                  {t(locale, "co_need_prefix")}{" "}
+                  <span className="font-semibold text-text-primary">{missing.join(", ")}</span>
+                </p>
+              )}
+
               {/* Place Order Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 type="submit"
-                disabled={state === "sending" || !org || !phone || !address}
+                disabled={!canPlace}
                 className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer"
                 style={{
                   background: "var(--accent)",
