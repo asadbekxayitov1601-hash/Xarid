@@ -341,15 +341,6 @@ const dict = {
     range_month: "Oy",
     scroll_progress_aria: "Sahifani o'qish jarayoni",
     scroll_cue_aria: "Pastga aylantiring",
-    // === Clerk auth surface (Agent 3) — additive, env-gated ===
-    clerk_signin_title: "Hisobingizga kiring",
-    clerk_signin_subtitle: "Buyurtmalaringiz barcha qurilmalarda saqlanadi",
-    clerk_signup_title: "Xarid'da ro'yxatdan o'ting",
-    clerk_signup_subtitle: "Bir necha daqiqada hisob yarating",
-    clerk_disabled_title: "Kirish hozircha sozlanmagan",
-    clerk_disabled_body:
-      "Bu kirish usuli hali yoqilmagan. Telefon raqami va parol orqali kiring.",
-    clerk_disabled_cta: "Telefon orqali kirish",
     // === Delivery time at checkout (Agent 2 / dt namespace) — append only ===
     dt_section_title: "Yetkazib berish vaqti",
     dt_section_hint: "Buyurtma qachon yetib kelishini tanlang",
@@ -736,15 +727,6 @@ const dict = {
     range_month: "Месяц",
     scroll_progress_aria: "Прогресс чтения страницы",
     scroll_cue_aria: "Прокрутите вниз",
-    // === Clerk auth surface (Agent 3) — additive, env-gated ===
-    clerk_signin_title: "Войдите в аккаунт",
-    clerk_signin_subtitle: "Ваши заказы сохраняются на всех устройствах",
-    clerk_signup_title: "Регистрация в Xarid",
-    clerk_signup_subtitle: "Создайте аккаунт за пару минут",
-    clerk_disabled_title: "Вход пока не настроен",
-    clerk_disabled_body:
-      "Этот способ входа ещё не включён. Войдите по номеру телефона и паролю.",
-    clerk_disabled_cta: "Войти по телефону",
     // === Delivery time at checkout (Agent 2 / dt namespace) — append only ===
     dt_section_title: "Время доставки",
     dt_section_hint: "Выберите, когда должен прибыть заказ",
@@ -1131,15 +1113,6 @@ const dict = {
     range_month: "Month",
     scroll_progress_aria: "Page reading progress",
     scroll_cue_aria: "Scroll down",
-    // === Clerk auth surface (Agent 3) — additive, env-gated ===
-    clerk_signin_title: "Sign in to your account",
-    clerk_signin_subtitle: "Your orders are synced across devices",
-    clerk_signup_title: "Sign up for Xarid",
-    clerk_signup_subtitle: "Create an account in a couple of minutes",
-    clerk_disabled_title: "Sign-in is not configured yet",
-    clerk_disabled_body:
-      "This sign-in method is not enabled yet. Use your phone number and password instead.",
-    clerk_disabled_cta: "Sign in with phone",
     // === Delivery time at checkout (Agent 2 / dt namespace) — append only ===
     dt_section_title: "Delivery time",
     dt_section_hint: "Choose when your order should arrive",
