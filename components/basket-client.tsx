@@ -6,12 +6,11 @@ import { useBasket, type BasketItem } from "@/components/basket-provider";
 import { t, unitLabel, uzs, type Locale } from "@/lib/i18n";
 import { productEmoji } from "@/lib/product-emoji";
 import {
-  DELIVERY_SLOTS,
-  DEFAULT_DELIVERY_SLOT,
   DEFAULT_DELIVER_MODE,
   type DeliverMode,
   defaultDeliveryDateInput,
-  resolveDeliveryWindow,
+  resolveDeliveryTime,
+  DEFAULT_DELIVERY_TIME,
   toDateInputValue,
 } from "@/lib/delivery";
 import { Minus, Plus, Trash2, ChevronRight, Loader2, Info, Clock, Zap } from "lucide-react";
@@ -30,10 +29,9 @@ export function BasketClient({ locale }: { locale: Locale }) {
   const [address, setAddress] = useState("");
   // Delivery mode: ASAP (on-demand, default) or SCHEDULED (deliver-later window).
   const [deliverMode, setDeliverMode] = useState<DeliverMode>(DEFAULT_DELIVER_MODE);
-  // Customer-chosen delivery window (only used when deliverMode === SCHEDULED):
-  // default to tomorrow's earliest slot.
+  // Customer-chosen delivery day + typed time (only when deliverMode === SCHEDULED).
   const [deliveryDate, setDeliveryDate] = useState(defaultDeliveryDateInput);
-  const [deliverySlot, setDeliverySlot] = useState(DEFAULT_DELIVERY_SLOT);
+  const [deliveryTime, setDeliveryTime] = useState(DEFAULT_DELIVERY_TIME);
 
   // Today (local) is the minimum selectable delivery day.
   const minDate = useMemo(() => toDateInputValue(new Date()), []);
@@ -57,11 +55,11 @@ export function BasketClient({ locale }: { locale: Locale }) {
     // Only the "deliver later" branch needs a validated day + window. ASAP just
     // sends the mode; the server computes a ~30-60 min ETA.
     if (scheduled) {
-      if (!deliveryDate || !deliverySlot) {
+      if (!deliveryDate || !deliveryTime) {
         setError(t(locale, "dt_err_required"));
         return;
       }
-      if (!resolveDeliveryWindow(deliveryDate, deliverySlot)) {
+      if (!resolveDeliveryTime(deliveryDate, deliveryTime)) {
         setError(t(locale, "dt_err_past"));
         return;
       }
@@ -78,8 +76,8 @@ export function BasketClient({ locale }: { locale: Locale }) {
         buyerPhone: phone,
         address,
         deliverMode,
-        // Only send the window for "deliver later"; ASAP omits it.
-        ...(scheduled ? { deliveryDate, deliverySlot } : {}),
+        // Only send the day + typed time for "deliver later"; ASAP omits it.
+        ...(scheduled ? { deliveryDate, deliveryTime } : {}),
         items: items.map((i) => ({ offerId: i.offerId, qty: i.qty })),
       }),
     }).catch(() => null);
@@ -497,45 +495,28 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     </div>
 
                     <div>
-                      <span
+                      <label
+                        htmlFor="delivery-time"
                         className="block text-xs font-semibold mb-1.5 text-text-secondary"
                         style={{ fontFamily: "Outfit, sans-serif" }}
                       >
-                        {t(locale, "dt_window_label")}
-                      </span>
-                      <div
-                        role="radiogroup"
-                        aria-label={t(locale, "dt_window_aria")}
-                        className="grid grid-cols-2 gap-2"
-                      >
-                        {DELIVERY_SLOTS.map((slot) => {
-                          const active = slot.value === deliverySlot;
-                          return (
-                            <button
-                              key={slot.value}
-                              type="button"
-                              role="radio"
-                              aria-checked={active}
-                              onClick={() => setDeliverySlot(slot.value)}
-                              className="px-2 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                              style={{
-                                fontFamily: "JetBrains Mono, monospace",
-                                background: active
-                                  ? "var(--status-success-bg)"
-                                  : "var(--bg-secondary)",
-                                borderColor: active
-                                  ? "color-mix(in srgb, var(--accent) 45%, transparent)"
-                                  : "var(--border-primary)",
-                                color: active
-                                  ? "var(--status-success)"
-                                  : "var(--text-secondary)",
-                              }}
-                            >
-                              {slot.value}
-                            </button>
-                          );
-                        })}
-                      </div>
+                        {t(locale, "dt_time_label")}
+                      </label>
+                      <input
+                        id="delivery-time"
+                        type="time"
+                        required
+                        min="06:00"
+                        max="22:00"
+                        step={300}
+                        value={deliveryTime}
+                        onChange={(e) => setDeliveryTime(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl text-base outline-none border border-border-primary bg-bg-secondary/60 text-text-primary tabular-nums focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
+                        style={{ fontFamily: "JetBrains Mono, monospace" }}
+                      />
+                      <p className="mt-1.5 text-[11px] text-text-secondary/70">
+                        {t(locale, "dt_time_hint")}
+                      </p>
                     </div>
                   </div>
                 )}

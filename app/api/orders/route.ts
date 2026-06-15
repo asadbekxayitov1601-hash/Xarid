@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId, setSession } from "@/lib/session";
-import { asapDeliveryDate, resolveDeliveryWindow, normalizeDeliverMode } from "@/lib/delivery";
+import { asapDeliveryDate, resolveDeliveryTime, normalizeDeliverMode } from "@/lib/delivery";
 
 // POST: place the order. Prices are recomputed from the database —
 // the client basket is a shopping list, never a source of money truth.
@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
   // window). Legacy callers omit deliverMode -> ASAP, the new default.
   const deliverMode = normalizeDeliverMode(body?.deliverMode);
 
-  // Customer-chosen delivery window (only relevant for SCHEDULED).
+  // Customer-chosen delivery day + typed time (only relevant for SCHEDULED).
   const window = deliverMode === "SCHEDULED"
-    ? resolveDeliveryWindow(body?.deliveryDate, body?.deliverySlot)
+    ? resolveDeliveryTime(body?.deliveryDate, body?.deliveryTime)
     : null;
 
   const offerIds = items.map((i: { offerId: string }) => String(i.offerId));
