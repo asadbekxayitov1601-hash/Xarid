@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Building2, Image as ImageIcon, Phone, Save, Upload } from "lucide-react";
+import { Building2, Image as ImageIcon, MapPin, Phone, Save, Upload } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
+import { LocationPicker } from "@/components/location-picker";
 import { updateMyProfile } from "@/app/supplier/actions";
 
 // Downscale a picked image to a 320px-max JPEG data URL in the browser, mirroring
@@ -28,6 +29,8 @@ export type AboutCompanyFormProps = {
     phone: string;
     about: string;
     logoUrl: string;
+    lat: number | null;
+    lng: number | null;
   };
 };
 
@@ -36,6 +39,11 @@ export function AboutCompanyForm({ locale, initial }: AboutCompanyFormProps) {
   const [toast, setToast] = useState<"saved" | "error" | null>(null);
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl);
   const [name, setName] = useState(initial.name);
+  // Shop map pin (Phase 1). Null when the seller hasn't set one yet; the picker
+  // then defaults to Kokand center. Carried into updateMyProfile via hidden fields.
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(
+    initial.lat != null && initial.lng != null ? { lat: initial.lat, lng: initial.lng } : null
+  );
   const [logoBusy, setLogoBusy] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -171,6 +179,47 @@ export function AboutCompanyForm({ locale, initial }: AboutCompanyFormProps) {
             {t(locale, "profile_field_about_help")}
           </span>
         </label>
+      </section>
+
+      <section className="glass-card rounded-2xl p-5 sm:p-6 space-y-4">
+        <div className="flex items-center gap-3 text-text-primary">
+          <MapPin
+            size={16}
+            style={{ color: "var(--accent-2)" }}
+            aria-hidden
+          />
+          <h2
+            className="text-sm font-bold uppercase tracking-wider"
+            style={{ fontFamily: "var(--font-display, Inter)" }}
+          >
+            {t(locale, "co_loc_section")}
+          </h2>
+        </div>
+        {/* Hidden fields carry the pin into the unchanged-shape FormData that
+            updateMyProfile reads (Organization.lat / Organization.lng). */}
+        <input type="hidden" name="lat" value={pin ? String(pin.lat) : ""} />
+        <input type="hidden" name="lng" value={pin ? String(pin.lng) : ""} />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-text-secondary">
+            {pin ? t(locale, "co_loc_set") : t(locale, "co_loc_hint")}
+          </span>
+          {pin ? (
+            <button
+              type="button"
+              onClick={() => setPin(null)}
+              className="shrink-0 text-xs font-semibold transition-colors"
+              style={{ color: "var(--accent)" }}
+            >
+              {t(locale, "co_loc_clear")}
+            </button>
+          ) : null}
+        </div>
+        <LocationPicker
+          locale={locale}
+          value={pin}
+          onChange={(lat, lng) => setPin({ lat, lng })}
+          height={220}
+        />
       </section>
 
       <section className="glass-card rounded-2xl p-5 sm:p-6 space-y-4">

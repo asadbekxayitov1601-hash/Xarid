@@ -18,9 +18,19 @@ export type DispatchOrder = {
   status: string;
   driverId: string | null;
   driverName: string | null;
+  /** Delivery (customer) coordinates — real pin or geocode fallback. */
   lat: number;
   lng: number;
+  /** Primary seller (pickup) — null when no item supplier has coords. */
+  sellerName: string | null;
+  sellerLat: number | null;
+  sellerLng: number | null;
 };
+
+/** Structured outcome of an auto-assign attempt, mirrored from the server action. */
+export type AutoAssignResult =
+  | { ok: true; orderId: string; driverName: string; distanceLabel: string }
+  | { ok: false; orderId: string; reason: string };
 
 export type DispatchDriver = {
   id: string;
@@ -38,6 +48,7 @@ export function DispatchBoard({
   drivers,
   themeLight = false,
   assignAction,
+  autoAssignAction,
 }: {
   locale: Locale;
   orders: DispatchOrder[];
@@ -49,9 +60,51 @@ export function DispatchBoard({
    * client still gets the optimistic spinner via useTransition().
    */
   assignAction: (formData: FormData) => Promise<void>;
+  /**
+   * Algorithmic dispatch: assigns the nearest available courier and returns a
+   * structured result (courier + distance, or a reason). The manual dropdown
+   * above stays as a no-JS fallback.
+   */
+  autoAssignAction: (orderId: string) => Promise<AutoAssignResult>;
 }) {
   const [highlightId, setHighlightId] = useState<string | undefined>(undefined);
   const [isPending, startTransition] = useTransition();
+  // Per-order auto-assign feedback, keyed by orderId. Shown inline under the
+  // order until the next revalidation removes the row from the unassigned list.
+  const [autoResults, setAutoResults] = useState<Record<string, AutoAssignResult>>({});
+  const [autoBusy, setAutoBusy] = useState<Record<string, boolean>>({});
+  const [autoAllBusy, setAutoAllBusy] = useState(false);
+
+  function runAutoAssign(orderId: string): Promise<AutoAssignResult> {
+    setAutoBusy((m) => ({ ...m, [orderId]: true }));
+    return autoAssignAction(orderId)
+      .then((res) => {
+        setAutoResults((m) => ({ ...m, [orderId]: res }));
+        return res;
+      })
+      .catch((): AutoAssignResult => {
+        const res: AutoAssignResult = { ok: false, orderId, reason: "failed" };
+        setAutoResults((m) => ({ ...m, [orderId]: res }));
+        return res;
+      })
+      .finally(() => {
+        setAutoBusy((m) => ({ ...m, [orderId]: false }));
+      });
+  }
+
+  function autoAssignReason(reason: string): string {
+    // Map stable backend reason codes -> translated messages. Unknown codes
+    // fall back to a generic failure string so nothing renders raw.
+    const key = (
+      {
+        no_pickup_coords: "disp_auto_err_no_pickup",
+        no_couriers: "disp_auto_err_no_couriers",
+        already_assigned: "disp_auto_err_already",
+        not_found: "disp_auto_err_not_found",
+      } as Record<string, string>
+    )[reason];
+    return t(locale, (key ?? "disp_auto_err_generic") as Parameters<typeof t>[1]);
+  }
 
   const unassigned: RouteStop[] = useMemo(
     () =>
@@ -85,8 +138,11 @@ export function DispatchBoard({
 
   const pins: MapPin[] = useMemo(() => {
     const list: MapPin[] = [];
+    // De-dupe seller pickup pins: several orders can share one seller location.
+    const sellerSeen = new Set<string>();
     for (const o of orders) {
       if (o.status === "DELIVERED" || o.status === "CANCELLED") continue;
+      // Delivery (customer) pin — colored by order phase.
       list.push({
         id: "order_" + o.id,
         lat: o.lat,
@@ -94,6 +150,21 @@ export function DispatchBoard({
         variant: pinVariant(toGoPhase(o.status)),
         label: `#${o.shortId} · ${o.buyerName}`,
       });
+      // Seller pickup pin — reuse the accent-2 "buyer" variant as a distinct
+      // pickup color (the dot set has no dedicated seller variant).
+      if (o.sellerLat != null && o.sellerLng != null) {
+        const key = o.sellerLat.toFixed(5) + "," + o.sellerLng.toFixed(5);
+        if (!sellerSeen.has(key)) {
+          sellerSeen.add(key);
+          list.push({
+            id: "seller_" + key,
+            lat: o.sellerLat,
+            lng: o.sellerLng,
+            variant: "buyer",
+            label: o.sellerName ?? t(locale, "disp_legend_seller"),
+          });
+        }
+      }
     }
     for (const d of drivers) {
       if (d.lat == null || d.lng == null) continue;
@@ -106,7 +177,7 @@ export function DispatchBoard({
       });
     }
     return list;
-  }, [orders, drivers]);
+  }, [orders, drivers, locale]);
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -140,6 +211,8 @@ export function DispatchBoard({
             <LegendRow color="var(--status-info)" label={t(locale, "disp_legend_confirmed")} />
             <LegendRow color="var(--accent)" label={t(locale, "disp_legend_en_route")} />
             <LegendRow color="var(--status-success)" label={t(locale, "disp_legend_delivered")} />
+            <LegendRow color="var(--accent-2)" label={t(locale, "disp_legend_seller")} />
+            <LegendRow color="var(--accent)" label={t(locale, "disp_legend_driver")} />
           </ul>
         </div>
       </section>
@@ -150,16 +223,39 @@ export function DispatchBoard({
           className="glass-card rounded-3xl p-4"
           style={{ boxShadow: "var(--shadow-md)" }}
         >
-          <header className="mb-3 flex items-center justify-between">
+          <header className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
               {t(locale, "disp_unassigned")}
             </h2>
-            <span
-              className="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
-              style={{ background: "var(--status-warning-bg)", color: "var(--status-warning)" }}
-            >
-              {unassigned.length}
-            </span>
+            <div className="flex items-center gap-2">
+              {unassigned.length > 0 && (
+                <button
+                  type="button"
+                  disabled={autoAllBusy}
+                  onClick={() => {
+                    setAutoAllBusy(true);
+                    // Sequential so we never assign two orders to the same lone
+                    // free courier in one pass; each call re-reads driver state.
+                    (async () => {
+                      for (const s of unassigned) {
+                        // eslint-disable-next-line no-await-in-loop
+                        await runAutoAssign(s.id);
+                      }
+                    })().finally(() => setAutoAllBusy(false));
+                  }}
+                  className="glow-button rounded-full px-3 py-1 text-xs font-bold disabled:opacity-60"
+                  style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                >
+                  {autoAllBusy ? t(locale, "disp_auto_running") : t(locale, "disp_auto_all_btn")}
+                </button>
+              )}
+              <span
+                className="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
+                style={{ background: "var(--status-warning-bg)", color: "var(--status-warning)" }}
+              >
+                {unassigned.length}
+              </span>
+            </div>
           </header>
 
           {unassigned.length === 0 ? (
@@ -242,6 +338,48 @@ export function DispatchBoard({
                         {t(locale, "disp_assign_btn")}
                       </button>
                     </form>
+
+                    {/* Algorithmic auto-assign — default dispatch path; the
+                        manual dropdown above stays as a fallback. */}
+                    <button
+                      type="button"
+                      disabled={!!autoBusy[order.id] || autoAllBusy}
+                      onClick={() => void runAutoAssign(order.id)}
+                      className="mt-2 w-full rounded-xl border px-3 py-2 text-xs font-bold transition-colors disabled:opacity-60"
+                      style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                    >
+                      {autoBusy[order.id]
+                        ? t(locale, "disp_auto_running")
+                        : t(locale, "disp_auto_btn")}
+                    </button>
+
+                    {autoResults[order.id] &&
+                      (() => {
+                        const r = autoResults[order.id];
+                        if (r.ok) {
+                          return (
+                            <p
+                              className="mt-1.5 text-xs font-semibold"
+                              style={{ color: "var(--status-success)" }}
+                            >
+                              {r.distanceLabel
+                                ? t(locale, "disp_auto_ok_dist", {
+                                    name: r.driverName,
+                                    dist: r.distanceLabel,
+                                  })
+                                : t(locale, "disp_auto_ok", { name: r.driverName })}
+                            </p>
+                          );
+                        }
+                        return (
+                          <p
+                            className="mt-1.5 text-xs font-semibold"
+                            style={{ color: "var(--status-warning)" }}
+                          >
+                            {autoAssignReason(r.reason)}
+                          </p>
+                        );
+                      })()}
                   </li>
                 );
               })}

@@ -4,8 +4,9 @@ import { requireAdmin } from "@/lib/admin";
 import { getLocale } from "@/lib/locale";
 import { t } from "@/lib/i18n";
 import { ACTIVE_ORDER_STATUSES, geocodeAddress, shortId } from "@/lib/driver";
+import { hasCoords } from "@/lib/geo";
 import { DispatchBoard, type DispatchOrder, type DispatchDriver } from "@/components/logistics/dispatch-board";
-import { assignDriver } from "./actions";
+import { assignDriver, autoAssignAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,18 @@ export default async function DispatchPage() {
     prisma.order.findMany({
       where: { status: { in: [...ACTIVE_ORDER_STATUSES] } },
       orderBy: { createdAt: "desc" },
-      include: { driver: { select: { id: true, name: true } } },
+      include: {
+        driver: { select: { id: true, name: true } },
+        // Walk to the primary seller's coords for the pickup pin. `id: asc`
+        // keeps "first item wins" deterministic, matching lib/dispatch's
+        // resolvePickup so the board and the auto-assign agree on pickup.
+        items: {
+          orderBy: { id: "asc" },
+          include: {
+            offer: { include: { supplier: { select: { name: true, lat: true, lng: true } } } },
+          },
+        },
+      },
     }),
     prisma.driver.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     prisma.driverLocation.findMany(),
@@ -27,7 +39,27 @@ export default async function DispatchPage() {
   const locByDriver = new Map(locations.map((l) => [l.driverId, l]));
 
   const orders: DispatchOrder[] = rawOrders.map((o) => {
-    const pt = geocodeAddress(o.address);
+    // Delivery pin: prefer the real captured coords (Phase 1 location picker),
+    // fall back to the deterministic geocode of the address text for legacy
+    // rows so every order still appears on the map.
+    const pt = hasCoords(o.lat, o.lng)
+      ? { lat: o.lat as number, lng: o.lng as number }
+      : geocodeAddress(o.address);
+
+    // Pickup pin: the first order item's supplier Organization that has coords.
+    let sellerName: string | null = null;
+    let sellerLat: number | null = null;
+    let sellerLng: number | null = null;
+    for (const it of o.items) {
+      const sup = it.offer?.supplier;
+      if (sup && hasCoords(sup.lat, sup.lng)) {
+        sellerName = sup.name;
+        sellerLat = sup.lat as number;
+        sellerLng = sup.lng as number;
+        break;
+      }
+    }
+
     return {
       id: o.id,
       shortId: shortId(o.id),
@@ -39,6 +71,9 @@ export default async function DispatchPage() {
       driverName: o.driver?.name ?? null,
       lat: pt.lat,
       lng: pt.lng,
+      sellerName,
+      sellerLat,
+      sellerLng,
     };
   });
 
@@ -71,6 +106,7 @@ export default async function DispatchPage() {
         drivers={drivers}
         themeLight={theme === "light"}
         assignAction={assignDriver}
+        autoAssignAction={autoAssignAction}
       />
     </div>
   );

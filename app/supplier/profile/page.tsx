@@ -12,12 +12,17 @@ export default async function SupplierProfilePage() {
   // `about` and `logoUrl` are nullable in the schema (Agent 4 additions).
   // Hand non-null defaults to the controlled form so React doesn't warn about
   // value/defaultValue switching mid-render.
+  // `lat`/`lng` are nullable Floats (Phase 1 map pin); pass them through so the
+  // form can show the current shop pin if one is set.
+  const o = org as { about?: string | null; logoUrl?: string | null; lat?: number | null; lng?: number | null };
   const initial = {
     name: org.name,
     district: org.district,
     phone: org.phone,
-    about: (org as { about?: string | null }).about ?? "",
-    logoUrl: (org as { logoUrl?: string | null }).logoUrl ?? "",
+    about: o.about ?? "",
+    logoUrl: o.logoUrl ?? "",
+    lat: o.lat ?? null,
+    lng: o.lng ?? null,
   };
 
   return (

@@ -23,6 +23,11 @@ model Organization {
   // additive `db push` is safe on existing dev sqlite + prod Postgres rows.
   about     String?
   logoUrl   String?
+  // Seller/shop pickup coordinates (Phase 1 marketplace, additive + nullable so
+  // `db push` is safe on existing Postgres rows). Set via the location picker on
+  // the supplier profile. Used as the pickup point for auto-dispatch.
+  lat       Float?
+  lng       Float?
   createdAt DateTime @default(now())
 
   users          User[]
@@ -104,6 +109,11 @@ model Order {
   buyerName    String
   buyerPhone   String
   address      String
+  // Customer delivery coordinates (Phase 1 marketplace map pin). Additive +
+  // nullable so `db push` is safe on existing rows. Captured at checkout via the
+  // location picker; falls back to geocoded address text when absent.
+  lat          Float?
+  lng          Float?
   status       String   @default("PLACED")
   deliveryDate DateTime
   // Customer-chosen arrival window (Agent 2 / time-at-checkout). Nullable so
