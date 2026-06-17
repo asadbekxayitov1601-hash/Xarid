@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBasket, type BasketItem } from "@/components/basket-provider";
 import { LocationPicker } from "@/components/location-picker";
+import { FREE_DELIVERY_OVER } from "@/lib/delivery-pricing";
 import { t, unitLabel, uzs, type Locale } from "@/lib/i18n";
 import { productEmoji } from "@/lib/product-emoji";
 import { formatUzPhone } from "@/lib/format";
@@ -40,6 +41,70 @@ export function BasketClient({ locale }: { locale: Locale }) {
 
   // Today (local) is the minimum selectable delivery day.
   const minDate = useMemo(() => toDateInputValue(new Date()), []);
+
+  // --- Live delivery quote (Phase 2 dynamic fee) ---
+  // The server is the single source of truth: we POST the cart + pin to
+  // /api/delivery/quote and render whatever fee/surge/free state it returns.
+  // The customer always pays `items subtotal + deliveryFee` in cash; we never
+  // compute money on the client (this is display only — the order API recomputes
+  // and persists the authoritative fee on placement).
+  type Quote = { fee: number; free: boolean; surge: number };
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoting, setQuoting] = useState(false);
+
+  // A compact, stable signature of everything that can move the fee: which
+  // offers + their quantities (subtotal) and the drop pin. Re-quote only when
+  // one of these actually changes, not on every unrelated re-render.
+  const quoteKey = useMemo(() => {
+    const cart = items.map((i) => `${i.offerId}:${i.qty}`).join(",");
+    const pinPart = pin ? `${pin.lat.toFixed(5)},${pin.lng.toFixed(5)}` : "nopin";
+    return `${cart}|${total}|${pinPart}`;
+  }, [items, total, pin]);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setQuote(null);
+      return;
+    }
+    const ctrl = new AbortController();
+    setQuoting(true);
+    // Debounce: pin drags + quantity taps fire fast — wait for a lull.
+    const timer = setTimeout(() => {
+      fetch("/api/delivery/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          offerIds: items.map((i) => i.offerId),
+          subtotal: total,
+          ...(pin ? { lat: pin.lat, lng: pin.lng } : {}),
+        }),
+        signal: ctrl.signal,
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && typeof data.fee === "number") {
+            setQuote({ fee: data.fee, free: !!data.free, surge: Number(data.surge) || 1 });
+          }
+        })
+        .catch(() => {
+          /* aborted or offline — keep the last known quote */
+        })
+        .finally(() => setQuoting(false));
+    }, 350);
+    return () => {
+      ctrl.abort();
+      clearTimeout(timer);
+    };
+    // quoteKey captures items/total/pin; depending on it keeps the effect lean.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteKey]);
+
+  // The fee the customer pays now (0 when free / while we have no quote yet).
+  const deliveryFee = quote ? quote.fee : 0;
+  const isFree = quote?.free ?? false;
+  const surge = quote?.surge ?? 1;
+  const showSurge = surge > 1 && !isFree;
+  const grandTotal = total + deliveryFee;
 
   const bySupplier = useMemo(() => {
     const m = new Map<string, BasketItem[]>();
@@ -286,7 +351,10 @@ export function BasketClient({ locale }: { locale: Locale }) {
                 {t(locale, "basket_checkout_title")}
               </h2>
 
-              {/* Price Summary */}
+              {/* Price Summary — items + delivery = grand total. The delivery
+                  line is a LIVE quote from /api/delivery/quote (re-fetched when
+                  the cart or drop pin changes); the customer pays the grand
+                  total in cash on delivery. */}
               <div
                 className="space-y-2 pb-4 border-b border-border-primary"
               >
@@ -301,26 +369,70 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     {uzs(locale, total)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm text-text-secondary">
+
+                {/* Delivery line: price, or "Free" over the threshold. */}
+                <div className="flex justify-between items-center text-sm text-text-secondary">
                   <span style={{ fontFamily: "var(--font-body, Inter), sans-serif" }}>
-                    {t(locale, "dt_summary_label")}
+                    {t(locale, "df_delivery")}
                   </span>
-                  <span
-                    className="font-bold"
-                    style={{
-                      fontFamily: "var(--font-display, Outfit), sans-serif",
-                      color: "var(--status-success)",
-                    }}
-                  >
-                    {t(locale, "basket_delivery_free")}
-                  </span>
+                  {quoting && !quote ? (
+                    <span
+                      className="inline-flex items-center gap-1.5 text-text-secondary/70"
+                      style={{ fontFamily: "Inter, sans-serif" }}
+                    >
+                      <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+                      {t(locale, "df_calculating")}
+                    </span>
+                  ) : isFree ? (
+                    <span
+                      className="font-bold"
+                      style={{
+                        fontFamily: "var(--font-display, Outfit), sans-serif",
+                        color: "var(--status-success)",
+                      }}
+                    >
+                      {t(locale, "df_free")}
+                    </span>
+                  ) : (
+                    <span
+                      className="tabular-nums font-semibold text-text-primary"
+                      style={{ fontFamily: "var(--font-display, JetBrains Mono), monospace" }}
+                    >
+                      {uzs(locale, deliveryFee)}
+                    </span>
+                  )}
                 </div>
+
+                {/* Surge note — only when the city is busy (multiplier > 1). */}
+                {showSurge && (
+                  <div
+                    className="flex items-center gap-1.5 text-xs"
+                    style={{ color: "var(--status-warning)" }}
+                  >
+                    <Zap size={12} className="flex-shrink-0" aria-hidden="true" />
+                    <span style={{ fontFamily: "Inter, sans-serif" }}>
+                      {t(locale, "df_busy_surge", { surge: surge.toFixed(1) })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Free-delivery nudge — only while not yet free, encourages a
+                    bigger basket to cross the threshold. */}
+                {!isFree && total < FREE_DELIVERY_OVER && (
+                  <p
+                    className="text-[11px] text-text-secondary/70"
+                    style={{ fontFamily: "Inter, sans-serif" }}
+                  >
+                    {t(locale, "df_free_hint", { amount: uzs(locale, FREE_DELIVERY_OVER) })}
+                  </p>
+                )}
+
                 <div className="flex justify-between items-center pt-2">
                   <span
                     className="font-bold text-text-primary"
                     style={{ fontFamily: "Outfit, sans-serif" }}
                   >
-                    {t(locale, "total")}
+                    {t(locale, "df_grand_total")}
                   </span>
                   <span
                     className="tabular-nums"
@@ -331,7 +443,7 @@ export function BasketClient({ locale }: { locale: Locale }) {
                       fontWeight: 700,
                     }}
                   >
-                    {uzs(locale, total)}
+                    {uzs(locale, grandTotal)}
                   </span>
                 </div>
               </div>
@@ -635,7 +747,7 @@ export function BasketClient({ locale }: { locale: Locale }) {
                 ) : (
                   <>
                     <span>{t(locale, "place_order")}</span>
-                    <span style={{ fontFamily: "JetBrains Mono, monospace" }}>· {uzs(locale, total)}</span>
+                    <span style={{ fontFamily: "JetBrains Mono, monospace" }}>· {uzs(locale, grandTotal)}</span>
                     <ChevronRight size={18} />
                   </>
                 )}

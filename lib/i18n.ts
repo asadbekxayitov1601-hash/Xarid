@@ -460,6 +460,22 @@ const dict = {
     co_loc_hint: "Xaritada do'koningiz joyini belgilang — kuryer shu yerdan oladi",
     co_loc_set: "Joy belgilandi",
     co_loc_clear: "Belgini olib tashlash",
+    // === Dynamic delivery fee (Phase 2 namespace) — append only ===
+    df_delivery: "Yetkazib berish",
+    df_free: "Bepul",
+    df_busy_surge: "Hozir band — narx {surge}x",
+    df_grand_total: "Jami to'lov",
+    df_you_earn: "Kuryer oladi: {amount}",
+    df_calculating: "Hisoblanmoqda...",
+    df_free_hint: "{amount} dan ortiq buyurtmaga bepul yetkazib berish",
+    // Transparency surfaces (Agent B) — append only
+    df_items: "Mahsulotlar",
+    df_you_earn_driver: "Siz olasiz ~{amount}",
+    df_you_earn_est: "Taxminiy",
+    disp_surge_label: "Narx x{n}",
+    disp_surge_meta: "{open} ochiq / {couriers} kuryer",
+    disp_surge_calm: "Oddiy narx",
+    disp_surge_none: "Faol kuryer yo'q",
   },
   ru: {
     nav_catalog: "Каталог",
@@ -909,6 +925,22 @@ const dict = {
     co_loc_hint: "Отметьте на карте, где находится магазин — отсюда курьер забирает заказ",
     co_loc_set: "Точка отмечена",
     co_loc_clear: "Убрать метку",
+    // === Dynamic delivery fee (Phase 2 namespace) — append only ===
+    df_delivery: "Доставка",
+    df_free: "Бесплатно",
+    df_busy_surge: "Сейчас загружено — цена {surge}x",
+    df_grand_total: "Итого к оплате",
+    df_you_earn: "Курьер получит: {amount}",
+    df_calculating: "Расчёт...",
+    df_free_hint: "Бесплатная доставка от {amount}",
+    // Transparency surfaces (Agent B) — append only
+    df_items: "Товары",
+    df_you_earn_driver: "Вы получите ~{amount}",
+    df_you_earn_est: "Примерно",
+    disp_surge_label: "Цена x{n}",
+    disp_surge_meta: "{open} открыто / {couriers} курьеров",
+    disp_surge_calm: "Обычная цена",
+    disp_surge_none: "Нет активных курьеров",
   },
   en: {
     nav_catalog: "Catalog",
@@ -1358,6 +1390,22 @@ const dict = {
     co_loc_hint: "Mark where your shop is on the map — the courier picks up here",
     co_loc_set: "Spot marked",
     co_loc_clear: "Clear pin",
+    // === Dynamic delivery fee (Phase 2 namespace) — append only ===
+    df_delivery: "Delivery",
+    df_free: "Free",
+    df_busy_surge: "Busy now — price {surge}x",
+    df_grand_total: "Total to pay",
+    df_you_earn: "Courier earns: {amount}",
+    df_calculating: "Calculating...",
+    df_free_hint: "Free delivery over {amount}",
+    // Transparency surfaces (Agent B) — append only
+    df_items: "Items",
+    df_you_earn_driver: "You earn ~{amount}",
+    df_you_earn_est: "Estimate",
+    disp_surge_label: "Surge x{n}",
+    disp_surge_meta: "{open} open / {couriers} couriers",
+    disp_surge_calm: "Normal pricing",
+    disp_surge_none: "No active couriers",
   },
 } as const;
 

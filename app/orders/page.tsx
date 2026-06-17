@@ -53,6 +53,11 @@ export default async function OrdersPage({
       month: "long",
     })} · ${o.deliverySlot ?? LEGACY_DELIVERY_SLOT}`;
 
+    // `deliveryFee` is an additive nullable column (Phase 2). Read it defensively
+    // so legacy rows (and builds predating the migration) fall back to null —
+    // the client then renders just the subtotal with no delivery line.
+    const deliveryFee = (o as { deliveryFee?: number | null }).deliveryFee ?? null;
+
     return {
       id: o.id,
       deliverMode: isAsap ? ("ASAP" as const) : ("SCHEDULED" as const),
@@ -62,6 +67,7 @@ export default async function OrdersPage({
       status: o.status,
       address: o.address,
       total: o.total,
+      deliveryFee,
       paidAt: !!o.paidAt,
       items: o.items.map((i) => ({
         id: i.id,

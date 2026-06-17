@@ -39,7 +39,12 @@ type OrderWithItems = {
   scheduledLabel: string; // pre-formatted day + window (for SCHEDULED)
   status: string;
   address: string;
+  // `total` is the items subtotal (the money model keeps Order.total = subtotal).
   total: number;
+  // Surge-applied delivery fee the customer pays in cash. null on legacy orders
+  // (predating Phase 2) -> we show just the subtotal with no delivery breakdown.
+  // 0 means free delivery (basket cleared the threshold).
+  deliveryFee: number | null;
   paidAt: boolean;
   items: OrderItemWithDetails[];
 };
@@ -184,6 +189,13 @@ export function OrdersClient({
             const statusKey = `status_${order.status}`;
             const deliveryText = deliveryLine(locale, order);
             const isOnTheWay = ON_THE_WAY.has(order.status);
+            // Phase 2 fee breakdown. `total` is the items subtotal; the customer
+            // pays subtotal + deliveryFee. Legacy rows (deliveryFee null) show no
+            // breakdown and the grand total is just the subtotal.
+            const hasFee = order.deliveryFee != null;
+            const fee = order.deliveryFee ?? 0;
+            const isFreeDelivery = hasFee && fee === 0;
+            const grandTotal = order.total + fee;
 
             return (
               <motion.div
@@ -319,6 +331,58 @@ export function OrdersClient({
                           ))}
                         </div>
 
+                        {/* Fee breakdown: items + delivery = grand total.
+                            Only when the order carries a Phase 2 delivery fee. */}
+                        {hasFee && (
+                          <div className="mb-4 space-y-1.5 rounded-2xl px-4 py-3 bg-bg-secondary/50 border border-border-primary">
+                            <div className="flex items-center justify-between text-xs">
+                              <span style={{ color: "var(--text-secondary)", fontFamily: "Inter, sans-serif" }}>
+                                {t(locale, "df_items")}
+                              </span>
+                              <span
+                                className="font-semibold text-text-primary tabular-nums"
+                                style={{ fontFamily: "JetBrains Mono, monospace" }}
+                              >
+                                {uzs(locale, order.total)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span style={{ color: "var(--text-secondary)", fontFamily: "Inter, sans-serif" }}>
+                                {t(locale, "df_delivery")}
+                              </span>
+                              {isFreeDelivery ? (
+                                <span
+                                  className="font-bold tabular-nums"
+                                  style={{ color: "var(--status-success)", fontFamily: "Outfit, sans-serif" }}
+                                >
+                                  {t(locale, "df_free")}
+                                </span>
+                              ) : (
+                                <span
+                                  className="font-semibold text-text-primary tabular-nums"
+                                  style={{ fontFamily: "JetBrains Mono, monospace" }}
+                                >
+                                  {uzs(locale, fee)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between pt-1.5 border-t border-border-primary/50">
+                              <span
+                                className="text-sm font-bold text-text-primary"
+                                style={{ fontFamily: "Outfit, sans-serif" }}
+                              >
+                                {t(locale, "df_grand_total")}
+                              </span>
+                              <span
+                                className="text-sm font-bold text-emerald-500 tabular-nums"
+                                style={{ fontFamily: "JetBrains Mono, monospace" }}
+                              >
+                                {uzs(locale, grandTotal)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Footer details */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border-primary/50">
                           {/* Payment status */}
@@ -346,33 +410,34 @@ export function OrdersClient({
                           </div>
 
                           <div className="flex items-center gap-2 flex-wrap">
-                            {/* Total price */}
+                            {/* Grand total the customer pays (subtotal + delivery).
+                                Equals the subtotal on legacy rows with no fee. */}
                             <span
-                              className="font-bold text-emerald-500 mr-2"
+                              className="font-bold text-emerald-500 mr-2 tabular-nums"
                               style={{ fontFamily: "JetBrains Mono, monospace" }}
                             >
-                              {uzs(locale, order.total)}
+                              {uzs(locale, grandTotal)}
                             </span>
 
                             {/* Payment links if unpaid */}
                             {!order.paidAt && order.status !== "CANCELLED" && (
                               <>
-                                {uzumPayUrl(order.id, order.total) && (
+                                {uzumPayUrl(order.id, grandTotal) && (
                                   <motion.a
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    href={uzumPayUrl(order.id, order.total)!}
+                                    href={uzumPayUrl(order.id, grandTotal)!}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-violet-600/20 text-violet-400 border border-violet-600/30 transition-all select-none"
                                   >
                                     <CreditCard size={12} />
                                     Uzum Pay
                                   </motion.a>
                                 )}
-                                {paynetPayUrl(order.id, order.total) && (
+                                {paynetPayUrl(order.id, grandTotal) && (
                                   <motion.a
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    href={paynetPayUrl(order.id, order.total)!}
+                                    href={paynetPayUrl(order.id, grandTotal)!}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30 transition-all select-none"
                                   >
                                     <CreditCard size={12} />
