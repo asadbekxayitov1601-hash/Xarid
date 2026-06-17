@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireSupplier } from "@/lib/supplier";
 import { sellPrice } from "@/lib/pricing";
+import { hasCoords } from "@/lib/geo";
 
 // Bound the profile fields so a misbehaving client cannot stuff novels into
 // the description or a 50KB data URL into the logo field.
@@ -126,6 +127,18 @@ export async function updateMyProfile(formData: FormData) {
   const about = String(formData.get("about") ?? "").trim().slice(0, ABOUT_MAX);
   const logoUrl = String(formData.get("logoUrl") ?? "").trim().slice(0, LOGO_MAX);
 
+  // Shop map pin (Phase 1). Empty strings (no pin set, or pin cleared) collapse
+  // to null; a malformed pair is rejected the same way. Note Number("") === 0,
+  // so we check for a non-empty raw value BEFORE parsing to avoid persisting a
+  // bogus (0, 0). Used as the pickup point for auto-dispatch.
+  const latRaw = String(formData.get("lat") ?? "").trim();
+  const lngRaw = String(formData.get("lng") ?? "").trim();
+  const latNum = Number(latRaw);
+  const lngNum = Number(lngRaw);
+  const pinOk = latRaw !== "" && lngRaw !== "" && hasCoords(latNum, lngNum);
+  const lat = pinOk ? latNum : null;
+  const lng = pinOk ? lngNum : null;
+
   if (!name || !district || !phone) return { ok: false as const, error: "missing" };
 
   await prisma.organization.update({
@@ -136,6 +149,8 @@ export async function updateMyProfile(formData: FormData) {
       phone,
       about: about ? about : null,
       logoUrl: logoUrl ? logoUrl : null,
+      lat,
+      lng,
     },
   });
   revalidatePath("/supplier/profile");

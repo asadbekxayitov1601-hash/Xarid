@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId, setSession } from "@/lib/session";
 import { normalizePhone } from "@/lib/password";
 import { asapDeliveryDate, resolveDeliveryTime, normalizeDeliverMode } from "@/lib/delivery";
+import { hasCoords } from "@/lib/geo";
+import { autoAssignCourier } from "@/lib/dispatch";
 
 // POST: place the order. Prices are recomputed from the database —
 // the client basket is a shopping list, never a source of money truth.
@@ -13,6 +15,16 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(items) || items.length === 0 || !buyerName || !buyerPhone || !address) {
     return NextResponse.json({ error: "items, buyerName, buyerPhone, address required" }, { status: 400 });
   }
+
+  // Optional delivery coordinates from the checkout map pin. The pin is
+  // encouraged but not required (the address text always stays mandatory), so a
+  // missing or malformed pair simply falls back to null — auto-dispatch then
+  // uses the seller's coords as the pickup, never the customer drop point.
+  const latNum = Number(body?.lat);
+  const lngNum = Number(body?.lng);
+  const hasPin = hasCoords(latNum, lngNum);
+  const orderLat = hasPin ? latNum : null;
+  const orderLng = hasPin ? lngNum : null;
 
   // Consumer pivot: "ASAP" (on-demand, default) vs "SCHEDULED" (deliver-later
   // window). Legacy callers omit deliverMode -> ASAP, the new default.
@@ -81,6 +93,8 @@ export async function POST(req: NextRequest) {
       buyerName: String(buyerName),
       buyerPhone: String(buyerPhone),
       address: String(address),
+      lat: orderLat,
+      lng: orderLng,
       deliveryDate,
       deliverySlot,
       deliverMode: resolvedMode,
@@ -88,6 +102,16 @@ export async function POST(req: NextRequest) {
       items: { create: lines },
     },
   });
+
+  // Auto-dispatch the nearest available courier (Yandex-Eats style), replacing
+  // manual admin assignment as the default. A failure here must NEVER block a
+  // successful order: swallow it and let the admin dispatch board pick up the
+  // slack. The pickup point is resolved from the seller's coords inside.
+  try {
+    await autoAssignCourier(order.id);
+  } catch (e) {
+    console.warn("autoAssignCourier failed for order", order.id, "-", e);
+  }
 
   return NextResponse.json({ ok: true, orderId: order.id, total });
 }

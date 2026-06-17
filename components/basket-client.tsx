@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBasket, type BasketItem } from "@/components/basket-provider";
+import { LocationPicker } from "@/components/location-picker";
 import { t, unitLabel, uzs, type Locale } from "@/lib/i18n";
 import { productEmoji } from "@/lib/product-emoji";
 import { formatUzPhone } from "@/lib/format";
@@ -28,6 +29,9 @@ export function BasketClient({ locale }: { locale: Locale }) {
   const [org, setOrg] = useState("");
   const [phone, setPhone] = useState("+998 ");
   const [address, setAddress] = useState("");
+  // Optional delivery map pin. Encouraged (helps the courier + auto-dispatch)
+  // but never required — the address text stays the mandatory field.
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   // Delivery mode: ASAP (on-demand, default) or SCHEDULED (deliver-later window).
   const [deliverMode, setDeliverMode] = useState<DeliverMode>(DEFAULT_DELIVER_MODE);
   // Customer-chosen delivery day + typed time (only when deliverMode === SCHEDULED).
@@ -89,6 +93,8 @@ export function BasketClient({ locale }: { locale: Locale }) {
         buyerPhone: phone,
         address,
         deliverMode,
+        // Optional delivery coordinates from the map pin; omitted when unset.
+        ...(pin ? { lat: pin.lat, lng: pin.lng } : {}),
         // Only send the day + typed time for "deliver later"; ASAP omits it.
         ...(scheduled ? { deliveryDate, deliveryTime } : {}),
         items: items.map((i) => ({ offerId: i.offerId, qty: i.qty })),
@@ -386,6 +392,47 @@ export function BasketClient({ locale }: { locale: Locale }) {
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* Delivery map pin — complements the address text. Optional but
+                  encouraged: a precise pin speeds up the courier + auto-dispatch. */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className="text-xs font-semibold text-text-secondary"
+                    style={{ fontFamily: "Outfit, sans-serif" }}
+                  >
+                    {t(locale, "b2c_loc_title")}
+                  </span>
+                  {pin ? (
+                    <button
+                      type="button"
+                      onClick={() => setPin(null)}
+                      className="shrink-0 text-xs font-semibold transition-colors"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      {t(locale, "b2c_loc_clear")}
+                    </button>
+                  ) : (
+                    <span className="shrink-0 text-[11px] text-text-secondary/70">
+                      {t(locale, "b2c_loc_optional")}
+                    </span>
+                  )}
+                </div>
+                <LocationPicker
+                  locale={locale}
+                  value={pin}
+                  onChange={(lat, lng) => setPin({ lat, lng })}
+                  height={200}
+                />
+                {pin && (
+                  <p
+                    className="text-xs font-semibold"
+                    style={{ color: "var(--status-success)" }}
+                  >
+                    {t(locale, "b2c_loc_set")}
+                  </p>
+                )}
               </div>
 
               {/* Delivery mode — ASAP (default) vs "deliver later" window */}
