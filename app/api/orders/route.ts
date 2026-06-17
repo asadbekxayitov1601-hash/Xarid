@@ -3,8 +3,32 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId, setSession } from "@/lib/session";
 import { normalizePhone } from "@/lib/password";
 import { asapDeliveryDate, resolveDeliveryTime, normalizeDeliverMode } from "@/lib/delivery";
-import { hasCoords } from "@/lib/geo";
+import { hasCoords, haversineKm } from "@/lib/geo";
 import { autoAssignCourier } from "@/lib/dispatch";
+import { getCurrentSurge } from "@/lib/surge";
+import { computeDeliveryFee, computeCourierPayout } from "@/lib/delivery-pricing";
+
+// Resolve the primary seller's coords from the order's offer ids, mirroring
+// lib/dispatch.resolvePickup (which isn't exported) and /api/delivery/quote:
+// the first offer whose supplier Organization has coords wins, deterministically
+// by the offerIds order. Returns null when no seller has coords.
+async function resolveSellerCoords(
+  offerIds: string[],
+): Promise<{ lat: number; lng: number } | null> {
+  if (offerIds.length === 0) return null;
+  const offers = await prisma.supplierOffer.findMany({
+    where: { id: { in: offerIds } },
+    include: { supplier: { select: { lat: true, lng: true } } },
+  });
+  const byId = new Map(offers.map((o) => [o.id, o]));
+  for (const id of offerIds) {
+    const sup = byId.get(id)?.supplier;
+    if (sup && hasCoords(sup.lat, sup.lng)) {
+      return { lat: sup.lat as number, lng: sup.lng as number };
+    }
+  }
+  return null;
+}
 
 // POST: place the order. Prices are recomputed from the database —
 // the client basket is a shopping list, never a source of money truth.
@@ -87,6 +111,32 @@ export async function POST(req: NextRequest) {
     resolvedMode = "ASAP";
   }
 
+  // --- Dynamic delivery fee (Phase 2). Recompute everything server-side; the
+  // client-shown quote is advisory only and is NEVER trusted for money. ---
+  // Distance = customer drop pin -> primary seller pickup (same resolution as
+  // auto-dispatch). When either side is unknown, computeDeliveryFee falls back
+  // to a typical short hop internally, so a missing pin never blocks checkout.
+  let deliveryFee = 0;
+  let surge = 1;
+  let courierPayout = 0;
+  try {
+    const seller = await resolveSellerCoords(offerIds);
+    const distanceKm =
+      hasPin && seller ? haversineKm(orderLat as number, orderLng as number, seller.lat, seller.lng) : null;
+    const surgeState = await getCurrentSurge();
+    surge = surgeState.surge;
+    const quote = computeDeliveryFee({ distanceKm, subtotal: total, surge });
+    deliveryFee = quote.fee;
+    courierPayout = computeCourierPayout({ distanceKm, surge });
+  } catch (e) {
+    // A pricing failure must never block a paid order: fall back to a free
+    // delivery line (fee 0) and let the dispatch board reconcile payout later.
+    console.warn("delivery fee compute failed for order -", e);
+    deliveryFee = 0;
+    surge = 1;
+    courierPayout = 0;
+  }
+
   const order = await prisma.order.create({
     data: {
       buyerUserId: userId,
@@ -98,7 +148,11 @@ export async function POST(req: NextRequest) {
       deliveryDate,
       deliverySlot,
       deliverMode: resolvedMode,
+      // total stays the items subtotal; the customer pays total + deliveryFee.
       total,
+      deliveryFee,
+      surge,
+      courierPayout,
       items: { create: lines },
     },
   });
@@ -113,5 +167,5 @@ export async function POST(req: NextRequest) {
     console.warn("autoAssignCourier failed for order", order.id, "-", e);
   }
 
-  return NextResponse.json({ ok: true, orderId: order.id, total });
+  return NextResponse.json({ ok: true, orderId: order.id, total, deliveryFee });
 }

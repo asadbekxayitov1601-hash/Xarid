@@ -17,7 +17,7 @@ Admin/dispatch oversight lives at `/admin/dispatch`.
 | Step | Status | Where |
 |---|---|---|
 | 1. Order placement | done | basket -> `app/api/orders/route.ts` |
-| 1b. Dynamic delivery pricing | **to build** (Phase 2) | needs distance (now unlocked) |
+| 1b. Dynamic delivery pricing | **done (Phase 2)** | distance + surge -> `lib/delivery-pricing.ts`, `lib/surge.ts`, `/api/delivery/quote` ([PRICING_ENGINE.md](./PRICING_ENGINE.md)) |
 | 2. Vendor acceptance + prep time | partial | supplier PO confirm; explicit prep-time still to add |
 | 3. Algorithmic dispatch | **done (Phase 1)** | `lib/dispatch.ts` `autoAssignCourier` |
 | 4. Real-time tracking + ETA | done via polling | `/track/[id]`, Leaflet, ETA pill (WebSockets later) |
@@ -50,9 +50,29 @@ Locations are now real coordinates, and the nearest courier is auto-assigned on 
 
 Verified: `next build` green with no Clerk keys; `tsc` clean; i18n in uz/ru/en.
 
+## Phase 2 delivered — dynamic delivery pricing + surge
+
+Distance (Phase 1) now feeds a live fee. The customer sees a real delivery line at
+checkout; the courier sees an honest payout; dispatch sees the city-wide surge. Cash stays.
+
+- **Pure pricing lib (`lib/delivery-pricing.ts`)** — `computeDeliveryFee` (base + per-km,
+  capped before surge, free over a basket threshold) and `computeCourierPayout`. No IO,
+  safe on client + server.
+- **Surge lib (`lib/surge.ts`)** — `getCurrentSurge()` from open-orders / active-couriers ratio,
+  clamped 1.0..2.5.
+- **Live quote endpoint (`app/api/delivery/quote`)** — POST returns the checkout fee; never throws.
+- **Schema (additive, nullable):** `Order.deliveryFee` / `surge` / `courierPayout`, recomputed
+  server-side at placement; `Order.total` stays the items subtotal, the fee is added in cash.
+- **Surfaces** — checkout breakdown (`components/basket-client.tsx`), orders list
+  (`components/orders-client.tsx`), driver payout (`components/logistics/driver-client.tsx`),
+  dispatch surge banner (`components/logistics/dispatch-board.tsx`); `df_*` / `disp_surge_*` in uz/ru/en.
+
+Full spec: [PRICING_ENGINE.md](./PRICING_ENGINE.md). Verified: `next build` green with no Clerk
+keys; `tsc` clean; i18n parity across uz/ru/en. **Orchestrator action: `npx prisma db push`** to
+add the three new nullable `Order` columns to Neon (additive, non-destructive).
+
 ## Remaining roadmap
 
-1. **Dynamic delivery pricing** — fee from distance + courier-to-order ratio (coords now make this possible). Cash stays.
-2. **Real-time** — polling -> WebSockets/SSE for the live map + instant status.
-3. **Vendor prep-time** — explicit accept/reject with an estimated prep time feeding dispatch timing.
-4. **Partner Pull/Push API** — Client ID/Secret, JSON, for external POS partners.
+1. **Real-time** — polling -> WebSockets/SSE for the live map + instant status.
+2. **Vendor prep-time** — explicit accept/reject with an estimated prep time feeding dispatch timing.
+3. **Partner Pull/Push API** — Client ID/Secret, JSON, for external POS partners.

@@ -130,6 +130,18 @@ model Order {
   // have a deliverySlot, otherwise ASAP.
   deliverMode  String?  @default("ASAP")
   total        Int
+  // Dynamic delivery pricing (Phase 2, Yandex-Eats model). All additive +
+  // nullable so `db push` is safe on existing Neon rows. `total` stays the items
+  // subtotal; the customer pays `total + deliveryFee` in cash.
+  //   deliveryFee   — surge-applied fee the customer actually pays (UZS). 0 when
+  //                   free (subtotal over the free-delivery threshold).
+  //   surge         — the multiplier applied at quote time (1.0..2.5).
+  //   courierPayout — what the courier earns for this trip (UZS), shown for
+  //                   transparency. May exceed deliveryFee by design (the gap is
+  //                   covered by the product margin + consolidation).
+  deliveryFee   Int?
+  surge         Float?
+  courierPayout Int?
   driverId     String?
   driver       Driver?  @relation(fields: [driverId], references: [id])
   cashTaken    Int?

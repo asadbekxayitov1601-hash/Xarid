@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { t, type Locale } from "@/lib/i18n";
+import { type SurgeState } from "@/lib/surge";
 import { toGoPhase, type GoPhase } from "@/lib/driver";
 import { RouteList, type RouteStop } from "./route-list";
 import type { MapPin } from "./map-card";
@@ -46,6 +47,7 @@ export function DispatchBoard({
   locale,
   orders,
   drivers,
+  surge,
   themeLight = false,
   assignAction,
   autoAssignAction,
@@ -53,6 +55,8 @@ export function DispatchBoard({
   locale: Locale;
   orders: DispatchOrder[];
   drivers: DispatchDriver[];
+  /** Live surge snapshot for the banner (server-computed via getCurrentSurge). */
+  surge: SurgeState;
   themeLight?: boolean;
   /**
    * Server action invoked with (orderId, driverId | "" to unassign). Wired
@@ -180,7 +184,9 @@ export function DispatchBoard({
   }, [orders, drivers, locale]);
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
+      <SurgeBanner locale={locale} surge={surge} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Map column */}
       <section
         className="glass-card depth-1 relative h-[60svh] overflow-hidden rounded-3xl lg:h-[78svh]"
@@ -487,7 +493,50 @@ export function DispatchBoard({
           </ul>
         </section>
       </div>
+      </div>
     </div>
+  );
+}
+
+function SurgeBanner({ locale, surge }: { locale: Locale; surge: SurgeState }) {
+  // Calm (x1) -> a neutral "normal pricing" chip; busy -> warning-tinted.
+  const isBusy = surge.surge > 1.001;
+  const accent = isBusy ? "var(--status-warning)" : "var(--status-success)";
+  const bg = isBusy ? "var(--status-warning-bg)" : "var(--status-success-bg)";
+  // Trim a trailing ".0" so we show "x2" not "x2.0", but keep "x1.5".
+  const surgeText = surge.surge.toFixed(1).replace(/\.0$/, "");
+
+  return (
+    <section
+      className="glass-card flex flex-wrap items-center justify-between gap-3 rounded-3xl px-4 py-3"
+      style={{ boxShadow: "var(--shadow-md)" }}
+      aria-label={t(locale, "disp_surge_label", { n: surgeText })}
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className="rounded-full px-3 py-1 text-sm font-bold tabular-nums"
+          style={{ background: bg, color: accent }}
+        >
+          {t(locale, "disp_surge_label", { n: surgeText })}
+        </span>
+        <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+          {surge.activeCouriers === 0
+            ? t(locale, "disp_surge_none")
+            : isBusy
+              ? t(locale, "disp_surge_meta", {
+                  open: surge.openOrders,
+                  couriers: surge.activeCouriers,
+                })
+              : t(locale, "disp_surge_calm")}
+        </span>
+      </div>
+      <span className="text-[11px] tabular-nums" style={{ color: "var(--text-secondary)" }}>
+        {t(locale, "disp_surge_meta", {
+          open: surge.openOrders,
+          couriers: surge.activeCouriers,
+        })}
+      </span>
+    </section>
   );
 }
 

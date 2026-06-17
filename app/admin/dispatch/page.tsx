@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/locale";
 import { t } from "@/lib/i18n";
 import { ACTIVE_ORDER_STATUSES, geocodeAddress, shortId } from "@/lib/driver";
 import { hasCoords } from "@/lib/geo";
+import { getCurrentSurge, type SurgeState } from "@/lib/surge";
 import { DispatchBoard, type DispatchOrder, type DispatchDriver } from "@/components/logistics/dispatch-board";
 import { assignDriver, autoAssignAction } from "./actions";
 
@@ -35,6 +36,15 @@ export default async function DispatchPage() {
     prisma.driver.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     prisma.driverLocation.findMany(),
   ]);
+
+  // Live surge snapshot for the banner. getCurrentSurge can reject if the DB
+  // hiccups; fall back to a calm state so the board still renders.
+  let surge: SurgeState;
+  try {
+    surge = await getCurrentSurge();
+  } catch {
+    surge = { surge: 1, openOrders: 0, activeCouriers: 0 };
+  }
 
   const locByDriver = new Map(locations.map((l) => [l.driverId, l]));
 
@@ -104,6 +114,7 @@ export default async function DispatchPage() {
         locale={locale}
         orders={orders}
         drivers={drivers}
+        surge={surge}
         themeLight={theme === "light"}
         assignAction={assignDriver}
         autoAssignAction={autoAssignAction}

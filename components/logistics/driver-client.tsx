@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { t, type Locale } from "@/lib/i18n";
+import { computeCourierPayout } from "@/lib/delivery-pricing";
 import { toGoPhase, nextDriverStatus, type GoPhase } from "@/lib/driver";
 import { EtaPill } from "./eta-pill";
 import { OrderStatusTimeline } from "./order-status-timeline";
@@ -17,6 +18,12 @@ export type DriverJobView = {
   buyer: { name: string; phone: string; address: string; lat: number; lng: number };
   itemsCount: number;
   total: number;
+  // Courier payout transparency (Phase 2). Both optional + nullable so this
+  // build is safe whether or not the page populates them: when `courierPayout`
+  // is present we show it as-is; otherwise we display a client-side estimate
+  // from `distanceKm` (a typical Kokand hop when that too is unknown).
+  courierPayout?: number | null;
+  distanceKm?: number | null;
 } | null;
 
 export function DriverClient({
@@ -141,6 +148,18 @@ export function DriverClient({
     return null;
   })();
 
+  // What the courier earns on this job. Prefer the persisted payout (priced at
+  // order time with the live surge); when absent, show a client-side estimate
+  // from the trip distance (or a default hop) so the line never renders empty.
+  const hasPersistedPayout =
+    typeof job.courierPayout === "number" && Number.isFinite(job.courierPayout);
+  const earnAmount = hasPersistedPayout
+    ? (job.courierPayout as number)
+    : computeCourierPayout({ distanceKm: job.distanceKm ?? null, surge: 1 });
+  const earnLabel = t(locale, "df_you_earn_driver", {
+    amount: new Intl.NumberFormat("ru-RU").format(earnAmount),
+  });
+
   return (
     <div className="relative h-[100svh] w-full overflow-hidden" style={{ background: "var(--bg-primary)" }}>
       <div className="absolute inset-0">
@@ -195,6 +214,30 @@ export function DriverClient({
             >
               {t(locale, "drv_total_due")}: {new Intl.NumberFormat("ru-RU").format(job.total)}
             </span>
+          </div>
+
+          {/* Courier earnings — what the rider takes home for this job. */}
+          <div
+            className="mt-3 flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
+            style={{
+              background: "var(--status-success-bg)",
+              border: "1px solid color-mix(in srgb, var(--status-success) 25%, transparent)",
+            }}
+          >
+            <span
+              className="text-sm font-bold tabular-nums"
+              style={{ color: "var(--status-success)" }}
+            >
+              {earnLabel}
+            </span>
+            {!hasPersistedPayout && (
+              <span
+                className="shrink-0 text-[10px] font-semibold uppercase tracking-wider"
+                style={{ color: "var(--text-secondary)", letterSpacing: "0.08em" }}
+              >
+                {t(locale, "df_you_earn_est")}
+              </span>
+            )}
           </div>
 
           {/* Geolocation state row */}

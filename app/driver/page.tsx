@@ -43,6 +43,11 @@ export default async function DriverHomePage() {
       },
       itemsCount: order.items.length,
       total: order.total,
+      // Stored payout (surge-applied at order time). Read defensively: it's an
+      // additive nullable column, so legacy rows fall back to the client-side
+      // estimate inside DriverClient. No distanceKm here, so the estimate uses a
+      // typical Kokand hop — the stored value is preferred whenever present.
+      courierPayout: (order as { courierPayout?: number | null }).courierPayout ?? null,
     };
   }
 
