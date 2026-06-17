@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { computeEtaMinutes, geocodeAddress, nextDriverStatus, shortId } from "@/lib/driver";
 import { getCurrentDriver } from "@/lib/driver-auth";
+import { publish } from "@/lib/realtime";
 
 export const dynamic = "force-dynamic";
 
@@ -99,5 +100,19 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   await prisma.order.update({ where: { id }, data: { status: target } });
+
+  // Real-time push: notify every buyer watching this order of the new status
+  // (and a freshly computed ETA, mirroring GET /track). Best-effort — a bus
+  // error must never fail the transition the driver just made.
+  try {
+    const buyerPt = geocodeAddress(order.address);
+    let driverPt: { lat: number; lng: number } | null = null;
+    const loc = await prisma.driverLocation.findUnique({ where: { driverId: driver.id } });
+    if (loc) driverPt = { lat: loc.lat, lng: loc.lng };
+    publish(id, { type: "status", status: target, eta: computeEtaMinutes(driverPt, buyerPt) });
+  } catch {
+    // Publishing is best-effort; the 10s GET /track poll remains the fallback.
+  }
+
   return NextResponse.json({ ok: true, status: target });
 }

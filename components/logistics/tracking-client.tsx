@@ -34,8 +34,84 @@ export function TrackingClient({
 }) {
   const [data, setData] = useState<TrackPayload>(initial);
   const [expanded, setExpanded] = useState(false);
+  // True while the SSE stream is open. Drives the "live" badge and lets the
+  // poller back off (real-time push is authoritative while connected).
+  const [live, setLive] = useState(false);
 
-  // 10s polling — gentle on the box, indistinguishable from real-time to the eye.
+  // --- Real-time channel (Server-Sent Events) -------------------------------
+  // Subscribe to /api/orders/[id]/stream and merge each pushed location/status
+  // event into the SAME `data` state the poller updates, so the existing render
+  // is reused untouched. EventSource auto-reconnects on transient errors; we
+  // flip `live` on open/error so the poll fallback (below) resumes whenever the
+  // stream is down. Guarded for SSR / unsupported browsers.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof EventSource === "undefined") {
+      // SSE unavailable — stay on the poll fallback only.
+      return;
+    }
+
+    let es: EventSource | null = null;
+
+    try {
+      es = new EventSource(`/api/orders/${orderId}/stream`);
+    } catch {
+      return; // construction failed — poll fallback stays active.
+    }
+
+    es.onopen = () => setLive(true);
+
+    es.onmessage = (e) => {
+      let ev: unknown;
+      try {
+        ev = JSON.parse(e.data);
+      } catch {
+        return; // ignore keep-alive comments / malformed frames
+      }
+      if (!ev || typeof ev !== "object") return;
+      const m = ev as { type?: string };
+
+      if (m.type === "location") {
+        const loc = ev as { lat: number; lng: number; updatedAt: string; name?: string };
+        setData((prev) => {
+          if (!prev.driver) return prev; // no driver block to attach a position to yet
+          return {
+            ...prev,
+            driver: {
+              ...prev.driver,
+              lat: loc.lat,
+              lng: loc.lng,
+              updatedAt: loc.updatedAt,
+              ...(loc.name ? { name: loc.name } : {}),
+            },
+          };
+        });
+      } else if (m.type === "status") {
+        const st = ev as { status: string; eta: number | null };
+        setData((prev) => ({ ...prev, status: st.status, eta: st.eta }));
+      }
+      // "ping" and unknown types are intentionally ignored.
+    };
+
+    es.onerror = () => {
+      // Transient drop: EventSource will retry on its own. Mark not-live so the
+      // poller resumes covering the gap until the stream reconnects (onopen).
+      setLive(false);
+    };
+
+    return () => {
+      setLive(false);
+      try {
+        es?.close();
+      } catch {
+        /* already closed */
+      }
+    };
+  }, [orderId]);
+
+  // --- Poll fallback --------------------------------------------------------
+  // Kept as the resilient fallback. While SSE is `live` we slow the poll way
+  // down (a cheap safety net / reconciliation); when SSE is down we poll at the
+  // original 10s cadence so the page still updates with no real-time channel.
   useEffect(() => {
     let cancelled = false;
     const tick = async () => {
@@ -48,12 +124,13 @@ export function TrackingClient({
         /* network blip — retry on next tick */
       }
     };
-    const id = window.setInterval(tick, 10_000);
+    const intervalMs = live ? 60_000 : 10_000;
+    const id = window.setInterval(tick, intervalMs);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [orderId]);
+  }, [orderId, live]);
 
   const phase: GoPhase = toGoPhase(data.status);
   const driverHasLoc = data.driver?.lat != null && data.driver?.lng != null;
@@ -86,6 +163,27 @@ export function TrackingClient({
 
   return (
     <div className="relative h-[100svh] w-full overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+      {/* Scoped styles for the real-time "live" dot. Reduced-motion users get a
+          static dot (no pulse). Kept local since this component is the only
+          consumer of the badge. */}
+      <style>{`
+        .rt-live-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 9999px;
+          background: var(--accent-3);
+          box-shadow: 0 0 0 0 var(--accent-3-glow);
+          animation: rt-live-pulse 1.8s ease-out infinite;
+        }
+        @keyframes rt-live-pulse {
+          0% { box-shadow: 0 0 0 0 var(--accent-3-glow); }
+          70% { box-shadow: 0 0 0 6px transparent; }
+          100% { box-shadow: 0 0 0 0 transparent; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .rt-live-dot { animation: none; }
+        }
+      `}</style>
       {/* Full-bleed map */}
       <div className="absolute inset-0">
         <MapCard
@@ -126,12 +224,29 @@ export function TrackingClient({
           {/* Header row */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p
-                className="text-[11px] font-semibold uppercase tracking-wider"
-                style={{ color: "var(--accent)", letterSpacing: "0.1em" }}
-              >
-                {t(locale, "go_brand")}
-              </p>
+              <div className="flex items-center gap-2">
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-wider"
+                  style={{ color: "var(--accent)", letterSpacing: "0.1em" }}
+                >
+                  {t(locale, "go_brand")}
+                </p>
+                {live && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                    style={{
+                      background: "var(--accent-3-glow)",
+                      color: "var(--accent-3)",
+                      letterSpacing: "0.08em",
+                    }}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <span aria-hidden className="rt-live-dot" />
+                    {t(locale, "rt_live")}
+                  </span>
+                )}
+              </div>
               <h1
                 className="mt-1 text-lg font-bold leading-tight"
                 style={{ color: "var(--text-primary)" }}

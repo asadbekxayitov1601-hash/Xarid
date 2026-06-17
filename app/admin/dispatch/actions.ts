@@ -5,6 +5,36 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 import { autoAssignCourier } from "@/lib/dispatch";
 import { formatKm } from "@/lib/geo";
+import { computeEtaMinutes, geocodeAddress } from "@/lib/driver";
+import { publish } from "@/lib/realtime";
+
+/**
+ * Real-time push helper for the dispatcher actions. After an assignment write
+ * we re-read the order's current status (+ the assigned driver's last known
+ * location, if any) and publish a "status" event so the buyer's live tracking
+ * page reflects the assignment / reassignment / unassignment instantly.
+ *
+ * Best-effort: any failure is swallowed so a bus hiccup never breaks the
+ * dispatcher's action. The buyer's 10s GET /track poll remains the fallback.
+ */
+async function publishOrderStatus(orderId: string): Promise<void> {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { status: true, address: true, driverId: true },
+    });
+    if (!order) return;
+    const buyerPt = geocodeAddress(order.address);
+    let driverPt: { lat: number; lng: number } | null = null;
+    if (order.driverId) {
+      const loc = await prisma.driverLocation.findUnique({ where: { driverId: order.driverId } });
+      if (loc) driverPt = { lat: loc.lat, lng: loc.lng };
+    }
+    publish(orderId, { type: "status", status: order.status, eta: computeEtaMinutes(driverPt, buyerPt) });
+  } catch {
+    // Publishing is best-effort; never let it break the dispatch action.
+  }
+}
 
 /**
  * Assigns or unassigns a driver to an order. Called from the dispatcher
@@ -46,6 +76,10 @@ export async function assignDriver(formData: FormData) {
     });
   }
 
+  // Push the resulting status (ASSIGNED on assign, CONFIRMED/PLACED on unassign,
+  // or unchanged on a mid-route reassign) to any buyer watching this order.
+  await publishOrderStatus(orderId);
+
   revalidatePath("/admin/dispatch");
   revalidatePath(`/track/${orderId}`);
 }
@@ -84,6 +118,10 @@ export async function autoAssignAction(orderId: string): Promise<AutoAssignResul
     where: { id: res.driverId },
     select: { name: true },
   });
+
+  // Push the resulting status (ASSIGNED when the order was still pre-pickup) to
+  // any buyer watching this order so the tracking page reflects it instantly.
+  await publishOrderStatus(orderId);
 
   revalidatePath("/admin/dispatch");
   revalidatePath(`/track/${orderId}`);
