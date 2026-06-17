@@ -142,6 +142,7 @@ const dict = {
     // Xarid Go — logistics surface (Agent 5)
     go_brand: "Xarid Go",
     go_tracking_title: "Buyurtmangiz yo'lda",
+    rt_live: "Jonli",
     go_tracking_subtitle: "Haydovchi va yetkazish vaqtini real vaqtda kuzating",
     go_searching_driver: "Haydovchi qidirilmoqda...",
     go_searching_driver_hint: "Tez orada eng yaqin haydovchi buyurtmangizni qabul qiladi",
@@ -607,6 +608,7 @@ const dict = {
     // Xarid Go — logistics surface (Agent 5)
     go_brand: "Xarid Go",
     go_tracking_title: "Ваш заказ в пути",
+    rt_live: "В эфире",
     go_tracking_subtitle: "Следите за курьером и временем доставки в реальном времени",
     go_searching_driver: "Ищем курьера...",
     go_searching_driver_hint: "Ближайший курьер скоро возьмёт ваш заказ",
@@ -1072,6 +1074,7 @@ const dict = {
     // Xarid Go — logistics surface (Agent 5)
     go_brand: "Xarid Go",
     go_tracking_title: "Your order is on the way",
+    rt_live: "Live",
     go_tracking_subtitle: "Track the driver and delivery time in real time",
     go_searching_driver: "Looking for a driver...",
     go_searching_driver_hint: "The nearest driver will pick up your order shortly",

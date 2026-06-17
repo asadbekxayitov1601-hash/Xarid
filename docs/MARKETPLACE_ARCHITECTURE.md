@@ -20,12 +20,13 @@ Admin/dispatch oversight lives at `/admin/dispatch`.
 | 1b. Dynamic delivery pricing | **done (Phase 2)** | distance + surge -> `lib/delivery-pricing.ts`, `lib/surge.ts`, `/api/delivery/quote` ([PRICING_ENGINE.md](./PRICING_ENGINE.md)) |
 | 2. Vendor acceptance + prep time | partial | supplier PO confirm; explicit prep-time still to add |
 | 3. Algorithmic dispatch | **done (Phase 1)** | `lib/dispatch.ts` `autoAssignCourier` |
-| 4. Real-time tracking + ETA | done via polling | `/track/[id]`, Leaflet, ETA pill (WebSockets later) |
+| 4. Real-time tracking + ETA | **done (Phase 3)** | SSE live stream `/api/orders/[id]/stream` + in-memory bus; `/track/[id]`, Leaflet, ETA pill; 10s polling fallback ([REALTIME.md](./REALTIME.md)) |
 | 5. Fulfillment | done | driver picked-up/delivered + proof of delivery |
 
 ## 3. Pull vs Push API
 
-Today every vendor uses the **built-in seller portal**, and real-time is **polling** (~10-15s).
+Today every vendor uses the **built-in seller portal**. Customer order tracking is now **live over SSE**
+(`/api/orders/[id]/stream`), with the previous ~10s polling kept as an automatic fallback.
 A partner **Pull/Push API** (Client ID + Secret, JSON menu/stock sync + order push) for vendors
 that run their own POS/inventory is a **later phase** — only needed when onboarding partners with
 external software. Not required while sellers use the built-in portal.
@@ -71,8 +72,32 @@ Full spec: [PRICING_ENGINE.md](./PRICING_ENGINE.md). Verified: `next build` gree
 keys; `tsc` clean; i18n parity across uz/ru/en. **Orchestrator action: `npx prisma db push`** to
 add the three new nullable `Order` columns to Neon (additive, non-destructive).
 
+## Phase 3 delivered — real-time tracking over SSE
+
+The live map and order status no longer wait on a 10s poll. A server-side in-memory pub/sub bus
+(`lib/realtime.ts`) fans driver-location, status-change, and assignment events to an SSE endpoint
+(`app/api/orders/[id]/stream`); the customer tracking page subscribes via `EventSource` and merges
+frames into the existing pin + ETA + timeline render. Polling stays wired as an automatic fallback
+(10s when SSE is down, backed off to 60s while connected). Chosen over WebSockets because tracking is
+one-way server->client and Railway runs a persistent Node server, so SSE needs no extra protocol or infra.
+
+- **`lib/realtime.ts`** — dependency-free `globalThis` singleton bus: `subscribe(orderId, send)`,
+  `publish(orderId, ev)`, `TrackEvent` union (`location` / `status` / `ping`).
+- **`app/api/orders/[id]/stream/route.ts`** — `dynamic = "force-dynamic"`, `runtime = "nodejs"` SSE
+  endpoint; emits a one-shot snapshot then live bus events, 20s keep-alive, full cleanup on disconnect.
+- **Publishers (after the DB write):** `app/api/driver/location/route.ts` (location),
+  `app/api/orders/[id]/track/route.ts` POST (status), `app/admin/dispatch/actions.ts` (assignment).
+- **Consumer:** `components/logistics/tracking-client.tsx` — `EventSource` + reduced-motion-safe "Live"
+  badge (`rt_live` in uz/ru/en); poll fallback retained.
+
+Single-instance caveat: the bus is per-process (fine for Railway's single instance); horizontal scaling
+later needs a Redis pub/sub swap (the `subscribe`/`publish` API is broker-agnostic for this reason).
+
+Full spec: [REALTIME.md](./REALTIME.md). Verified: `next build` green with no Clerk keys; `tsc` clean;
+i18n parity across uz/ru/en.
+
 ## Remaining roadmap
 
-1. **Real-time** — polling -> WebSockets/SSE for the live map + instant status.
-2. **Vendor prep-time** — explicit accept/reject with an estimated prep time feeding dispatch timing.
-3. **Partner Pull/Push API** — Client ID/Secret, JSON, for external POS partners.
+1. **Vendor prep-time** — explicit accept/reject with an estimated prep time feeding dispatch timing.
+2. **Partner Pull/Push API** — Client ID/Secret, JSON, for external POS partners.
+3. **Capacity-aware dispatch** — factor courier load / vendor prep time into assignment, not just distance.
