@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingBasket } from "lucide-react";
 import { t, type Locale } from "@/lib/i18n";
 
@@ -20,13 +21,22 @@ export function Footer({ locale }: { locale: Locale }) {
   return (
     <footer className="w-full border-t border-border-primary bg-bg-secondary/30 px-6 py-10 text-center text-text-primary transition-colors duration-300">
       <div className="mx-auto flex items-center justify-center gap-2">
-        <span
-          aria-hidden
-          className="grid h-8 w-8 place-items-center rounded-lg shadow-[var(--shadow-md)]"
-          style={{ background: "var(--accent)", color: "var(--on-accent)" }}
-        >
-          <ShoppingBasket size={16} strokeWidth={2.5} />
-        </span>
+        <div className="relative h-9 w-9 overflow-hidden rounded-xl">
+          <Image
+            src="/logo.png"
+            alt="Xarid Logo"
+            fill
+            className="object-contain"
+          />
+          {/* Current/Previous logo (preserved):
+          <span
+            className="absolute inset-0 grid place-items-center rounded-lg shadow-[var(--shadow-md)]"
+            style={{ background: "var(--accent)", color: "var(--on-accent)" }}
+          >
+            <ShoppingBasket size={16} strokeWidth={2.5} />
+          </span>
+          */}
+        </div>
         <span className="font-display text-lg font-extrabold tracking-tight">Xarid</span>
       </div>
 

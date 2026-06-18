@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useBasket } from "./basket-provider";
 import { LanguageSwitcher } from "./language-switcher";
@@ -69,7 +70,7 @@ export function Header({
 
   async function logout() {
     setMenuOpen(false);
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => { });
     router.refresh();
   }
 
@@ -94,14 +95,20 @@ export function Header({
         >
           <motion.div
             whileHover={{ scale: 1.08 }}
-            aria-hidden
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl"
-            style={{
-              background: "linear-gradient(135deg, var(--accent), var(--accent))",
-              boxShadow: "var(--shadow-glow-accent)",
-            }}
+            className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl"
           >
-            <ShoppingBasket size={18} strokeWidth={2.5} style={{ color: "var(--on-accent)" }} />
+            <Image
+              src="/logo.png"
+              alt="Xarid Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+            {/* Current/Previous logo (preserved):
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)] to-[var(--accent)] flex items-center justify-center rounded-xl">
+              <ShoppingBasket size={18} strokeWidth={2.5} style={{ color: "var(--on-accent)" }} />
+            </div>
+            */}
           </motion.div>
           <span
             className="font-display text-lg font-extrabold tracking-tight transition-colors duration-200 group-hover:text-[color:var(--accent)]"
