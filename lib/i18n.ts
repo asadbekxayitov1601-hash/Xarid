@@ -57,6 +57,7 @@ const dict = {
     sending: "Yuborilmoqda...",
     thanks: "Rahmat! Tez orada bog'lanamiz.",
     error_generic: "Xatolik yuz berdi, qayta urinib ko'ring.",
+    co_err_unavailable: "Ba'zi mahsulotlar endi mavjud emas va savatdan olib tashlandi. Iltimos, savatni qayta ko'rib chiqing.",
     // catalog
     search_placeholder: "Qidirish: piyoz, guruch, sut...",
     all: "Hammasi",
@@ -527,6 +528,7 @@ const dict = {
     sending: "Отправка...",
     thanks: "Спасибо! Скоро свяжемся.",
     error_generic: "Произошла ошибка, попробуйте ещё раз.",
+    co_err_unavailable: "Некоторые товары больше недоступны и удалены из корзины. Пожалуйста, проверьте корзину.",
     search_placeholder: "Поиск: лук, рис, молоко...",
     all: "Все",
     add_to_basket: "В корзину",
@@ -993,6 +995,7 @@ const dict = {
     sending: "Sending...",
     thanks: "Thanks! We'll be in touch shortly.",
     error_generic: "Something went wrong, please try again.",
+    co_err_unavailable: "Some items are no longer available and were removed from your basket. Please review it.",
     search_placeholder: "Search: onion, rice, milk...",
     all: "All",
     add_to_basket: "Add",

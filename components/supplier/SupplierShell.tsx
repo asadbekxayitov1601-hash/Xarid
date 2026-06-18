@@ -75,7 +75,7 @@ export function SupplierShell({
             style={{
               background:
                 "linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 60%, var(--bg-primary)))",
-              color: "var(--bg-primary)",
+              color: "var(--on-accent)",
               fontFamily: "var(--font-display, Inter)",
               boxShadow: "var(--shadow-glow-accent)",
             }}
@@ -114,7 +114,7 @@ export function SupplierShell({
                   active
                     ? {
                         background: "var(--accent)",
-                        color: "var(--bg-primary)",
+                        color: "var(--on-accent)",
                         fontFamily: "var(--font-display, Inter)",
                       }
                     : { color: "var(--text-secondary)" }

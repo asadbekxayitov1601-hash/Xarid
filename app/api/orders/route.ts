@@ -63,17 +63,24 @@ export async function POST(req: NextRequest) {
   const offers = await prisma.supplierOffer.findMany({ where: { id: { in: offerIds }, available: true } });
   const offerById = new Map(offers.map((o) => [o.id, o]));
 
+  // Collect EVERY problem item (offer missing/unavailable, qty invalid, or
+  // below minQty) instead of bailing on the first one, then return a stable
+  // coded error the client maps to a friendly, translated message. The raw
+  // offer id must never reach the user (it changes on a catalog re-seed and is
+  // meaningless to a shopper). The frontend uses offerIds to prune the basket.
   const lines: { offerId: string; qty: number; price: number; costPrice: number }[] = [];
+  const badIds: string[] = [];
   for (const i of items) {
     const offer = offerById.get(String(i.offerId));
     const qty = Number(i.qty);
-    if (!offer || !Number.isFinite(qty) || qty <= 0) {
-      return NextResponse.json({ error: `Mahsulot mavjud emas yoki miqdor noto'g'ri: ${i.offerId}` }, { status: 409 });
-    }
-    if (qty < offer.minQty) {
-      return NextResponse.json({ error: `Minimal miqdor ${offer.minQty} (offer ${offer.id})` }, { status: 409 });
+    if (!offer || !Number.isFinite(qty) || qty <= 0 || qty < offer.minQty) {
+      badIds.push(String(i.offerId));
+      continue;
     }
     lines.push({ offerId: offer.id, qty, price: offer.price, costPrice: offer.costPrice });
+  }
+  if (badIds.length > 0) {
+    return NextResponse.json({ error: "items_unavailable", offerIds: badIds }, { status: 409 });
   }
 
   const total = lines.reduce((s, l) => s + Math.round(l.price * l.qty), 0);

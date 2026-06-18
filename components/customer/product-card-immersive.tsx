@@ -168,8 +168,8 @@ export function ImmersiveProductCard({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer select-none"
               style={{
                 background: "var(--accent)",
-                color: "var(--bg-primary)",
-                boxShadow: "var(--shadow-glow-accent, 0 0 12px rgba(165,86,251,0.35))",
+                color: "var(--on-accent)",
+                boxShadow: "var(--shadow-glow-accent, 0 0 12px rgba(89,199,73,0.35))",
                 fontFamily: "var(--font-display, Outfit), sans-serif",
               }}
             >

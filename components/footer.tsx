@@ -23,7 +23,7 @@ export function Footer({ locale }: { locale: Locale }) {
         <span
           aria-hidden
           className="grid h-8 w-8 place-items-center rounded-lg shadow-[var(--shadow-md)]"
-          style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+          style={{ background: "var(--accent)", color: "var(--on-accent)" }}
         >
           <ShoppingBasket size={16} strokeWidth={2.5} />
         </span>

@@ -250,7 +250,7 @@ export function AboutCompanyForm({ locale, initial }: AboutCompanyFormProps) {
               style={{
                 background:
                   "linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 60%, var(--bg-primary)))",
-                color: "var(--bg-primary)",
+                color: "var(--on-accent)",
                 fontFamily: "var(--font-display, Inter)",
               }}
               aria-hidden
@@ -305,7 +305,7 @@ export function AboutCompanyForm({ locale, initial }: AboutCompanyFormProps) {
           className="glow-button inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-50"
           style={{
             background: "var(--accent)",
-            color: "var(--bg-primary)",
+            color: "var(--on-accent)",
             fontFamily: "var(--font-display, Inter)",
           }}
         >

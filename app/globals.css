@@ -22,38 +22,38 @@
   --color-accent-3: var(--accent-3);
   --color-accent-3-glow: var(--accent-3-glow);
 
-  /* Brand re-palette — emerald utility ramp remapped to the brand PURPLE
-     (#A556FB at 500). Historic `emerald-*` classes across the app now render
+  /* Brand re-palette — emerald utility ramp remapped to the brand GREEN
+     (#59C749 at 500). Historic `emerald-*` classes across the app now render
      as the brand accent without touching every file. See docs/DESIGN_SYSTEM.md
      §2. Genuine "delivered/success" semantics use the --status-success token
-     (still functional green), not these classes. */
-  --color-emerald-50: #f6effe;
-  --color-emerald-100: #ecdcfd;
-  --color-emerald-200: #dabffb;
-  --color-emerald-300: #c79bf9;
-  --color-emerald-400: #b675fc;
-  --color-emerald-500: #a556fb;
-  --color-emerald-600: #8a3be0;
-  --color-emerald-700: #6f2cba;
-  --color-emerald-800: #5a2599;
-  --color-emerald-900: #4a217d;
-  --color-emerald-950: #2e0f53;
+     (kept distinct from the brand green), not these classes. */
+  --color-emerald-50: #eef9e9;
+  --color-emerald-100: #d7f1cc;
+  --color-emerald-200: #b4e6a0;
+  --color-emerald-300: #8dd873;
+  --color-emerald-400: #6fcd56;
+  --color-emerald-500: #59c749;
+  --color-emerald-600: #46a838;
+  --color-emerald-700: #38842d;
+  --color-emerald-800: #2f6927;
+  --color-emerald-900: #285623;
+  --color-emerald-950: #11300e;
 
-  /* Brand re-palette — amber utility ramp remapped to the brand INDIGO
-     (#4922E5 at 500). Historic `amber-*` brand classes now render as the
+  /* Brand re-palette — amber utility ramp remapped to the DARKER BRAND GREEN
+     (#3DA233 at 500). Historic `amber-*` brand classes now render as the
      secondary accent. Genuine "placed/pending/warning" semantics use the
      --status-warning token (still functional amber), not these classes. */
-  --color-amber-50: #eeeafe;
-  --color-amber-100: #ddd4fd;
-  --color-amber-200: #bcaafb;
-  --color-amber-300: #9a7ff7;
-  --color-amber-400: #7551ef;
-  --color-amber-500: #4922e5;
-  --color-amber-600: #3c1cc0;
-  --color-amber-700: #31179c;
-  --color-amber-800: #28147e;
-  --color-amber-900: #211166;
-  --color-amber-950: #150a42;
+  --color-amber-50: #eaf6e8;
+  --color-amber-100: #cfe9cb;
+  --color-amber-200: #a6d79f;
+  --color-amber-300: #76c06c;
+  --color-amber-400: #52ad46;
+  --color-amber-500: #3da233;
+  --color-amber-600: #318829;
+  --color-amber-700: #296e23;
+  --color-amber-800: #24591f;
+  --color-amber-900: #1f4a1c;
+  --color-amber-950: #0e280b;
 
   /* Typography — DESIGN_SYSTEM.md §3.2. font-body (default) + font-display
      (headlines, stat numbers). Manrope shapes Latin + Cyrillic; falls back to
@@ -63,59 +63,65 @@
 }
 
 :root {
-  --accent: #a556fb;
-  /* brand purple */
-  --accent-glow: rgba(165, 86, 251, 0.15);
+  --accent: #59c749;
+  /* brand green */
+  --accent-glow: rgba(89, 199, 73, 0.15);
+  /* Dark ink for text on a green accent fill. Mid-green fails AA with
+     cream/white text, so on-accent text uses a near-black green ink. Defined
+     in both themes (same value) so buttons stay readable in dark + light. */
+  --on-accent: #07260a;
 
   /* Dark mode defaults */
   color-scheme: dark;
-  --bg-primary: #020202;
-  /* brand near-black */
-  --bg-secondary: #0c0a12;
-  /* faintly purple-tinted lifted near-black */
+  --bg-primary: #0b100a;
+  /* near-black, faintly green-tinted */
+  --bg-secondary: #121a10;
+  /* lifted green-tinted near-black */
   --text-primary: #f7f6fb;
   /* near-white */
-  --text-secondary: #c9c3d6;
-  /* muted lavender-grey */
+  --text-secondary: #c9d6c3;
+  /* muted green-grey */
   --border-color: rgba(255, 255, 255, 0.08);
 
-  --glass-bg: rgba(12, 10, 18, 0.65);
+  --glass-bg: rgba(18, 26, 16, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-hover-border: rgba(165, 86, 251, 0.3);
+  --glass-hover-border: rgba(89, 199, 73, 0.3);
   --glass-hover-shadow: rgba(0, 0, 0, 0.6);
-  --glass-glow: rgba(165, 86, 251, 0.15);
+  --glass-glow: rgba(89, 199, 73, 0.15);
   --input-bg: rgba(255, 255, 255, 0.03);
   --input-border: rgba(255, 255, 255, 0.08);
 
-  --scroll-track: #020202;
-  --scroll-thumb: #2a1d3f;
+  --scroll-track: #0b100a;
+  --scroll-thumb: #2a3f1d;
 }
 
 html.light {
   color-scheme: light;
-  --accent: #8a3be0;
-  /* brand purple, slightly deepened for AA contrast on light bg */
-  --accent-glow: rgba(165, 86, 251, 0.12);
-  --bg-primary: #f6f4fb;
-  /* near-white, faintly lavender */
-  --bg-secondary: #ece8f6;
-  /* lifted lavender-grey */
-  --text-primary: #1a1430;
-  /* deep indigo-ink */
-  --text-secondary: #4b4661;
-  /* muted indigo-grey */
-  --border-color: rgba(40, 24, 80, 0.1);
+  --accent: #3da233;
+  /* darker brand green — readable on cream, passes AA for accent text/borders */
+  --accent-glow: rgba(89, 199, 73, 0.12);
+  --on-accent: #07260a;
+  /* dark green ink for text on green fills (see :root note) */
+  --bg-primary: #fffdf1;
+  /* cream */
+  --bg-secondary: #f5efdf;
+  /* lifted cream / warm parchment */
+  --text-primary: #17210f;
+  /* deep green-ink */
+  --text-secondary: #5a6150;
+  /* muted green-grey */
+  --border-color: rgba(23, 33, 15, 0.1);
 
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(40, 24, 80, 0.08);
-  --glass-hover-border: rgba(165, 86, 251, 0.4);
-  --glass-hover-shadow: rgba(40, 24, 80, 0.12);
-  --glass-glow: rgba(165, 86, 251, 0.1);
+  --glass-bg: rgba(255, 253, 241, 0.78);
+  --glass-border: rgba(23, 33, 15, 0.08);
+  --glass-hover-border: rgba(61, 162, 51, 0.4);
+  --glass-hover-shadow: rgba(23, 33, 15, 0.12);
+  --glass-glow: rgba(89, 199, 73, 0.1);
   --input-bg: rgba(255, 255, 255, 0.85);
-  --input-border: rgba(40, 24, 80, 0.14);
+  --input-border: rgba(23, 33, 15, 0.14);
 
-  --scroll-track: #ece8f6;
-  --scroll-thumb: #cdc2e6;
+  --scroll-track: #f5efdf;
+  --scroll-thumb: #d6cdae;
 }
 
 body {
@@ -138,7 +144,7 @@ body {
 
 ::selection {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 /* Custom Scrollbar */
@@ -347,8 +353,8 @@ body {
 
 .card-3d:hover {
   transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-6px);
-  border-color: rgba(165, 86, 251, 0.25);
-  box-shadow: 0 28px 56px -20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(165, 86, 251, 0.1);
+  border-color: rgba(89, 199, 73, 0.25);
+  box-shadow: 0 28px 56px -20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(89, 199, 73, 0.1);
 }
 
 /* ---------- Category Hover Effects ---------- */
@@ -363,7 +369,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(165, 86, 251, 0.1) 0%, rgba(73, 34, 229, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(89, 199, 73, 0.1) 0%, rgba(61, 162, 51, 0.05) 100%);
   opacity: 0;
   transition: opacity 0.4s ease;
 }
@@ -382,7 +388,7 @@ body {
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 8px 20px -6px rgba(165, 86, 251, 0.4);
+  box-shadow: 0 8px 20px -6px rgba(89, 199, 73, 0.4);
 }
 
 .glow-button::after {
@@ -401,7 +407,7 @@ body {
 }
 
 .glow-button:hover {
-  box-shadow: 0 12px 28px -4px rgba(165, 86, 251, 0.6), 0 0 20px rgba(165, 86, 251, 0.2);
+  box-shadow: 0 12px 28px -4px rgba(89, 199, 73, 0.6), 0 0 20px rgba(89, 199, 73, 0.2);
 }
 
 .glow-button:hover::after {
@@ -421,8 +427,8 @@ body {
 }
 
 .glow-status-delivered {
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
+  border: 1px solid rgba(20, 184, 166, 0.3);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -461,18 +467,19 @@ body {
 
 :root {
   /* Secondary + tertiary accents */
-  --accent-2: #4922e5;
-  /* brand deep indigo — charts series 2, sub-highlights, gradients */
-  --accent-2-glow: rgba(73, 34, 229, 0.18);
+  --accent-2: #3da233;
+  /* darker brand green — charts series 2, sub-highlights, gradients */
+  --accent-2-glow: rgba(61, 162, 51, 0.18);
   --accent-3: #38bdf8;
   /* sky-400 — kept cool so chart slices stay distinct from the purple/indigo
      brand and so "in-motion / in-transit" reads as a separate signal */
   --accent-3-glow: rgba(56, 189, 248, 0.15);
 
-  /* Status colors (4 semantic states) — kept FUNCTIONAL (green/amber/red/blue)
-     so order / PO / delivery states stay readable; success is never purple. */
-  --status-success: #10b981;
-  --status-success-bg: rgba(16, 185, 129, 0.12);
+  /* Status colors (4 semantic states) — kept FUNCTIONAL (teal/amber/red/blue)
+     so order / PO / delivery states stay readable. Success is a cool teal so it
+     stays visually distinct from the warmer yellow-green brand --accent. */
+  --status-success: #14b8a6;
+  --status-success-bg: rgba(20, 184, 166, 0.12);
   --status-warning: #f59e0b;
   --status-warning-bg: rgba(245, 158, 11, 0.12);
   --status-danger: #ef4444;
@@ -486,8 +493,8 @@ body {
   --shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.6);
   --shadow-xl: 0 36px 72px -24px rgba(0, 0, 0, 0.7);
-  --shadow-glow-accent: 0 0 32px rgba(165, 86, 251, 0.3);
-  --shadow-glow-accent-2: 0 0 32px rgba(73, 34, 229, 0.25);
+  --shadow-glow-accent: 0 0 32px rgba(89, 199, 73, 0.3);
+  --shadow-glow-accent-2: 0 0 32px rgba(61, 162, 51, 0.25);
   --shadow-glow-info: 0 0 32px rgba(56, 189, 248, 0.25);
   --shadow-glow-danger: 0 0 32px rgba(239, 68, 68, 0.25);
 
@@ -498,15 +505,15 @@ body {
 }
 
 html.light {
-  --accent-2: #4922e5;
-  /* brand deep indigo — already strong on light bg */
-  --accent-2-glow: rgba(73, 34, 229, 0.12);
+  --accent-2: #59c749;
+  /* brighter brand green — pairs with the darker --accent on cream */
+  --accent-2-glow: rgba(89, 199, 73, 0.12);
   --accent-3: #0284c7;
   /* sky-600 — cool tertiary, kept distinct from brand */
   --accent-3-glow: rgba(56, 189, 248, 0.1);
 
-  --status-success: #059669;
-  --status-success-bg: rgba(16, 185, 129, 0.1);
+  --status-success: #0d9488;
+  --status-success-bg: rgba(20, 184, 166, 0.1);
   --status-warning: #d97706;
   --status-warning-bg: rgba(245, 158, 11, 0.1);
   --status-danger: #dc2626;
@@ -519,8 +526,8 @@ html.light {
   --shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.12);
   --shadow-xl: 0 36px 72px -24px rgba(0, 0, 0, 0.16);
-  --shadow-glow-accent: 0 0 32px rgba(165, 86, 251, 0.18);
-  --shadow-glow-accent-2: 0 0 32px rgba(73, 34, 229, 0.15);
+  --shadow-glow-accent: 0 0 32px rgba(89, 199, 73, 0.18);
+  --shadow-glow-accent-2: 0 0 32px rgba(61, 162, 51, 0.15);
   --shadow-glow-info: 0 0 32px rgba(56, 189, 248, 0.15);
   --shadow-glow-danger: 0 0 32px rgba(239, 68, 68, 0.15);
   --marquee-fade: 48px;

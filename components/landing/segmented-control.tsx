@@ -39,7 +39,7 @@ export function SegmentedControl({
             aria-selected={active}
             onClick={() => onChange(seg.id)}
             className="relative min-h-10 flex-1 cursor-pointer rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
-            style={{ color: active ? "var(--bg-primary)" : "var(--text-secondary)" }}
+            style={{ color: active ? "var(--on-accent)" : "var(--text-secondary)" }}
           >
             {active && (
               <motion.span

@@ -10,29 +10,31 @@
 ## 1. Design philosophy
 
 Xarid is a B2B marketplace where Tashkent restaurant owners order tomorrow's
-inventory while their sous-chef closes the kitchen. The mood is **calm,
-nocturnal, expensive** — closer to Yandex Go's polished operator console than
-to a generic e-commerce dashboard. Surfaces feel like real glass plates
-floating in a softly-lit room: tactile depth, slow ambient motion, vivid
-purple highlights that read as "supply confirmed". Light mode is the same room with
-the curtains open — same furniture, sunlight instead of lamp light. We
-default dark because most operators use the app at 22:00 placing the morning
-order. Everything must remain readable on a 5-inch phone inside the Telegram
-mini-app webview.
+inventory while their sous-chef closes the kitchen. The mood is **fresh,
+warm, trustworthy** — a sunlit grocery aisle rather than a generic e-commerce
+dashboard. Surfaces feel like real glass plates resting on a cream counter:
+tactile depth, slow ambient motion, vivid green highlights that read as "supply
+confirmed / fresh". **Light mode is the default** — cream background with green
+accents, the room with the curtains open. Dark mode is the same room at night:
+a green-tinted near-black with the same green accents. Everything must remain
+readable on a 5-inch phone inside the Telegram mini-app webview.
 
 ---
 
 ## 2. Color system
 
-> **Brand re-palette (current).** The brand moved from emerald/amber to a
-> vivid **purple / deep indigo / near-black** system. Primary accent is
-> `#A556FB` (purple); secondary accent is `#4922E5` (deep indigo); the darkest
-> dark-mode background is `#020202` (near-black). The historic emerald/amber
-> Tailwind utility ramps are remapped to these brand hues in the `@theme` block
-> of `app/globals.css`, so legacy `emerald-*` / `amber-*` classes now render as
-> the brand. **Functional status colors stay functional** (green = delivered,
-> amber = placed/pending, red = cancelled, blue/sky = confirmed/in-transit) —
-> see §2.2.
+> **Brand re-palette (current).** The brand is a **cream + green, light-first**
+> system. Primary accent is `#59C749` (fresh green); secondary accent is
+> `#3DA233` (a darker green); the light-mode background is `#FFFDF1` (cream) and
+> the dark-mode background is `#0B100A` (green-tinted near-black). Text on a
+> green fill uses a near-black green ink (`#07260A`, the `--on-accent` token) —
+> cream/white text fails WCAG AA on mid-green, so never put light text on a
+> green button. The historic emerald/amber Tailwind utility ramps are remapped
+> to green hues in the `@theme` block of `app/globals.css`, so legacy
+> `emerald-*` / `amber-*` classes now render as the brand green. **Functional
+> status colors stay functional** (teal = delivered, amber = placed/pending,
+> red = cancelled, blue/sky = confirmed/in-transit) — success uses a cool teal
+> so it stays distinct from the warmer brand green. See §2.2.
 
 ### 2.1 Core tokens (do not remove)
 
@@ -40,26 +42,27 @@ mini-app webview.
 
 | Token                  | Dark                       | Light                  | Use                              |
 |------------------------|----------------------------|------------------------|----------------------------------|
-| `--accent`             | `#A556FB` brand purple     | `#8A3BE0` (deepened)   | Primary action, brand            |
-| `--accent-glow`        | `rgba(165,86,251,.15)`     | `rgba(165,86,251,.12)` | Halo behind primary surfaces     |
-| `--bg-primary`         | `#020202` near-black       | `#f6f4fb` lavender-white| Page background                 |
-| `--bg-secondary`       | `#0c0a12` purple-tinted    | `#ece8f6` lavender-grey| Section / card base              |
-| `--text-primary`       | `#f7f6fb` near-white       | `#1a1430` indigo-ink   | Headlines, body                  |
-| `--text-secondary`     | `#c9c3d6` lavender-grey    | `#4b4661` indigo-grey  | Captions, meta                   |
-| `--border-color`       | `rgba(255,255,255,.08)`    | `rgba(40,24,80,.1)`    | Hairline borders                 |
-| `--glass-bg`           | `rgba(12,10,18,.65)`       | `rgba(255,255,255,.72)`| Glass card fill                  |
-| `--glass-hover-border` | `rgba(165,86,251,.3)`      | `rgba(165,86,251,.4)`  | Card hover edge                  |
-| `--glass-glow`         | `rgba(165,86,251,.15)`     | `rgba(165,86,251,.1)`  | Card hover halo                  |
+| `--accent`             | `#59C749` brand green      | `#3DA233` (deepened)   | Primary action, brand            |
+| `--accent-glow`        | `rgba(89,199,73,.15)`      | `rgba(89,199,73,.12)`  | Halo behind primary surfaces     |
+| `--on-accent`          | `#07260A` dark green ink   | `#07260A` dark green ink| Text/icon on a green accent fill (AA) |
+| `--bg-primary`         | `#0b100a` green near-black | `#fffdf1` cream         | Page background                 |
+| `--bg-secondary`       | `#121a10` green near-black | `#f5efdf` warm cream   | Section / card base              |
+| `--text-primary`       | `#f7f6fb` near-white       | `#17210f` green-ink    | Headlines, body                  |
+| `--text-secondary`     | `#c9d6c3` green-grey       | `#5a6150` green-grey   | Captions, meta                   |
+| `--border-color`       | `rgba(255,255,255,.08)`    | `rgba(23,33,15,.1)`    | Hairline borders                 |
+| `--glass-bg`           | `rgba(18,26,16,.65)`       | `rgba(255,253,241,.78)`| Glass card fill                  |
+| `--glass-hover-border` | `rgba(89,199,73,.3)`       | `rgba(61,162,51,.4)`   | Card hover edge                  |
+| `--glass-glow`         | `rgba(89,199,73,.15)`      | `rgba(89,199,73,.1)`   | Card hover halo                  |
 
 ### 2.2 NEW tokens (added in section 11 below)
 
 | Token                  | Dark                       | Light                  | Use                              |
 |------------------------|----------------------------|------------------------|----------------------------------|
-| `--accent-2`           | `#4922E5` brand indigo     | `#4922E5` brand indigo | Secondary accent (charts, gradients) |
-| `--accent-2-glow`      | `rgba(73,34,229,.18)`      | `rgba(73,34,229,.12)`  | Halo for indigo surfaces         |
-| `--accent-3`           | `#38bdf8` sky-400          | `#0284c7` sky-600      | Tertiary accent (links, info, in-motion) — kept cool so chart slices stay distinct from the purple/indigo brand |
-| `--status-success`     | `#10b981` (functional)     | `#059669`              | Delivered, paid, healthy         |
-| `--status-success-bg`  | `rgba(16,185,129,.12)`     | `rgba(16,185,129,.1)`  | Badge fill                       |
+| `--accent-2`           | `#3DA233` darker green     | `#59C749` brighter green| Secondary accent (charts, gradients) |
+| `--accent-2-glow`      | `rgba(61,162,51,.18)`      | `rgba(89,199,73,.12)`  | Halo for secondary-green surfaces |
+| `--accent-3`           | `#38bdf8` sky-400          | `#0284c7` sky-600      | Tertiary accent (links, info, in-motion) — kept cool so chart slices stay distinct from the green brand |
+| `--status-success`     | `#14b8a6` teal (functional)| `#0d9488`              | Delivered, paid, healthy (cool teal, distinct from brand green) |
+| `--status-success-bg`  | `rgba(20,184,166,.12)`     | `rgba(20,184,166,.1)`  | Badge fill                       |
 | `--status-warning`     | `#f59e0b` (functional)     | `#d97706`              | Placed, pending, partial         |
 | `--status-warning-bg`  | `rgba(245,158,11,.12)`     | `rgba(245,158,11,.1)`  | Badge fill                       |
 | `--status-danger`      | `#ef4444` (functional)     | `#dc2626`              | Cancelled, failed                |
@@ -71,7 +74,7 @@ mini-app webview.
 | `--shadow-md`          | `0 12px 28px -8px rgba(0,0,0,.55)` | `0 12px 28px -8px rgba(0,0,0,.1)` | Resting card           |
 | `--shadow-lg`          | `0 24px 48px -16px rgba(0,0,0,.6)` | `0 24px 48px -16px rgba(0,0,0,.12)` | Hovered card / modal |
 | `--shadow-xl`          | `0 36px 72px -24px rgba(0,0,0,.7)` | `0 36px 72px -24px rgba(0,0,0,.16)` | Hero focal element  |
-| `--shadow-glow-accent` | `0 0 32px rgba(165,86,251,.3)` | `0 0 32px rgba(165,86,251,.18)` | Accent halo (CTAs)      |
+| `--shadow-glow-accent` | `0 0 32px rgba(89,199,73,.3)` | `0 0 32px rgba(89,199,73,.18)` | Accent halo (CTAs)      |
 
 ### 2.3 Usage rules
 
@@ -80,19 +83,22 @@ mini-app webview.
   lives in `app/globals.css` (token definitions) and in a handful of
   non-CSS contexts that cannot read CSS vars (Leaflet map polylines, the
   standalone `global-error.tsx` and `app/icon.svg`).
-- **Brand purple (`--accent`) = Xarid identity** — primary CTAs, brand marks,
-  active nav, selected chips, the hero. Text on a purple fill is white (the
-  fill is mid-luminance; near-black text fails AA).
-- **Brand indigo (`--accent-2`) = secondary brand** — gradient partner for
-  purple, chart secondary series, sub-highlights, satellite accents.
+- **Brand green (`--accent`) = Xarid identity** — primary CTAs, brand marks,
+  active nav, selected chips, the hero. **Text/icons on a green fill use the
+  dark green ink `--on-accent` (`#07260A`)** — the green fill is mid-luminance, so
+  cream/white text fails WCAG AA. Never set button text to `var(--bg-primary)`
+  on a green fill: in light mode that is cream-on-green (unreadable).
+- **Secondary green (`--accent-2`) = secondary brand** — gradient partner for
+  the primary green, chart secondary series, sub-highlights, satellite accents.
 - **Status colors are FUNCTIONAL and never brand-tinted:**
-  green = delivered/paid/healthy, amber = placed/pending/partial,
+  teal = delivered/paid/healthy, amber = placed/pending/partial,
   red = cancelled/failed, sky/blue = confirmed/in-transit. Use the
   `--status-*` tokens (or `glow-status-*` utilities) for these — do NOT use the
-  brand accent for a "delivered" pill.
+  brand accent for a "delivered" pill. Success is a cool teal precisely so it
+  never gets confused with the warmer brand green.
 - Sky (`--accent-3`) doubles as "in motion" (delivering) and the third chart
   hue; it is deliberately kept cool so chart slices and in-transit states stay
-  distinguishable from the purple/indigo brand.
+  distinguishable from the green brand.
 
 ---
 
