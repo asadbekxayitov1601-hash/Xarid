@@ -197,7 +197,7 @@ export function LandingClient({ locale }: LandingClientProps) {
                 whileTap={reduce ? undefined : { scale: 0.97 }}
                 onClick={() => router.push("/catalog")}
                 className="glow-button flex cursor-pointer items-center gap-2 rounded-full px-7 py-3.5 font-display text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-primary)]"
-                style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                style={{ background: "var(--accent)", color: "var(--on-accent)" }}
               >
                 {t(locale, "landing_cta_catalog")} <ArrowRight size={18} />
               </motion.button>

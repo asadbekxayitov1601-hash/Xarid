@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const cookieStore = await cookies();
-  const theme = cookieStore.get("theme")?.value || "dark";
+  const theme = cookieStore.get("theme")?.value || "light";
 
   let userName: string | null = null;
   const userId = await getSessionUserId();

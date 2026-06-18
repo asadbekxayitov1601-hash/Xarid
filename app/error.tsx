@@ -59,7 +59,7 @@ export default function Error({
             className="px-5 py-3 rounded-2xl text-sm font-bold transition-all glow-button"
             style={{
               background: "var(--accent)",
-              color: "var(--bg-primary)",
+              color: "var(--on-accent)",
               fontFamily: "var(--font-display, Outfit), sans-serif",
             }}
           >

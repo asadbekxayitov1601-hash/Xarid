@@ -158,7 +158,7 @@ export function SupplierClient({
             activeTab === "orders"
               ? {
                   background: "var(--accent)",
-                  color: "var(--bg-primary)",
+                  color: "var(--on-accent)",
                   fontFamily: "var(--font-display, Inter)",
                 }
               : { color: "var(--text-secondary)", fontFamily: "var(--font-display, Inter)" }
@@ -173,7 +173,7 @@ export function SupplierClient({
             activeTab === "offers"
               ? {
                   background: "var(--accent)",
-                  color: "var(--bg-primary)",
+                  color: "var(--on-accent)",
                   fontFamily: "var(--font-display, Inter)",
                 }
               : { color: "var(--text-secondary)", fontFamily: "var(--font-display, Inter)" }
@@ -347,7 +347,7 @@ export function SupplierClient({
                                   className="glow-button flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer disabled:opacity-50"
                                   style={{
                                     background: "var(--accent)",
-                                    color: "var(--bg-primary)",
+                                    color: "var(--on-accent)",
                                     fontFamily: "var(--font-display, Inter)",
                                   }}
                                 >

@@ -93,7 +93,7 @@ export function AnalyticsDashboard(props: AnalyticsDashboardProps) {
               className="glow-button mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold"
               style={{
                 background: "var(--accent)",
-                color: "var(--bg-primary)",
+                color: "var(--on-accent)",
               }}
             >
               <Package size={14} aria-hidden />

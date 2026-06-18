@@ -200,7 +200,7 @@ export function ProductUploadForm({ locale }: { locale: Locale }) {
           className="glow-button inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-50"
           style={{
             background: "var(--accent)",
-            color: "var(--bg-primary)",
+            color: "var(--on-accent)",
             fontFamily: "var(--font-display, Inter)",
           }}
         >

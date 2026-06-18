@@ -250,7 +250,7 @@ export function DispatchBoard({
                     })().finally(() => setAutoAllBusy(false));
                   }}
                   className="glow-button rounded-full px-3 py-1 text-xs font-bold disabled:opacity-60"
-                  style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                  style={{ background: "var(--accent)", color: "var(--on-accent)" }}
                 >
                   {autoAllBusy ? t(locale, "disp_auto_running") : t(locale, "disp_auto_all_btn")}
                 </button>
@@ -339,7 +339,7 @@ export function DispatchBoard({
                         type="submit"
                         disabled={isPending}
                         className="glow-button rounded-xl px-3 py-2 text-sm font-bold disabled:opacity-60"
-                        style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                        style={{ background: "var(--accent)", color: "var(--on-accent)" }}
                       >
                         {t(locale, "disp_assign_btn")}
                       </button>

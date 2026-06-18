@@ -178,7 +178,7 @@ export function MapCard({
             [line.from.lat, line.from.lng],
             [line.to.lat, line.to.lng],
           ],
-          { color: "#a556fb", weight: 3, opacity: 0.7, dashArray: "6 8" }
+          { color: "#59c749", weight: 3, opacity: 0.7, dashArray: "6 8" }
         );
         created.addTo(map);
         lineRef.current = created;

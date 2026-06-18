@@ -115,7 +115,7 @@ export function AdminClient({
                   className="w-7 h-7 rounded-lg flex items-center justify-center"
                   style={{
                     background: "linear-gradient(135deg,var(--accent),var(--accent-2))",
-                    boxShadow: "0 0 12px rgba(165,86,251,0.4)",
+                    boxShadow: "0 0 12px rgba(89,199,73,0.4)",
                   }}
                 >
                   <span className="text-white font-black text-sm" style={{ fontFamily: "Outfit" }}>X</span>
@@ -136,9 +136,9 @@ export function AdminClient({
                     onClick={() => setActiveSection(id)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left cursor-pointer"
                     style={{
-                      background: active ? "rgba(165,86,251,0.15)" : "transparent",
+                      background: active ? "rgba(89,199,73,0.15)" : "transparent",
                       color: active ? "var(--accent)" : "var(--text-secondary)",
-                      border: active ? "1px solid rgba(165,86,251,0.25)" : "1px solid transparent",
+                      border: active ? "1px solid rgba(89,199,73,0.25)" : "1px solid transparent",
                       fontFamily: "Outfit",
                     }}
                   >
@@ -252,7 +252,7 @@ export function AdminClient({
                         initial={{ height: 0 }}
                         animate={{ height: `${pct}%` }}
                         transition={{ delay: idx * 0.05, duration: 0.6 }}
-                        className="w-8 sm:w-10 rounded-t-lg bg-emerald-500 shadow-[0_0_12px_rgba(165,86,251,0.3)] group-hover:bg-emerald-400 transition-colors"
+                        className="w-8 sm:w-10 rounded-t-lg bg-emerald-500 shadow-[0_0_12px_rgba(89,199,73,0.3)] group-hover:bg-emerald-400 transition-colors"
                       />
                       <div className="text-xs text-text-secondary font-medium font-sans">
                         {d.day}

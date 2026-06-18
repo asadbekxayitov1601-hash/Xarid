@@ -171,7 +171,22 @@ export function BasketClient({ locale }: { locale: Locale }) {
       router.push("/orders?placed=1");
     } else {
       const data = await res?.json().catch(() => null);
-      setError(data?.error ?? t(locale, "error_generic"));
+      // Stale/unavailable basket items: the server returns a coded 409 with the
+      // offending offer ids (e.g. after a catalog re-seed changed offer ids).
+      // Quietly prune just those items so the rest of the basket survives, then
+      // show a friendly translated nudge — never the raw server string/offer id.
+      if (
+        res?.status === 409 &&
+        data?.error === "items_unavailable" &&
+        Array.isArray(data?.offerIds)
+      ) {
+        for (const offerId of data.offerIds as string[]) {
+          setQty(String(offerId), 0);
+        }
+        setError(t(locale, "co_err_unavailable"));
+      } else {
+        setError(t(locale, "error_generic"));
+      }
       setState("idle");
     }
   }
@@ -736,7 +751,7 @@ export function BasketClient({ locale }: { locale: Locale }) {
                 className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer"
                 style={{
                   background: "var(--accent)",
-                  color: "var(--bg-primary)",
+                  color: "var(--on-accent)",
                   fontFamily: "var(--font-display, Outfit), sans-serif",
                   fontSize: "1rem",
                   boxShadow: "var(--shadow-md), var(--shadow-glow-accent)",

@@ -61,9 +61,9 @@ export function AuthClient({ locale }: { locale: Locale }) {
     <div className="min-h-screen flex items-center justify-center px-4 pt-16 relative overflow-hidden">
       {/* Ambient blobs */}
       {[
-        { color: "rgba(165,86,251,0.15)", x: "-10%", y: "-10%", size: 500, delay: 0 },
-        { color: "rgba(73,34,229,0.12)", x: "60%", y: "50%", size: 400, delay: 3 },
-        { color: "rgba(165,86,251,0.08)", x: "20%", y: "70%", size: 350, delay: 6 },
+        { color: "rgba(89,199,73,0.15)", x: "-10%", y: "-10%", size: 500, delay: 0 },
+        { color: "rgba(61,162,51,0.12)", x: "60%", y: "50%", size: 400, delay: 3 },
+        { color: "rgba(89,199,73,0.08)", x: "20%", y: "70%", size: 350, delay: 6 },
       ].map((b, i) => (
         <motion.div
           key={i}
@@ -90,7 +90,7 @@ export function AuthClient({ locale }: { locale: Locale }) {
               className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{
                 background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
-                boxShadow: "0 0 20px rgba(165,86,251,0.4)",
+                boxShadow: "0 0 20px rgba(89,199,73,0.4)",
               }}
             >
               <span className="text-white font-black text-lg" style={{ fontFamily: "Outfit, sans-serif" }}>X</span>
@@ -123,7 +123,7 @@ export function AuthClient({ locale }: { locale: Locale }) {
                 }}
                 className="relative z-10 flex-1 py-2 text-sm font-bold rounded-full transition-colors duration-200 cursor-pointer"
                 style={{
-                  color: mode === m ? "var(--bg-primary)" : "var(--text-secondary)",
+                  color: mode === m ? "var(--on-accent)" : "var(--text-secondary)",
                   fontFamily: "Outfit, sans-serif",
                 }}
               >
@@ -172,7 +172,7 @@ export function AuthClient({ locale }: { locale: Locale }) {
                               background: active
                                 ? "color-mix(in srgb, var(--accent) 12%, transparent)"
                                 : "var(--bg-secondary)",
-                              boxShadow: active ? "0 0 16px rgba(165,86,251,0.25)" : "none",
+                              boxShadow: active ? "0 0 16px rgba(89,199,73,0.25)" : "none",
                             }}
                           >
                             <Icon size={18} style={{ color: active ? "var(--accent)" : "var(--text-secondary)" }} />
@@ -268,16 +268,16 @@ export function AuthClient({ locale }: { locale: Locale }) {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(165,86,251,0.5)" }}
+              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(89,199,73,0.5)" }}
               whileTap={{ scale: 0.97 }}
               type="submit"
               disabled={busy}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-base mt-2 disabled:opacity-50 select-none cursor-pointer"
               style={{
                 background: "var(--accent)",
-                color: "var(--bg-primary)",
+                color: "var(--on-accent)",
                 fontFamily: "Outfit, sans-serif",
-                boxShadow: "0 0 20px rgba(165,86,251,0.4)",
+                boxShadow: "0 0 20px rgba(89,199,73,0.4)",
               }}
             >
               {busy ? (

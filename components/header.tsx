@@ -97,7 +97,7 @@ export function Header({
               boxShadow: "var(--shadow-glow-accent)",
             }}
           >
-            <ShoppingBasket size={18} strokeWidth={2.5} style={{ color: "var(--bg-primary)" }} />
+            <ShoppingBasket size={18} strokeWidth={2.5} style={{ color: "var(--on-accent)" }} />
           </motion.div>
           <span
             className="font-display text-lg font-extrabold tracking-tight transition-colors duration-200 group-hover:text-[color:var(--accent)]"
@@ -117,7 +117,7 @@ export function Header({
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className="relative flex items-center gap-1.5 rounded-full px-3 py-2 font-display text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] sm:px-4"
-                style={{ color: active ? "var(--bg-primary)" : "var(--text-secondary)" }}
+                style={{ color: active ? "var(--on-accent)" : "var(--text-secondary)" }}
               >
                 {active && (
                   <motion.span
@@ -135,7 +135,7 @@ export function Header({
                     initial={{ scale: reduce ? 1 : 0 }}
                     animate={{ scale: 1 }}
                     className="absolute -right-1 -top-1 z-[2] flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold"
-                    style={{ background: "var(--accent-2)", color: "var(--bg-primary)" }}
+                    style={{ background: "var(--accent-2)", color: "var(--on-accent)" }}
                   >
                     {count > 9 ? "9+" : count}
                   </motion.span>
@@ -165,7 +165,7 @@ export function Header({
                 <span
                   aria-hidden
                   className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-display text-xs font-bold uppercase"
-                  style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                  style={{ background: "var(--accent)", color: "var(--on-accent)" }}
                 >
                   {userName.trim().charAt(0) || "?"}
                 </span>
@@ -204,7 +204,7 @@ export function Header({
                       <span
                         aria-hidden
                         className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full font-display text-sm font-bold uppercase"
-                        style={{ background: "var(--accent)", color: "var(--bg-primary)" }}
+                        style={{ background: "var(--accent)", color: "var(--on-accent)" }}
                       >
                         {userName.trim().charAt(0) || "?"}
                       </span>

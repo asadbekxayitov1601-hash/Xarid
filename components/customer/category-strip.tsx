@@ -66,9 +66,9 @@ export function CategoryStrip({
         className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer"
         style={{
           background: !active ? "var(--accent)" : "var(--glass-bg)",
-          color: !active ? "var(--bg-primary)" : "var(--text-secondary)",
+          color: !active ? "var(--on-accent)" : "var(--text-secondary)",
           border: "1px solid var(--glass-border)",
-          boxShadow: !active ? "var(--shadow-glow-accent, 0 0 16px rgba(165,86,251,0.35))" : "none",
+          boxShadow: !active ? "var(--shadow-glow-accent, 0 0 16px rgba(89,199,73,0.35))" : "none",
           fontFamily: "var(--font-display, Outfit), sans-serif",
           backdropFilter: "blur(16px)",
         }}
@@ -86,10 +86,10 @@ export function CategoryStrip({
             className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer"
             style={{
               background: selected ? "var(--accent)" : "var(--glass-bg)",
-              color: selected ? "var(--bg-primary)" : "var(--text-secondary)",
+              color: selected ? "var(--on-accent)" : "var(--text-secondary)",
               border: "1px solid var(--glass-border)",
               boxShadow: selected
-                ? "var(--shadow-glow-accent, 0 0 16px rgba(165,86,251,0.35))"
+                ? "var(--shadow-glow-accent, 0 0 16px rgba(89,199,73,0.35))"
                 : "none",
               fontFamily: "var(--font-display, Outfit), sans-serif",
               backdropFilter: "blur(16px)",

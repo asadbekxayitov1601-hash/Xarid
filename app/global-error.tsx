@@ -41,8 +41,8 @@ export default function GlobalError({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#020202",
-          color: "#f7f6fb",
+          background: "#fffdf1",
+          color: "#17210f",
           fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
           padding: "1.5rem",
         }}
@@ -67,8 +67,8 @@ export default function GlobalError({
               fontSize: 14,
               fontWeight: 700,
               cursor: "pointer",
-              background: "#A556FB",
-              color: "#ffffff",
+              background: "#59c749",
+              color: "#07260a",
             }}
           >
             {t(locale, "err_retry")}

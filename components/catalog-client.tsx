@@ -115,7 +115,7 @@ export function CatalogClient({
                 className="inline-flex items-center gap-2 mt-6 px-5 py-3 rounded-2xl text-sm font-bold transition-all glow-button"
                 style={{
                   background: "var(--accent)",
-                  color: "var(--bg-primary)",
+                  color: "var(--on-accent)",
                   fontFamily: "var(--font-display, Outfit), sans-serif",
                 }}
               >
@@ -214,7 +214,7 @@ export function CatalogClient({
               className="w-full flex items-center justify-between px-6 py-4 rounded-2xl font-bold transition-all select-none glow-button"
               style={{
                 background: "var(--accent)",
-                color: "var(--bg-primary)",
+                color: "var(--on-accent)",
                 fontFamily: "var(--font-display, Outfit), sans-serif",
                 boxShadow: "var(--shadow-lg), 0 0 32px var(--accent-glow)",
               }}

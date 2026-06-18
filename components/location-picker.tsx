@@ -10,16 +10,16 @@ import { KOKAND_CENTER } from "@/lib/geo";
 type LeafletMap = unknown;
 type LeafletMarker = unknown;
 
-// Brand purple. Leaflet's divIcon HTML is injected into the DOM and cannot read
+// Brand green. Leaflet's divIcon HTML is injected into the DOM and cannot read
 // CSS custom properties reliably, so the marker fill uses the documented brand
 // hex exception. Everything else on this surface uses semantic tokens.
-const BRAND_PURPLE = "#A556FB";
+const BRAND_GREEN = "#59C749";
 
 function pinHtml(): string {
   return (
     `<span style="position:relative;display:block;width:22px;height:22px">` +
-    `<span style="position:absolute;inset:0;border-radius:9999px;background:${BRAND_PURPLE};` +
-    `box-shadow:0 0 0 3px rgba(255,255,255,0.92),0 4px 12px rgba(165,86,251,0.45)"></span>` +
+    `<span style="position:absolute;inset:0;border-radius:9999px;background:${BRAND_GREEN};` +
+    `box-shadow:0 0 0 3px rgba(255,255,255,0.92),0 4px 12px rgba(89,199,73,0.45)"></span>` +
     `<span style="position:absolute;inset:7px;border-radius:9999px;background:rgba(255,255,255,0.9)"></span>` +
     `</span>`
   );
