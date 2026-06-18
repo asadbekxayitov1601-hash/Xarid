@@ -31,10 +31,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const theme = cookieStore.get("theme")?.value || "light";
 
   let userName: string | null = null;
+  let isSeller = false;
   const userId = await getSessionUserId();
   if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
-    if (user) userName = user.name || user.phone || "•";
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, phone: true, org: { select: { type: true } } },
+    });
+    if (user) {
+      userName = user.name || user.phone || "•";
+      isSeller = user.org?.type === "SUPPLIER";
+    }
   }
 
   return (
@@ -42,7 +49,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.className} min-h-screen flex flex-col bg-bg-primary text-text-primary transition-colors duration-300`}>
         <TelegramProvider>
           <BasketProvider>
-            <Header locale={locale} userName={userName} />
+            <Header locale={locale} userName={userName} isSeller={isSeller} />
             <main className="w-full flex-1 pb-16">{children}</main>
             <Footer locale={locale} />
           </BasketProvider>

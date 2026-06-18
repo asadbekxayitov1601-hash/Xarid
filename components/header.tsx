@@ -15,9 +15,13 @@ import { springSnappy } from "@/lib/motion-presets";
 export function Header({
   locale,
   userName,
+  isSeller = false,
 }: {
   locale: Locale;
   userName: string | null;
+  // True when the logged-in user owns a SUPPLIER org (computed server-side in
+  // layout.tsx) — surfaces the seller-only "My profile" link in the account menu.
+  isSeller?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -233,6 +237,19 @@ export function Header({
                       <Receipt size={16} style={{ color: "var(--accent)" }} aria-hidden />
                       <span className="font-display">{t(locale, "acct_menu_my_orders")}</span>
                     </Link>
+
+                    {isSeller && (
+                      <Link
+                        href="/supplier/profile"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        <Store size={16} style={{ color: "var(--accent)" }} aria-hidden />
+                        <span className="font-display">{t(locale, "acct_menu_profile")}</span>
+                      </Link>
+                    )}
 
                     <button
                       type="button"

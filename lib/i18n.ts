@@ -445,6 +445,7 @@ const dict = {
     acct_menu_label: "Hisob menyusi",
     acct_menu_my_orders: "Buyurtmalarim",
     acct_menu_logout: "Chiqish",
+    acct_menu_profile: "Mening profilim",
     // === Location picker (Phase 1 map pin) — append only ===
     loc_pick_label: "Xaritada joyni tanlash",
     loc_pick_hint: "Belgini surib qo'ying yoki xaritani bosing",
@@ -912,6 +913,7 @@ const dict = {
     acct_menu_label: "Меню аккаунта",
     acct_menu_my_orders: "Мои заказы",
     acct_menu_logout: "Выйти",
+    acct_menu_profile: "Мой профиль",
     // === Location picker (Phase 1 map pin) — append only ===
     loc_pick_label: "Выбор точки на карте",
     loc_pick_hint: "Перетащите метку или нажмите на карту",
@@ -1379,6 +1381,7 @@ const dict = {
     acct_menu_label: "Account menu",
     acct_menu_my_orders: "My orders",
     acct_menu_logout: "Log out",
+    acct_menu_profile: "My profile",
     // === Location picker (Phase 1 map pin) — append only ===
     loc_pick_label: "Pick a point on the map",
     loc_pick_hint: "Drag the pin or tap the map",
