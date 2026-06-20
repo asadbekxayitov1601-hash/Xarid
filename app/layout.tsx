@@ -10,6 +10,7 @@ import { getLocale } from "@/lib/locale";
 import { getSessionUserId } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"], display: "swap" });
 
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Footer locale={locale} />
           </BasketProvider>
         </TelegramProvider>
+        <Analytics />
       </body>
     </html>
   );
