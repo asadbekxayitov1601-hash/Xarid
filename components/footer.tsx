@@ -26,6 +26,7 @@ export function Footer({ locale }: { locale: Locale }) {
             src="/logo.png"
             alt="Xarid Logo"
             fill
+            sizes="36px"
             className="object-contain"
           />
           {/* Current/Previous logo (preserved):

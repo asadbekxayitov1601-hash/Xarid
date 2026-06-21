@@ -101,6 +101,7 @@ export function Header({
               src="/logo.png"
               alt="Xarid Logo"
               fill
+              sizes="40px"
               className="object-contain"
               priority
             />
