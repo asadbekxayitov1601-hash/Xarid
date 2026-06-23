@@ -6,7 +6,7 @@ export const LOCALE_COOKIE = "locale";
 const dict = {
   uz: {
     // header
-    nav_catalog: "Katalog",
+    nav_catalog: "Do'konlar",
     nav_basket: "Savat",
     nav_orders: "Buyurtmalar",
     // landing
@@ -481,7 +481,7 @@ const dict = {
     disp_surge_none: "Faol kuryer yo'q",
   },
   ru: {
-    nav_catalog: "Каталог",
+    nav_catalog: "Магазины",
     nav_basket: "Корзина",
     nav_orders: "Заказы",
     hero_badge: "B2B-маркет для ресторанов Коканда",
@@ -949,7 +949,7 @@ const dict = {
     disp_surge_none: "Нет активных курьеров",
   },
   en: {
-    nav_catalog: "Catalog",
+    nav_catalog: "Stores",
     nav_basket: "Basket",
     nav_orders: "Orders",
     hero_badge: "B2B marketplace for Kokand restaurants",

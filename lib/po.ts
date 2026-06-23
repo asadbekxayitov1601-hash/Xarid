@@ -90,8 +90,13 @@ export async function notifySupplier(poId: string) {
  * admin (ADMIN_TELEGRAM_ID) a summary so they can start calling.
  */
 export async function remindUnconfirmed(): Promise<{ pending: number }> {
+  // Only consider POs from the current cutoff window. Without this, every
+  // historic/seed PO left in SENT status re-fired this reminder nightly (the
+  // "23:30 holati" message that appeared with no real orders). The reminder is
+  // about *today's* unconfirmed orders, so scope it to the last 6 hours.
+  const since = new Date(Date.now() - 6 * 60 * 60 * 1000);
   const pending = await prisma.purchaseOrder.findMany({
-    where: { status: "SENT" },
+    where: { status: "SENT", createdAt: { gte: since } },
     include: { supplier: { include: { users: { where: { telegramId: { not: null } } } } } },
   });
 
