@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { t, type Locale } from "@/lib/i18n";
 import { formatUzPhone } from "@/lib/format";
@@ -83,16 +84,17 @@ export function AuthClient({ locale }: { locale: Locale }) {
         >
           {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{
-                background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
-                boxShadow: "0 0 20px rgba(89,199,73,0.4)",
-              }}
-            >
-              <span className="text-white font-black text-lg" style={{ fontFamily: "Outfit, sans-serif" }}>X</span>
+            <div className="relative h-9 w-9 overflow-hidden rounded-xl">
+              <Image
+                src="/logo.png"
+                alt="Xarid"
+                fill
+                sizes="36px"
+                className="object-contain"
+                priority
+              />
             </div>
-            <span className="text-lg font-bold text-text-primary" style={{ fontFamily: "Outfit, sans-serif" }}>arid</span>
+            <span className="text-lg font-bold text-text-primary" style={{ fontFamily: "Outfit, sans-serif" }}>Xarid</span>
           </div>
 
           {/* Consumer subtitle — frames the page as a shopper login, not a B2B portal. */}
