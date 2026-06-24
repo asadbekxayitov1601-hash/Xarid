@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -111,14 +112,15 @@ export function AdminClient({
           >
             <div className="px-4 py-5 border-b border-border-primary">
               <div className="flex items-center gap-2">
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(135deg,var(--accent),var(--accent-2))",
-                    boxShadow: "0 0 12px rgba(89,199,73,0.4)",
-                  }}
-                >
-                  <span className="text-white font-black text-sm" style={{ fontFamily: "Outfit" }}>X</span>
+                <div className="relative h-7 w-7 overflow-hidden rounded-lg">
+                  <Image
+                    src="/logo.png"
+                    alt="Xarid"
+                    fill
+                    sizes="28px"
+                    className="object-contain"
+                    priority
+                  />
                 </div>
                 <div>
                   <div className="text-sm font-bold text-text-primary" style={{ fontFamily: "Outfit" }}>Xarid Admin</div>

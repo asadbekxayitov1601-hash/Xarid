@@ -1,18 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
 import { t, type Locale } from "@/lib/i18n";
 
 /**
- * FancyLoader — branded route-level loader (Agent 4).
+ * FancyLoader — branded route-level loader.
  *
- * Not a plain spinner: the Xarid mark (emerald tile + amber dot) sits inside a
- * morphing conic gradient ring, with three produce dots orbiting it on a stagger.
- * A soft shimmer sweeps the brand wordmark. Everything is themed through the
- * semantic CSS tokens (--accent, --accent-2, --accent-3, --bg-*, --text-*).
+ * A little green delivery van drives in place while speed lines stream past it
+ * and the wheels bounce over the road — on-brand for a grocery-delivery app.
+ * The real Xarid logo sits above with a soft pulse; wordmark + hint sit below.
+ * The van illustration is drawn entirely in CSS and themed through the semantic
+ * tokens (--accent, --accent-2, --bg-primary, --text-*) so it tracks light/dark.
  *
- * Reduced motion: when the user prefers reduced motion we drop every spin /
- * orbit / shimmer and fall back to a calm opacity pulse on the mark only.
+ * Reduced motion: when the user prefers reduced motion we freeze the van, its
+ * wheels and the speed lines, and fall back to a calm opacity pulse on the logo.
  */
 export function FancyLoader({
   locale,
@@ -22,13 +24,6 @@ export function FancyLoader({
   fullscreen?: boolean;
 }) {
   const reduce = useReducedMotion();
-
-  // Three orbiting produce dots, evenly spaced, each its own token color.
-  const dots = [
-    { color: "var(--accent)", delay: 0 },
-    { color: "var(--accent-2)", delay: 0.25 },
-    { color: "var(--accent-3)", delay: 0.5 },
-  ];
 
   return (
     <div
@@ -41,76 +36,37 @@ export function FancyLoader({
           : "grid w-full place-items-center px-6 py-12"
       }
     >
-      <div className="flex flex-col items-center gap-7">
-        {/* ---- Orbit stage ---- */}
-        <div className="relative h-32 w-32 [transform-style:preserve-3d]">
-          {/* Morphing conic gradient ring */}
-          <motion.div
+      <div className="flex flex-col items-center gap-9">
+        {/* ---- Brand mark ---- */}
+        <motion.div
+          className="relative h-14 w-14 overflow-hidden rounded-2xl"
+          style={{ boxShadow: "var(--shadow-glow-accent)" }}
+          animate={
+            reduce ? { opacity: [0.55, 1, 0.55] } : { scale: [1, 1.06, 1] }
+          }
+          transition={{
+            repeat: Infinity,
+            ease: "easeInOut",
+            duration: reduce ? 1.8 : 2.2,
+          }}
+        >
+          <Image
+            src="/logo.png"
+            alt=""
             aria-hidden
-            className="loader-ring absolute inset-0 rounded-full"
-            animate={reduce ? undefined : { rotate: 360 }}
-            transition={
-              reduce
-                ? undefined
-                : { repeat: Infinity, ease: "linear", duration: 3.2 }
-            }
+            fill
+            sizes="56px"
+            className="object-contain"
+            priority
           />
-          {/* Inner mask so the ring reads as a thick stroke, not a disc */}
-          <div className="loader-ring-mask absolute inset-[6px] rounded-full" />
+        </motion.div>
 
-          {/* Orbiting produce dots */}
-          {!reduce &&
-            dots.map((d, i) => (
-              <motion.span
-                key={i}
-                aria-hidden
-                className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{ background: d.color, boxShadow: `0 0 12px ${d.color}` }}
-                animate={{
-                  rotate: 360,
-                  x: [0, 54, 0, -54, 0],
-                  y: [-54, 0, 54, 0, -54],
-                }}
-                transition={{
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  duration: 2.6,
-                  delay: d.delay,
-                }}
-              />
-            ))}
-
-          {/* ---- Brand mark (center) ---- */}
-          <motion.div
-            className="absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-2xl"
-            style={{
-              background: "var(--accent)",
-              boxShadow: "var(--shadow-glow-accent)",
-            }}
-            animate={
-              reduce
-                ? { opacity: [0.55, 1, 0.55] }
-                : { scale: [1, 1.06, 1] }
-            }
-            transition={{
-              repeat: Infinity,
-              ease: "easeInOut",
-              duration: reduce ? 1.8 : 2.2,
-            }}
-          >
-            <span className="text-2xl font-extrabold leading-none text-white">
-              X
-            </span>
-            {/* amber accent dot — the brand's signature */}
-            <span
-              aria-hidden
-              className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2"
-              style={{
-                background: "var(--accent-2)",
-                borderColor: "var(--bg-primary)",
-              }}
-            />
-          </motion.div>
+        {/* ---- Delivery van (CSS illustration) ---- */}
+        <div className="grid h-[100px] w-[200px] place-items-center">
+          <span
+            aria-hidden
+            className={reduce ? "van van--still" : "van"}
+          />
         </div>
 
         {/* ---- Wordmark + label ---- */}
@@ -128,20 +84,84 @@ export function FancyLoader({
       <span className="sr-only">{t(locale, "loader_label")}</span>
 
       <style jsx>{`
-        .loader-ring {
-          background: conic-gradient(
-            from 0deg,
-            var(--accent) 0deg,
-            var(--accent-3) 120deg,
-            var(--accent-2) 240deg,
-            var(--accent) 360deg
-          );
-          opacity: 0.9;
-          filter: blur(0.5px);
+        /* --- Van body: cargo box + cab, drawn with three solid fills --- */
+        .van {
+          position: relative;
+          width: 130px;
+          height: 100px;
+          background-repeat: no-repeat;
+          background-image: linear-gradient(var(--accent-2), var(--accent-2)),
+            linear-gradient(var(--accent), var(--accent)),
+            linear-gradient(var(--accent), var(--accent));
+          background-size: 80px 70px, 30px 50px, 30px 30px;
+          background-position: 0 0, 80px 20px, 100px 40px;
         }
-        .loader-ring-mask {
-          background: var(--bg-primary);
+        /* --- Wheels: dark tire + light hub, bouncing over the road --- */
+        .van:after {
+          content: "";
+          position: absolute;
+          bottom: 10px;
+          left: 12px;
+          width: 10px;
+          height: 10px;
+          background: var(--bg-secondary);
+          border-radius: 50%;
+          box-sizing: content-box;
+          border: 10px solid var(--text-primary);
+          box-shadow: 78px 0 0 -10px var(--bg-secondary), 78px 0 var(--text-primary);
+          animation: vanWheel 0.75s ease-in infinite alternate;
         }
+        /* --- Speed lines streaming past the van --- */
+        .van:before {
+          content: "";
+          position: absolute;
+          right: 100%;
+          top: 0px;
+          height: 70px;
+          width: 70px;
+          background-image: linear-gradient(var(--accent) 45px, transparent 0),
+            linear-gradient(var(--accent) 45px, transparent 0),
+            linear-gradient(var(--accent) 45px, transparent 0);
+          background-repeat: no-repeat;
+          background-size: 30px 4px;
+          background-position: 0px 11px, 8px 35px, 0px 60px;
+          animation: vanLines 0.75s linear infinite;
+        }
+        .van--still:after,
+        .van--still:before {
+          animation: none;
+        }
+
+        @keyframes vanWheel {
+          0%,
+          50%,
+          100% {
+            transform: translatey(0);
+          }
+          30%,
+          90% {
+            transform: translatey(-3px);
+          }
+        }
+        @keyframes vanLines {
+          0% {
+            background-position: 100px 11px, 115px 35px, 105px 60px;
+            opacity: 1;
+          }
+          50% {
+            background-position: 0px 11px, 20px 35px, 5px 60px;
+          }
+          60% {
+            background-position: -30px 11px, 0px 35px, -10px 60px;
+          }
+          75%,
+          100% {
+            background-position: -30px 11px, -30px 35px, -30px 60px;
+            opacity: 0;
+          }
+        }
+
+        /* --- Shimmering wordmark --- */
         .loader-wordmark {
           position: relative;
           background: linear-gradient(
@@ -166,6 +186,7 @@ export function FancyLoader({
             background-position: -40% 0;
           }
         }
+
         .sr-only {
           position: absolute;
           width: 1px;
@@ -177,8 +198,10 @@ export function FancyLoader({
           white-space: nowrap;
           border: 0;
         }
+
         @media (prefers-reduced-motion: reduce) {
-          .loader-ring {
+          .van:after,
+          .van:before {
             animation: none !important;
           }
           .loader-wordmark {
