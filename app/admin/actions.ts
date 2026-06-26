@@ -1,41 +1,18 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { setSession } from "@/lib/session";
 import { requireAdmin } from "@/lib/admin";
 import { runCutoff } from "@/lib/po";
 import { saveActuals } from "@/lib/orders";
 import { sellPrice } from "@/lib/pricing";
-import { normalizePhone, safeStrEqual } from "@/lib/password";
 import { sendStopToDriver } from "@/lib/driver";
 import { notifyBuyerStatus } from "@/lib/notifications";
 import { markPayoutPaid, postCashHandover, postDelivery } from "@/lib/ledger";
 
-// The admin's login phone. Not a secret (it only gates the panel together with
-// ADMIN_PASSWORD), so it may live in code with an env override.
-const ADMIN_PHONE = process.env.ADMIN_PHONE || "+998917220044";
-
-export async function loginAdmin(formData: FormData) {
-  const expectedPhone = normalizePhone(ADMIN_PHONE);
-  const password = process.env.ADMIN_PASSWORD;
-  const phone = normalizePhone(String(formData.get("phone") ?? ""));
-  const pass = String(formData.get("password") ?? "");
-  // Both factors must match; the password stays in env (never committed) and is
-  // compared in constant time, like the session/scrypt checks elsewhere.
-  if (!password || !expectedPhone || phone !== expectedPhone || !safeStrEqual(pass, password)) {
-    redirect("/admin/login?error=1");
-  }
-  // The admin identity is the single role=ADMIN user; the phone gates entry but
-  // is not forced onto the row (User.phone is unique — a buyer could hold it).
-  let admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-  if (!admin) {
-    admin = await prisma.user.create({ data: { role: "ADMIN", name: "Admin" } });
-  }
-  await setSession(admin.id);
-  redirect("/admin");
-}
+// Admin sign-in is unified into the normal phone+password login
+// (app/api/auth/credentials -> routed to /admin by role). The admin account is
+// provisioned from env in lib/setup.ensureAdminUser. No separate admin login.
 
 export async function triggerCutoff() {
   await requireAdmin();

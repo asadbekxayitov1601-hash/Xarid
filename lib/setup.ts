@@ -1,5 +1,22 @@
 import type { PrismaClient } from "@prisma/client";
 import { seedCatalog } from "./seed";
+import { hashPassword, normalizePhone } from "./password";
+
+// Provisions the operator's admin account from env so they sign in through the
+// normal phone+password login (no separate admin login page). The phone is
+// public-ish (ADMIN_PHONE, default below); the password lives only in
+// ADMIN_PASSWORD and is stored as a scrypt hash, never in code. Idempotent:
+// re-running keeps the row ADMIN and refreshes the hash from env.
+export async function ensureAdminUser(prisma: PrismaClient) {
+  const phone = normalizePhone(process.env.ADMIN_PHONE || "+998917220044");
+  const password = process.env.ADMIN_PASSWORD;
+  if (!phone || !password) return null;
+  return prisma.user.upsert({
+    where: { phone },
+    update: { role: "ADMIN", passwordHash: hashPassword(password) },
+    create: { phone, role: "ADMIN", passwordHash: hashPassword(password), name: "Admin" },
+  });
+}
 
 // Schema DDL generated from prisma/schema.prisma via:
 //   npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
@@ -314,5 +331,15 @@ export async function ensureDatabase(
     seeded = await seedCatalog(prisma);
   }
 
-  return { createdTables, migrated: !createdTables, seeded, products: await prisma.product.count() };
+  // Provision/refresh the admin account so the operator can sign in via the
+  // normal phone+password login. Never blocks bootstrap.
+  const admin = await ensureAdminUser(prisma).catch(() => null);
+
+  return {
+    createdTables,
+    migrated: !createdTables,
+    seeded,
+    adminReady: Boolean(admin),
+    products: await prisma.product.count(),
+  };
 }
