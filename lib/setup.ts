@@ -266,6 +266,14 @@ const MIGRATIONS = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "Payout_supplierId_periodStart_key" ON "Payout"("supplierId", "periodStart")`,
   `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT`,
   `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "passwordHash" TEXT`,
+  // Public store profile + store-first catalog card fields (all nullable).
+  `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "about" TEXT`,
+  `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "logoUrl" TEXT`,
+  `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "lat" DOUBLE PRECISION`,
+  `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "lng" DOUBLE PRECISION`,
+  `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "discountPct" INTEGER`,
+  `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "etaMin" INTEGER`,
+  `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "etaMax" INTEGER`,
 ];
 
 /** True when the schema's tables already exist in the connected database. */
@@ -277,10 +285,17 @@ export async function tablesExist(prisma: PrismaClient): Promise<boolean> {
 
 /**
  * Browser-driven bootstrap for fresh deployments: creates the schema if
- * missing, applies idempotent upgrades to existing databases, and seeds the
- * demo catalog if empty. Safe to call repeatedly; it never touches data.
+ * missing and applies idempotent upgrades to existing databases. Safe to call
+ * repeatedly; it never touches data.
+ *
+ * Seeding the demo catalog is now OPT-IN (`{ seed: true }`). The store-first
+ * model is manual: stores and their products are entered by an admin, so an
+ * empty catalog must stay empty rather than auto-refilling with demo SKUs.
  */
-export async function ensureDatabase(prisma: PrismaClient) {
+export async function ensureDatabase(
+  prisma: PrismaClient,
+  { seed = false }: { seed?: boolean } = {}
+) {
   let createdTables = false;
   if (!(await tablesExist(prisma))) {
     const statements = DDL.split(";").map((s) => s.trim()).filter(Boolean);
@@ -295,7 +310,7 @@ export async function ensureDatabase(prisma: PrismaClient) {
   }
 
   let seeded = null;
-  if ((await prisma.product.count()) === 0) {
+  if (seed && (await prisma.product.count()) === 0) {
     seeded = await seedCatalog(prisma);
   }
 

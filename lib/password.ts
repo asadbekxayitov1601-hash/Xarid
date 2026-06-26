@@ -16,6 +16,15 @@ export function verifyPassword(password: string, stored: string): boolean {
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
+// Constant-time string equality for shared secrets (admin password, setup key),
+// mirroring the timingSafeEqual posture used for session + scrypt comparisons.
+// The length check leaks only the length, which is acceptable here.
+export function safeStrEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
+}
+
 /** Normalizes an Uzbek phone to +998XXXXXXXXX form. Returns null if invalid. */
 export function normalizePhone(input: string): string | null {
   const digits = input.replace(/\D/g, "");
