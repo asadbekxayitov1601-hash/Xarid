@@ -1,55 +1,51 @@
 import { prisma } from "@/lib/db";
 import { getLocale } from "@/lib/locale";
-import { CatalogClient, type CatalogProduct } from "@/components/catalog-client";
+import { StoresClient, type StoreCard } from "@/components/stores-client";
 
 export const dynamic = "force-dynamic";
 
+// Store-first catalog: the landing list is the STORES (Do'konlar), each with its
+// preview photo, optional discount badge and approximate delivery time. Tapping a
+// store opens /store/[id] with that store's products. Only stores with at least
+// one available product are shown so customers never enter an empty shop.
 export default async function CatalogPage() {
   const locale = await getLocale();
 
-  // The DB may be unreachable in production (DATABASE_URL unset/misconfigured,
-  // schema not pushed). NEVER let that throw a raw 500 here — catch it and let
-  // the client render a calm, translated "temporarily unavailable" state.
-  // Diagnose the real cause with /api/health.
-  let items: CatalogProduct[] = [];
+  let stores: StoreCard[] = [];
   let dbError = false;
 
   try {
-    const products = await prisma.product.findMany({
-      orderBy: { sortKey: "asc" },
-      include: {
-        offers: {
-          where: { available: true },
-          orderBy: { price: "asc" },
-          include: { supplier: { select: { name: true } } },
-        },
+    const rows = await prisma.organization.findMany({
+      where: { type: "SUPPLIER", offers: { some: { available: true } } },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        district: true,
+        logoUrl: true,
+        discountPct: true,
+        etaMin: true,
+        etaMax: true,
+        _count: { select: { offers: { where: { available: true } } } },
       },
     });
 
-    // Transparent price = the cheapest available offer per SKU.
-    items = products
-      .filter((p) => p.offers.length > 0)
-      .map((p) => {
-        const best = p.offers[0];
-        return {
-          productId: p.id,
-          name: locale === "ru" ? p.nameRu : p.nameUz,
-          altName: locale === "ru" ? p.nameUz : p.nameRu,
-          category: p.category,
-          unit: p.unit,
-          image: p.imageUrl,
-          offerId: best.id,
-          price: best.price,
-          minQty: best.minQty,
-          supplierName: best.supplier.name,
-          offerCount: p.offers.length,
-        };
-      });
+    stores = rows.map((s) => ({
+      id: s.id,
+      name: s.name,
+      image: s.logoUrl,
+      discountPct: s.discountPct,
+      etaMin: s.etaMin,
+      etaMax: s.etaMax,
+      district: s.district,
+      productCount: s._count.offers,
+    }));
   } catch (e) {
-    // Log server-side for diagnosis; the client only sees a friendly state.
-    console.error("[catalog] product query failed — see /api/health:", e);
+    // The DB may be unreachable (DATABASE_URL unset, schema not pushed). Never
+    // throw a raw 500 — render a calm, translated state. Diagnose via /api/health.
+    console.error("[catalog] store query failed — see /api/health:", e);
     dbError = true;
   }
 
-  return <CatalogClient items={items} locale={locale} dbError={dbError} />;
+  return <StoresClient stores={stores} locale={locale} dbError={dbError} />;
 }

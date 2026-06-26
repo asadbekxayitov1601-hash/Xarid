@@ -8,15 +8,27 @@ import { requireAdmin } from "@/lib/admin";
 import { runCutoff } from "@/lib/po";
 import { saveActuals } from "@/lib/orders";
 import { sellPrice } from "@/lib/pricing";
+import { normalizePhone, safeStrEqual } from "@/lib/password";
 import { sendStopToDriver } from "@/lib/driver";
 import { notifyBuyerStatus } from "@/lib/notifications";
 import { markPayoutPaid, postCashHandover, postDelivery } from "@/lib/ledger";
 
+// The admin's login phone. Not a secret (it only gates the panel together with
+// ADMIN_PASSWORD), so it may live in code with an env override.
+const ADMIN_PHONE = process.env.ADMIN_PHONE || "+998917220044";
+
 export async function loginAdmin(formData: FormData) {
+  const expectedPhone = normalizePhone(ADMIN_PHONE);
   const password = process.env.ADMIN_PASSWORD;
-  if (!password || formData.get("password") !== password) {
+  const phone = normalizePhone(String(formData.get("phone") ?? ""));
+  const pass = String(formData.get("password") ?? "");
+  // Both factors must match; the password stays in env (never committed) and is
+  // compared in constant time, like the session/scrypt checks elsewhere.
+  if (!password || !expectedPhone || phone !== expectedPhone || !safeStrEqual(pass, password)) {
     redirect("/admin/login?error=1");
   }
+  // The admin identity is the single role=ADMIN user; the phone gates entry but
+  // is not forced onto the row (User.phone is unique — a buyer could hold it).
   let admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
   if (!admin) {
     admin = await prisma.user.create({ data: { role: "ADMIN", name: "Admin" } });
@@ -55,14 +67,150 @@ export async function saveOrderActuals(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export async function createSupplier(formData: FormData) {
+// ---- Store (Organization type SUPPLIER) management -------------------------
+
+// A store photo is a compressed JPEG/PNG/WebP data URL (~20-40KB), so this cap
+// must hold a full data URL, not a plain link.
+const STORE_IMAGE_MAX = 300_000;
+const ALLOWED_UNITS = new Set(["KG", "PIECE", "LITER", "BLOCK"]);
+const ALLOWED_CATEGORIES = new Set([
+  "Mevalar",
+  "Sabzavotlar",
+  "Sut va tuxum",
+  "Non",
+  "Go'sht",
+  "Quruq mahsulotlar",
+  "Ichimliklar",
+  "Sut mahsulotlari",
+]);
+
+/** Accepts a compressed image data URL within the size cap, else null. */
+function parseImage(raw: string): string | null {
+  const v = raw.trim();
+  return /^data:image\/(jpeg|png|webp);base64,/.test(v) && v.length <= STORE_IMAGE_MAX ? v : null;
+}
+
+/** Parses an optional non-negative integer form field; "" / invalid -> null. */
+function parseOptionalInt(raw: FormDataEntryValue | null, max: number): number | null {
+  const s = String(raw ?? "").trim();
+  if (s === "") return null;
+  const n = Math.round(Number(s));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(n, max);
+}
+
+export async function createStore(formData: FormData) {
   await requireAdmin();
-  const name = String(formData.get("name") ?? "").trim();
-  const district = String(formData.get("district") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+  const district = String(formData.get("district") ?? "").trim().slice(0, 80);
+  const phone = String(formData.get("phone") ?? "").trim().slice(0, 32);
   if (!name || !phone) return;
-  await prisma.organization.create({ data: { type: "SUPPLIER", name, district, phone } });
+
+  const logoUrl = parseImage(String(formData.get("logoUrl") ?? ""));
+  // 0 means "no discount" — store null so no "-0%" badge ever renders.
+  const discountPct = parseOptionalInt(formData.get("discountPct"), 90) || null;
+  const etaMin = parseOptionalInt(formData.get("etaMin"), 600);
+  const etaMaxRaw = parseOptionalInt(formData.get("etaMax"), 600);
+  // Keep the window coherent: max must not be below min.
+  const etaMax = etaMin != null && etaMaxRaw != null ? Math.max(etaMin, etaMaxRaw) : etaMaxRaw;
+
+  await prisma.organization.create({
+    data: { type: "SUPPLIER", name, district, phone, logoUrl, discountPct, etaMin, etaMax },
+  });
   revalidatePath("/admin/suppliers");
+  revalidatePath("/catalog");
+}
+
+export async function updateStore(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("storeId"));
+  const store = await prisma.organization.findUnique({ where: { id } });
+  if (!store || store.type !== "SUPPLIER") return;
+
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+  const district = String(formData.get("district") ?? "").trim().slice(0, 80);
+  const phone = String(formData.get("phone") ?? "").trim().slice(0, 32);
+  if (!name || !phone) return;
+
+  const logoRaw = String(formData.get("logoUrl") ?? "");
+  // Blank or invalid input keeps the current photo; a valid data URL replaces it.
+  const logoUrl = parseImage(logoRaw) ?? store.logoUrl;
+  // 0 means "no discount" — store null so no "-0%" badge ever renders.
+  const discountPct = parseOptionalInt(formData.get("discountPct"), 90) || null;
+  const etaMin = parseOptionalInt(formData.get("etaMin"), 600);
+  const etaMaxRaw = parseOptionalInt(formData.get("etaMax"), 600);
+  const etaMax = etaMin != null && etaMaxRaw != null ? Math.max(etaMin, etaMaxRaw) : etaMaxRaw;
+
+  await prisma.organization.update({
+    where: { id },
+    data: { name, district, phone, logoUrl, discountPct, etaMin, etaMax },
+  });
+  revalidatePath("/admin/suppliers");
+  revalidatePath(`/admin/suppliers/${id}`);
+  revalidatePath("/catalog");
+  revalidatePath(`/store/${id}`);
+}
+
+// Create a catalog Product and the store's SupplierOffer that carries its price,
+// in one admin submit. Mirrors the seller flow (lib supplier/actions) but is
+// admin-driven and scoped to a chosen store.
+export async function createStoreProduct(formData: FormData) {
+  await requireAdmin();
+  const supplierId = String(formData.get("storeId"));
+  const store = await prisma.organization.findUnique({ where: { id: supplierId } });
+  if (!store || store.type !== "SUPPLIER") return;
+
+  const nameUz = String(formData.get("nameUz") ?? "").trim().slice(0, 80);
+  const nameRu = String(formData.get("nameRu") ?? "").trim().slice(0, 80) || nameUz;
+  const categoryRaw = String(formData.get("category") ?? "").trim();
+  const unitRaw = String(formData.get("unit") ?? "").trim();
+  const costPrice = Math.round(Number(formData.get("costPrice")));
+  if (!nameUz || !Number.isFinite(costPrice) || costPrice <= 0) return;
+
+  const category = ALLOWED_CATEGORIES.has(categoryRaw) ? categoryRaw : "Quruq mahsulotlar";
+  const unit = ALLOWED_UNITS.has(unitRaw) ? unitRaw : "KG";
+  const imageUrl = parseImage(String(formData.get("imageUrl") ?? ""));
+
+  const product = await prisma.product.create({
+    data: { nameUz, nameRu, category, unit, imageUrl },
+  });
+  await prisma.supplierOffer.create({
+    data: { supplierId, productId: product.id, costPrice, price: sellPrice(costPrice), available: true },
+  });
+
+  revalidatePath(`/admin/suppliers/${supplierId}`);
+  revalidatePath("/catalog");
+  revalidatePath(`/store/${supplierId}`);
+}
+
+// Wipe the catalog so the admin can rebuild it manually. FK-safe: offers tied
+// to past orders (OrderItem has onDelete RESTRICT) are hidden, not deleted, so
+// order history is preserved; everything else is removed.
+export async function clearCatalog() {
+  await requireAdmin();
+
+  const referenced = await prisma.orderItem.findMany({
+    select: { offerId: true },
+    distinct: ["offerId"],
+  });
+  const refIds = referenced.map((r) => r.offerId);
+
+  await prisma.supplierOffer.updateMany({
+    where: { id: { in: refIds } },
+    data: { available: false },
+  });
+  await prisma.supplierOffer.deleteMany({ where: { id: { notIn: refIds } } });
+
+  // Drop products that no longer have any offer at all.
+  const stillOffered = await prisma.supplierOffer.findMany({
+    select: { productId: true },
+    distinct: ["productId"],
+  });
+  const keep = stillOffered.map((o) => o.productId);
+  await prisma.product.deleteMany({ where: { id: { notIn: keep } } });
+
+  revalidatePath("/admin/suppliers");
+  revalidatePath("/catalog");
 }
 
 export async function updateOffer(formData: FormData) {

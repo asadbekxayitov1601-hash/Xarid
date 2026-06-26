@@ -21,8 +21,17 @@ model Organization {
   botCode   String   @unique @default(cuid())
   // Public-facing supplier profile (Agent 4). Both fields are nullable so the
   // additive `db push` is safe on existing dev sqlite + prod Postgres rows.
+  // logoUrl doubles as the store's preview picture on the store-first catalog.
   about     String?
   logoUrl   String?
+  // Store-first catalog card fields (manual entry by admin). All nullable so the
+  // additive `db push` stays safe on existing Postgres rows.
+  //   discountPct — optional storewide discount badge, e.g. 15 renders "-15%".
+  //   etaMin/etaMax — approximate delivery window in minutes, e.g. 30..45 renders
+  //                   "30-45 min". Display-only; checkout pricing is unaffected.
+  discountPct Int?
+  etaMin      Int?
+  etaMax      Int?
   // Seller/shop pickup coordinates (Phase 1 marketplace, additive + nullable so
   // `db push` is safe on existing Postgres rows). Set via the location picker on
   // the supplier profile. Used as the pickup point for auto-dispatch.
