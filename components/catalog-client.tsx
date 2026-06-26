@@ -34,6 +34,10 @@ export type CatalogProduct = {
   minQty: number;
   supplierName: string;
   offerCount: number;
+  // Storewide discount percent (from the product's store). When set, the card
+  // shows the discounted price + struck-through original + a "-N%" badge, and
+  // the basket/checkout charge the discounted price (lib/pricing.discountedPrice).
+  discountPct?: number | null;
 };
 
 // Category metadata keyed by the exact `category` string stored on Product
@@ -259,7 +263,7 @@ export function CatalogClient({
         />
 
         {/* Product Cards Grid — uses the new ImmersiveProductCard */}
-        <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           <AnimatePresence>
             {visible.map((p, idx) => (
               <ImmersiveProductCard

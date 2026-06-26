@@ -57,6 +57,7 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
       minQty: o.minQty,
       supplierName: org.name,
       offerCount: 1,
+      discountPct: org.discountPct,
     }));
   } catch (e) {
     // notFound() throws a control-flow signal we must not swallow as a DB error.
