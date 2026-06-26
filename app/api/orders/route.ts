@@ -7,6 +7,7 @@ import { hasCoords, haversineKm } from "@/lib/geo";
 import { autoAssignCourier } from "@/lib/dispatch";
 import { getCurrentSurge } from "@/lib/surge";
 import { computeDeliveryFee, computeCourierPayout } from "@/lib/delivery-pricing";
+import { discountedPrice } from "@/lib/pricing";
 
 // Resolve the primary seller's coords from the order's offer ids, mirroring
 // lib/dispatch.resolvePickup (which isn't exported) and /api/delivery/quote:
@@ -60,7 +61,12 @@ export async function POST(req: NextRequest) {
     : null;
 
   const offerIds = items.map((i: { offerId: string }) => String(i.offerId));
-  const offers = await prisma.supplierOffer.findMany({ where: { id: { in: offerIds }, available: true } });
+  const offers = await prisma.supplierOffer.findMany({
+    where: { id: { in: offerIds }, available: true },
+    // The store's storewide discount is applied to the buyer price here so the
+    // struck-through "was -> now" shown on the card is actually charged.
+    include: { supplier: { select: { discountPct: true } } },
+  });
   const offerById = new Map(offers.map((o) => [o.id, o]));
 
   // Collect EVERY problem item (offer missing/unavailable, qty invalid, or
@@ -77,7 +83,10 @@ export async function POST(req: NextRequest) {
       badIds.push(String(i.offerId));
       continue;
     }
-    lines.push({ offerId: offer.id, qty, price: offer.price, costPrice: offer.costPrice });
+    // Buyer pays the discounted price; the supplier costPrice (their payout) is
+    // unchanged — the storewide discount comes out of the platform margin.
+    const price = discountedPrice(offer.price, offer.supplier.discountPct);
+    lines.push({ offerId: offer.id, qty, price, costPrice: offer.costPrice });
   }
   if (badIds.length > 0) {
     return NextResponse.json({ error: "items_unavailable", offerIds: badIds }, { status: 409 });
