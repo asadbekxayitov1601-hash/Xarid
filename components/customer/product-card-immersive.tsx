@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Plus, Minus } from "lucide-react";
 import { useBasket } from "@/components/basket-provider";
@@ -35,6 +36,17 @@ export function ImmersiveProductCard({
   const { items, setQty } = useBasket();
   const inBasket = items.find((i) => i.offerId === p.offerId);
 
+  // Lets the shopper type a quantity directly. `draft` holds the in-progress
+  // text so clearing the field doesn't instantly remove the item; it commits on
+  // blur / Enter and reverts to the basket value when left empty or invalid.
+  const [draft, setDraft] = useState<string | null>(null);
+  function commitQty() {
+    if (draft === null) return;
+    const n = parseFloat(draft.replace(",", "."));
+    if (Number.isFinite(n) && n > 0) setQty(p.offerId, n);
+    setDraft(null);
+  }
+
   const shown = discountedPrice(p.price, p.discountPct);
   const hasDiscount = shown < p.price;
   const pct = hasDiscount ? Math.round((1 - shown / p.price) * 100) : 0;
@@ -51,12 +63,8 @@ export function ImmersiveProductCard({
       transition={{ duration: 0.4, delay: Math.min(index * 0.02, 0.2) }}
     >
       <div
-        className="group flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5"
-        style={{
-          background: "var(--bg-primary)",
-          border: "1px solid var(--border-color)",
-          boxShadow: "var(--shadow-sm)",
-        }}
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-0.5 border-[color:var(--border-color)] hover:border-[color:var(--accent)]"
+        style={{ background: "var(--bg-primary)", boxShadow: "var(--shadow-sm)" }}
       >
         {/* Image area */}
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-bg-secondary">
@@ -124,12 +132,19 @@ export function ImmersiveProductCard({
                 >
                   <Minus size={15} strokeWidth={3} style={{ color: "var(--on-accent)" }} />
                 </button>
-                <span
-                  className="min-w-7 text-center text-sm font-extrabold tabular-nums"
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  aria-label={t(locale, "qty_aria")}
+                  value={draft ?? String(inBasket.qty)}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={commitQty}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                  className="w-9 bg-transparent text-center text-sm font-extrabold tabular-nums outline-none"
                   style={{ color: "var(--on-accent)" }}
-                >
-                  {inBasket.qty}
-                </span>
+                />
                 <button
                   type="button"
                   aria-label={t(locale, "qty_aria")}
