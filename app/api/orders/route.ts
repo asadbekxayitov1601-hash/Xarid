@@ -31,6 +31,44 @@ async function resolveSellerCoords(
   return null;
 }
 
+// GET: the signed-in user's recent orders (native apps + web). Requires a
+// session — Bearer token (mobile) or cookie (web).
+export async function GET() {
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const orders = await prisma.order.findMany({
+    where: { buyerUserId: userId },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      status: true,
+      total: true,
+      deliveryFee: true,
+      address: true,
+      createdAt: true,
+      deliveryDate: true,
+      deliverMode: true,
+      _count: { select: { items: true } },
+    },
+  });
+
+  return NextResponse.json({
+    orders: orders.map((o) => ({
+      id: o.id,
+      status: o.status,
+      total: o.total,
+      deliveryFee: o.deliveryFee ?? 0,
+      address: o.address,
+      itemCount: o._count.items,
+      createdAt: o.createdAt,
+      deliveryDate: o.deliveryDate,
+      deliverMode: o.deliverMode,
+    })),
+  });
+}
+
 // POST: place the order. Prices are recomputed from the database —
 // the client basket is a shopping list, never a source of money truth.
 export async function POST(req: NextRequest) {

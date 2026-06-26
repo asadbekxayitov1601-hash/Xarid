@@ -291,6 +291,17 @@ const MIGRATIONS = [
   `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "discountPct" INTEGER`,
   `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "etaMin" INTEGER`,
   `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "etaMax" INTEGER`,
+  // Push-notification device tokens (FCM) for the native apps.
+  `CREATE TABLE IF NOT EXISTS "DeviceToken" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "platform" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "DeviceToken_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "DeviceToken_token_key" ON "DeviceToken"("token")`,
 ];
 
 /** True when the schema's tables already exist in the connected database. */

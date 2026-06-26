@@ -57,8 +57,22 @@ model User {
   org          Organization? @relation(fields: [orgId], references: [id])
   createdAt    DateTime @default(now())
 
-  orders Order[]
-  driver Driver?
+  orders       Order[]
+  driver       Driver?
+  deviceTokens DeviceToken[]
+}
+
+// A push-notification device token (Firebase Cloud Messaging) for a user's
+// installed mobile app. Re-registering the same token upserts. One user can
+// have several (phone + tablet). platform: ANDROID | IOS.
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  platform  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Canonical SKU, e.g. "Onion, yellow / kg". unit: KG | PIECE | LITER | BLOCK
