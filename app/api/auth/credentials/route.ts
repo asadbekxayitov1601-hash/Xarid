@@ -18,8 +18,10 @@ import { setSession } from "@/lib/session";
 async function destinationFor(userId: string): Promise<string> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { org: { select: { type: true } } },
+    select: { role: true, org: { select: { type: true } } },
   });
+  // The operator signs in here too (a role=ADMIN account) and lands in /admin.
+  if (user?.role === "ADMIN") return "/admin";
   return user?.org?.type === "SUPPLIER" ? "/supplier" : "/catalog";
 }
 

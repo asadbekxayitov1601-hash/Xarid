@@ -9,5 +9,6 @@ export async function requireAdmin() {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (user?.role === "ADMIN") return user;
   }
-  redirect("/admin/login");
+  // Admins sign in through the normal phone+password page; no separate login.
+  redirect("/auth");
 }
