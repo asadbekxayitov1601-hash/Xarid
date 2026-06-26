@@ -101,13 +101,26 @@ export async function POST(req: NextRequest) {
   // number resolve to the same user (keeps order history on "claim").
   const phoneKey = normalizePhone(String(buyerPhone)) ?? String(buyerPhone);
   if (!userId) {
-    const user = await prisma.user.upsert({
+    const existing = await prisma.user.findUnique({
       where: { phone: phoneKey },
-      update: { name: String(buyerName) },
-      create: { phone: phoneKey, name: String(buyerName) },
+      select: { id: true, passwordHash: true, role: true },
     });
-    userId = user.id;
-    await setSession(userId);
+    if (existing) {
+      // Attach the order to the existing account, but NEVER hand an
+      // unauthenticated caller a session for an account that has a password or
+      // an elevated role. Otherwise ordering with someone's phone (e.g. the
+      // admin's known number) would silently grant their session — account
+      // takeover. Such users must sign in to claim/track the order.
+      userId = existing.id;
+      if (!existing.passwordHash && existing.role === "OWNER") {
+        await prisma.user.update({ where: { id: existing.id }, data: { name: String(buyerName) } });
+        await setSession(userId);
+      }
+    } else {
+      const user = await prisma.user.create({ data: { phone: phoneKey, name: String(buyerName) } });
+      userId = user.id;
+      await setSession(user.id);
+    }
   }
 
   // Resolve the delivery target. SCHEDULED orders use the customer-chosen
