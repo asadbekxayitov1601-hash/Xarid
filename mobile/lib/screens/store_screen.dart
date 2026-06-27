@@ -5,6 +5,7 @@ import '../basket.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
+import 'basket_screen.dart';
 
 class StoreScreen extends StatefulWidget {
   final String storeId;
@@ -67,6 +68,7 @@ class _StoreScreenState extends State<StoreScreen> {
           );
         },
       ),
+      bottomNavigationBar: const _BasketBottomBar(),
     );
   }
 }
@@ -202,7 +204,7 @@ class _AddControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final basket = context.read<Basket>();
-    final start = product.minQty > 0 ? product.minQty : 1;
+    final start = product.minQty > 0 ? product.minQty : 1.0;
     if (qty <= 0) {
       return Material(
         color: Brand.cream,
@@ -239,3 +241,123 @@ class _AddControl extends StatelessWidget {
         child: SizedBox(width: 28, height: 28, child: Icon(icon, size: 16, color: Brand.onAccent)),
       );
 }
+
+class _BasketBottomBar extends StatelessWidget {
+  const _BasketBottomBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final basket = context.watch<Basket>();
+    if (basket.items.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Brand.cream,
+        border: const Border(
+          top: BorderSide(color: Brand.border, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Brand.ink.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Free delivery notification
+              InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const BasketScreen()),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.delivery_dining, color: Brand.green, size: 22),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Bepul yetkazib berish',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Brand.ink,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: Brand.inkSoft, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+              // Cart button
+              Material(
+                color: Brand.green,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BasketScreen()),
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    height: 52,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        // Quantity badge
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: const BoxDecoration(
+                            color: Brand.onAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${basket.count}',
+                            style: const TextStyle(
+                              color: Brand.cream,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'Savatga',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Brand.onAccent,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          uzs(basket.total),
+                          style: const TextStyle(
+                            color: Brand.onAccent,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

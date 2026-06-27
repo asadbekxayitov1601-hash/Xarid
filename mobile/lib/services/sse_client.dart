@@ -47,10 +47,12 @@ class SseClient {
   /// Whether the client has been permanently closed via [close]/[dispose].
   bool get isClosed => _closed;
 
+  final _reconnecting = StreamController<bool>.broadcast();
+
   /// Emitted whenever the underlying connection drops; `true` while
   /// reconnecting, `false` once data is flowing again. Lets the UI show a calm
   /// "reconnecting" hint without treating it as a hard failure.
-  final reconnecting = StreamController<bool>.broadcast();
+  Stream<bool> get reconnecting => _reconnecting.stream;
 
   /// Open the connection and start streaming. Safe to call once.
   void connect() {
@@ -91,7 +93,7 @@ class SseClient {
 
       // Connected cleanly: announce recovery and reset the backoff.
       _backoff = _minBackoff;
-      if (!reconnecting.isClosed) reconnecting.add(false);
+      if (!_reconnecting.isClosed) _reconnecting.add(false);
 
       // Decode the byte stream to UTF-8 and split into lines. `LineSplitter`
       // handles \n and \r\n and emits one string per line without terminators.
@@ -154,7 +156,7 @@ class SseClient {
     _client?.close();
     _client = null;
 
-    if (!reconnecting.isClosed) reconnecting.add(true);
+    if (!_reconnecting.isClosed) _reconnecting.add(true);
 
     final delay = _backoff;
     // Exponential backoff, capped.
@@ -180,7 +182,7 @@ class SseClient {
     _sub = null;
     _client?.close();
     _client = null;
-    if (!reconnecting.isClosed) await reconnecting.close();
+    if (!_reconnecting.isClosed) await _reconnecting.close();
     if (!_controller.isClosed) await _controller.close();
   }
 

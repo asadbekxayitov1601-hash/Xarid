@@ -296,7 +296,7 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Brand.cream.withOpacity(0.92),
+        color: Brand.cream.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Brand.border),
       ),
@@ -376,9 +376,9 @@ class _ActionBar extends StatelessWidget {
     return SafeArea(
       minimum: const EdgeInsets.all(16),
       child: busy
-          ? FilledButton(
+          ? const FilledButton(
               onPressed: null,
-              child: const SizedBox(
+              child: SizedBox(
                 height: 22,
                 width: 22,
                 child: CircularProgressIndicator(strokeWidth: 2.5, color: Brand.onAccent),
