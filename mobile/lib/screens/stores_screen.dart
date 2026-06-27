@@ -46,7 +46,7 @@ class _StoresScreenState extends State<StoresScreen> {
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Brand.green));
+              return const _StoresSkeleton();
             }
             if (snap.hasError) {
               return _Message(icon: Icons.cloud_off, text: 'Hozircha ulanib bo\'lmadi.', onRetry: _reload);
@@ -136,6 +136,8 @@ class _StoreCard extends StatelessWidget {
   }
 }
 
+// Centered, branded empty / error state. Wrapped in a scroll view so it stays
+// pull-to-refresh friendly inside a RefreshIndicator.
 class _Message extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -144,19 +146,130 @@ class _Message extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        const SizedBox(height: 120),
-        Icon(icon, size: 56, color: Brand.inkSoft),
-        const SizedBox(height: 12),
-        Text(text, textAlign: TextAlign.center, style: const TextStyle(color: Brand.inkSoft)),
-        if (onRetry != null) ...[
-          const SizedBox(height: 16),
-          Center(
-            child: OutlinedButton(onPressed: () => onRetry!(), child: const Text('Qayta urinish')),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: const BoxDecoration(color: Brand.card, shape: BoxShape.circle),
+                    child: Icon(icon, size: 40, color: Brand.inkSoft),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Brand.inkSoft, fontSize: 15)),
+                  if (onRetry != null) ...[
+                    const SizedBox(height: 20),
+                    OutlinedButton.icon(
+                      onPressed: () => onRetry!(),
+                      icon: const Icon(Icons.refresh, size: 18, color: Brand.green),
+                      label: const Text('Qayta urinish',
+                          style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Brand.green),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-        ],
-      ],
+        ),
+      ),
+    );
+  }
+}
+
+// A gentle pulsing grey box used to build loading skeletons. Pulses opacity with
+// a looping TweenAnimationBuilder so no extra packages are needed.
+class _Pulse extends StatefulWidget {
+  final double? width;
+  final double? height;
+  final double radius;
+  const _Pulse({this.width, this.height, this.radius = 8});
+
+  @override
+  State<_Pulse> createState() => _PulseState();
+}
+
+class _PulseState extends State<_Pulse> {
+  bool _dim = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _dim = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _dim ? 0.45 : 1.0,
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeInOut,
+      onEnd: () {
+        if (mounted) setState(() => _dim = !_dim);
+      },
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: Brand.card,
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
+      ),
+    );
+  }
+}
+
+// Placeholder list shown while stores load — mirrors the _StoreCard layout.
+class _StoresSkeleton extends StatelessWidget {
+  const _StoresSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 5,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) => Container(
+        decoration: BoxDecoration(
+          color: Brand.cream,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Brand.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(aspectRatio: 16 / 9, child: _Pulse(radius: 0)),
+            Padding(
+              padding: EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Pulse(width: 160, height: 16),
+                  SizedBox(height: 10),
+                  _Pulse(width: 110, height: 12),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

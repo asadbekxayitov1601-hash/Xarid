@@ -28,6 +28,12 @@ flutter:
   uses-material-design: true
 
 # App launcher icons — run:  dart run flutter_launcher_icons
+# This default config generates the CUSTOMER ("Xarid") icon from assets/icon.png.
+# For the two-flavor setup (customer + courier) generate per-flavor icons with
+# separate config files keyed by Android product flavor — see mobile/FLAVORS.md
+# step "Per-flavor icons". In short, add e.g. flutter_launcher_icons-courier.yaml
+# (image_path: "assets/icon_courier.png", flavor: courier) and run:
+#   dart run flutter_launcher_icons -f flutter_launcher_icons-courier.yaml
 flutter_launcher_icons:
   android: true
   ios: true

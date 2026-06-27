@@ -29,7 +29,7 @@ class TrackScreen extends StatefulWidget {
   State<TrackScreen> createState() => _TrackScreenState();
 }
 
-class _TrackScreenState extends State<TrackScreen> {
+class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStateMixin {
   // Kokand (Qo'qon) city center — sensible default before we have any point.
   static const _kokand = LatLng(40.5283, 70.9425);
 
@@ -37,6 +37,14 @@ class _TrackScreenState extends State<TrackScreen> {
   SseClient? _sse;
   StreamSubscription<Map<String, dynamic>>? _eventSub;
   StreamSubscription<bool>? _reconnectSub;
+
+  // Smoothly tween the courier marker from its previous fix to the new one so
+  // it glides between live events instead of teleporting. The backend pushes a
+  // fresh location roughly every ~15s (driver app cadence).
+  late final AnimationController _moveCtl =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+  LatLng? _driverFrom;
+  LatLng? _driverTo;
 
   bool _loading = true;
   bool _reconnecting = false;
@@ -52,16 +60,51 @@ class _TrackScreenState extends State<TrackScreen> {
   @override
   void initState() {
     super.initState();
+    // Drive the interpolated courier position as the tween animates.
+    _moveCtl.addListener(_onMoveTick);
     _bootstrap();
   }
 
   @override
   void dispose() {
+    _moveCtl.removeListener(_onMoveTick);
+    _moveCtl.dispose();
     _eventSub?.cancel();
     _reconnectSub?.cancel();
     _sse?.close();
     _map.dispose();
     super.dispose();
+  }
+
+  /// Interpolate the rendered courier position along the active tween.
+  void _onMoveTick() {
+    final from = _driverFrom;
+    final to = _driverTo;
+    if (from == null || to == null) return;
+    final t = _moveCtl.value;
+    setState(() {
+      _driver = LatLng(
+        from.latitude + (to.latitude - from.latitude) * t,
+        from.longitude + (to.longitude - from.longitude) * t,
+      );
+    });
+  }
+
+  /// Move the courier marker to [next], gliding from its current rendered
+  /// position. The very first fix snaps into place (no start point to glide from).
+  void _moveCourierTo(LatLng next) {
+    final start = _driver;
+    if (start == null) {
+      _driverFrom = next;
+      _driverTo = next;
+      _driver = next;
+      return;
+    }
+    _driverFrom = start;
+    _driverTo = next;
+    _moveCtl
+      ..reset()
+      ..forward();
   }
 
   Future<String?> _token() async {
@@ -81,6 +124,10 @@ class _TrackScreenState extends State<TrackScreen> {
 
     if (!mounted) return;
     setState(() => _loading = false);
+
+    // Already finished before we even opened: render the static snapshot and
+    // skip the live stream entirely (nothing left to push).
+    if (_isTerminal(_status)) return;
 
     // 2) Live stream. Reconnect/backoff is handled inside SseClient.
     final sse = SseClient(
@@ -121,9 +168,19 @@ class _TrackScreenState extends State<TrackScreen> {
         if (driver is Map) {
           _driverName = driver['name'] as String?;
           final dp = _asLatLng(driver['lat'], driver['lng']);
-          if (dp != null) _driver = dp;
+          if (dp != null) {
+            // Snap (no glide) — this is the first known position.
+            _driverFrom = dp;
+            _driverTo = dp;
+            _driver = dp;
+          }
         }
       });
+
+      // Frame both points once we have them so the map opens already framed.
+      if (_driver != null || _destination != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _fitToPoints());
+      }
     } catch (_) {
       // Snapshot is best-effort; ignore and rely on the live stream.
     }
@@ -132,23 +189,41 @@ class _TrackScreenState extends State<TrackScreen> {
   void _onEvent(Map<String, dynamic> ev) {
     if (!mounted) return;
     final type = ev['type'];
-    setState(() {
-      if (type == 'status') {
+
+    if (type == 'status') {
+      setState(() {
         if (ev['status'] is String) _status = ev['status'] as String;
         _etaMin = _asInt(ev['eta']);
-      } else if (type == 'location') {
-        final p = _asLatLng(ev['lat'], ev['lng']);
-        if (p != null) {
-          _driver = p;
-          if (ev['name'] is String) _driverName = ev['name'] as String;
-        }
-      }
-    });
-
-    // Keep the courier comfortably in view as it moves.
-    if (type == 'location' && _driver != null) {
-      _fitToPoints();
+      });
+      // The order reached a terminal state — there will be no more movement, so
+      // tear the live stream down. The marker stays where it last was.
+      if (_isTerminal(_status)) _stopStream();
+      return;
     }
+
+    if (type == 'location') {
+      if (ev['name'] is String) {
+        setState(() => _driverName = ev['name'] as String);
+      }
+      final p = _asLatLng(ev['lat'], ev['lng']);
+      if (p != null) {
+        _moveCourierTo(p);
+        // Keep the courier comfortably in view as it moves.
+        _fitToPoints();
+      }
+    }
+  }
+
+  /// Permanently stop the live stream (e.g. on DELIVERED/CANCELLED). Idempotent.
+  void _stopStream() {
+    _moveCtl.stop();
+    _eventSub?.cancel();
+    _eventSub = null;
+    _reconnectSub?.cancel();
+    _reconnectSub = null;
+    _sse?.close();
+    _sse = null;
+    if (mounted && _reconnecting) setState(() => _reconnecting = false);
   }
 
   void _fitToPoints() {
@@ -269,7 +344,7 @@ class _StatusBar extends StatelessWidget {
                 ),
             ],
           ),
-          if (reconnecting) ...[
+          if (reconnecting && !_isTerminal(status)) ...[
             const SizedBox(height: 10),
             const Row(
               children: [
@@ -282,6 +357,25 @@ class _StatusBar extends StatelessWidget {
                 Text(
                   'Qayta ulanmoqda...',
                   style: TextStyle(color: Brand.inkSoft, fontSize: 12.5),
+                ),
+              ],
+            ),
+          ],
+          if (_isTerminal(status)) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  status == 'DELIVERED' ? Icons.check_circle : Icons.cancel,
+                  size: 16,
+                  color: color,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  status == 'DELIVERED'
+                      ? 'Buyurtmangiz yetkazildi. Rahmat!'
+                      : 'Buyurtma bekor qilindi.',
+                  style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12.5),
                 ),
               ],
             ),

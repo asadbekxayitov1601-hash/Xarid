@@ -23,6 +23,11 @@ class _StoreScreenState extends State<StoreScreen> {
     _future = context.read<Api>().storeDetail(widget.storeId);
   }
 
+  Future<void> _reload() async {
+    setState(() => _future = context.read<Api>().storeDetail(widget.storeId));
+    await _future;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,10 +36,10 @@ class _StoreScreenState extends State<StoreScreen> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Brand.green));
+            return const _StoreSkeleton();
           }
           if (snap.hasError || snap.data == null) {
-            return const Center(child: Text('Ochib bo\'lmadi.', style: TextStyle(color: Brand.inkSoft)));
+            return _Message(icon: Icons.cloud_off, text: 'Do\'konni ochib bo\'lmadi.', onRetry: _reload);
           }
           final store = snap.data!.store;
           final products = snap.data!.products;
@@ -42,11 +47,9 @@ class _StoreScreenState extends State<StoreScreen> {
             slivers: [
               SliverToBoxAdapter(child: _Header(store: store)),
               if (products.isEmpty)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(40),
-                    child: Center(child: Text('Mahsulotlar yo\'q.', style: TextStyle(color: Brand.inkSoft))),
-                  ),
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _Message(icon: Icons.inventory_2_outlined, text: 'Mahsulotlar yo\'q.'),
                 )
               else
                 SliverPadding(
@@ -56,7 +59,7 @@ class _StoreScreenState extends State<StoreScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.62,
+                      childAspectRatio: 0.58,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, i) => _ProductCard(product: products[i]),
@@ -157,37 +160,54 @@ class _ProductCard extends StatelessWidget {
               Positioned(right: 8, bottom: 8, child: _AddControl(product: product, qty: qty)),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(uzs(product.discountedPrice),
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: product.hasDiscount ? Brand.green : Brand.ink)),
-                    if (product.hasDiscount) ...[
-                      const SizedBox(width: 6),
-                      Text(uzs(product.price),
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: Brand.inkSoft,
-                              decoration: TextDecoration.lineThrough)),
+          // Flexible so the text block can shrink to fit on short screens and
+          // never overflows the card; the price row stays pinned at the top.
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: Text(uzs(product.discountedPrice),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: product.hasDiscount ? Brand.green : Brand.ink)),
+                      ),
+                      if (product.hasDiscount) ...[
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(uzs(product.price),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Brand.inkSoft,
+                                  decoration: TextDecoration.lineThrough)),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(product.nameUz,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, color: Brand.ink, height: 1.2)),
-                const SizedBox(height: 4),
-                Text(product.unitLabel, style: const TextStyle(fontSize: 12, color: Brand.inkSoft)),
-              ],
+                  ),
+                  const SizedBox(height: 4),
+                  Flexible(
+                    child: Text(product.nameUz,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: Brand.ink, height: 1.2)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(product.unitLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: Brand.inkSoft)),
+                ],
+              ),
             ),
           ),
         ],
@@ -357,6 +377,170 @@ class _BasketBottomBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Centered, branded empty / error state shared across this screen.
+class _Message extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Future<void> Function()? onRetry;
+  const _Message({required this.icon, required this.text, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: const BoxDecoration(color: Brand.card, shape: BoxShape.circle),
+              child: Icon(icon, size: 40, color: Brand.inkSoft),
+            ),
+            const SizedBox(height: 16),
+            Text(text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Brand.inkSoft, fontSize: 15)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => onRetry!(),
+                icon: const Icon(Icons.refresh, size: 18, color: Brand.green),
+                label: const Text('Qayta urinish',
+                    style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Brand.green),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// A gentle pulsing grey box used to build loading skeletons (no extra packages).
+class _Pulse extends StatefulWidget {
+  final double? width;
+  final double? height;
+  final double radius;
+  const _Pulse({this.width, this.height, this.radius = 8});
+
+  @override
+  State<_Pulse> createState() => _PulseState();
+}
+
+class _PulseState extends State<_Pulse> {
+  bool _dim = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _dim = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _dim ? 0.45 : 1.0,
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeInOut,
+      onEnd: () {
+        if (mounted) setState(() => _dim = !_dim);
+      },
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: Brand.card,
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
+      ),
+    );
+  }
+}
+
+// Placeholder grid shown while a store's products load — mirrors _ProductCard.
+class _StoreSkeleton extends StatelessWidget {
+  const _StoreSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _Pulse(width: 72, height: 72, radius: 16),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _Pulse(width: 180, height: 20),
+                      SizedBox(height: 10),
+                      _Pulse(width: 120, height: 13),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.all(12),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.58,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (_, __) => Container(
+                decoration: BoxDecoration(
+                  color: Brand.cream,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Brand.border),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AspectRatio(aspectRatio: 4 / 3, child: _Pulse(radius: 0)),
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _Pulse(width: 70, height: 15),
+                          SizedBox(height: 8),
+                          _Pulse(width: double.infinity, height: 12),
+                          SizedBox(height: 6),
+                          _Pulse(width: 90, height: 12),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              childCount: 6,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

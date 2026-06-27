@@ -9,7 +9,21 @@ import 'screens/basket_screen.dart';
 import 'screens/orders_screen.dart';
 import 'screens/courier/courier_home.dart';
 
-void main() => runApp(const XaridApp());
+/// Compile-time flavor, set by the per-flavor entry points (see
+/// lib/main_customer.dart / lib/main_courier.dart) with
+/// `--dart-define=FLAVOR=customer|courier`. Drives the window title only; the
+/// signed-in user's role still governs which experience is shown (see _Gate).
+const String appFlavor = String.fromEnvironment('FLAVOR', defaultValue: 'customer');
+
+bool get _isCourierFlavor => appFlavor == 'courier';
+
+/// Default `flutter run` entry — boots the customer flavor.
+void main() => runXarid();
+
+/// Shared app bootstrap the per-flavor entry points call. Keeping it tiny means
+/// one codebase, two shippable apps (uz.xarid.app / uz.xarid.courier) with the
+/// same Dart and the same role routing.
+void runXarid() => runApp(const XaridApp());
 
 class XaridApp extends StatelessWidget {
   const XaridApp({super.key});
@@ -22,7 +36,7 @@ class XaridApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => Basket()),
       ],
       child: MaterialApp(
-        title: 'Xarid',
+        title: _isCourierFlavor ? 'Xarid Kuryer' : 'Xarid',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         home: const _Gate(),
@@ -41,8 +55,12 @@ class _Gate extends StatelessWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator(color: Brand.green)));
     }
     if (!api.isLoggedIn) return const AuthScreen();
-    // Couriers get the driver experience; everyone else gets the shopper app.
+    // The signed-in role is the source of truth: couriers get the driver
+    // experience, everyone else gets the shopper app. The courier flavor only
+    // default-hints the courier UI when the role is missing/unknown — so a
+    // buyer signing into the courier build still lands in the shopper app.
     if (api.user?.role == 'DRIVER') return const CourierHome();
+    if (_isCourierFlavor && api.user?.role == null) return const CourierHome();
     return const HomeShell();
   }
 }

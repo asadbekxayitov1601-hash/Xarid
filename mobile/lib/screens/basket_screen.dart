@@ -14,13 +14,7 @@ class BasketScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Savat', style: TextStyle(fontWeight: FontWeight.w800))),
       body: basket.items.isEmpty
-          ? const Center(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.shopping_basket_outlined, size: 56, color: Brand.inkSoft),
-                SizedBox(height: 12),
-                Text('Savat bo\'sh', style: TextStyle(color: Brand.inkSoft)),
-              ]),
-            )
+          ? const _EmptyBasket()
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: basket.items.length,
@@ -80,6 +74,35 @@ class BasketScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => const _CheckoutSheet(),
+    );
+  }
+}
+
+// Branded empty state, consistent with the stores / orders screens.
+class _EmptyBasket extends StatelessWidget {
+  const _EmptyBasket();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: const BoxDecoration(color: Brand.card, shape: BoxShape.circle),
+              child: const Icon(Icons.shopping_basket_outlined, size: 40, color: Brand.inkSoft),
+            ),
+            const SizedBox(height: 16),
+            const Text('Savat bo\'sh',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Brand.inkSoft, fontSize: 15)),
+          ],
+        ),
+      ),
     );
   }
 }
