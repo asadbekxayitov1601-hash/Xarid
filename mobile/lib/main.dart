@@ -7,6 +7,7 @@ import 'screens/auth_screen.dart';
 import 'screens/stores_screen.dart';
 import 'screens/basket_screen.dart';
 import 'screens/orders_screen.dart';
+import 'screens/courier/courier_home.dart';
 
 void main() => runApp(const XaridApp());
 
@@ -39,7 +40,10 @@ class _Gate extends StatelessWidget {
     if (!api.ready) {
       return const Scaffold(body: Center(child: CircularProgressIndicator(color: Brand.green)));
     }
-    return api.isLoggedIn ? const HomeShell() : const AuthScreen();
+    if (!api.isLoggedIn) return const AuthScreen();
+    // Couriers get the driver experience; everyone else gets the shopper app.
+    if (api.user?.role == 'DRIVER') return const CourierHome();
+    return const HomeShell();
   }
 }
 
