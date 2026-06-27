@@ -9,6 +9,7 @@ const nav = [
   { href: "/admin/dispatch", label: "Xarid Go" },
   { href: "/admin/routes", label: "Marshrut" },
   { href: "/admin/finance", label: "Moliya" },
+  { href: "/admin/analytics", label: "Tahlil" },
 ];
 
 // Defense-in-depth: gate the whole /admin subtree here (there is no longer a
