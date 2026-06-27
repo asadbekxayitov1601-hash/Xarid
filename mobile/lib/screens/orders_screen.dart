@@ -86,7 +86,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                                color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(999)),
+                                color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
                             child: Text(o.statusLabel,
                                 style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
                           ),

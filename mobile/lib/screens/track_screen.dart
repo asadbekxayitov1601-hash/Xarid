@@ -247,7 +247,7 @@ class _StatusBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -271,8 +271,8 @@ class _StatusBar extends StatelessWidget {
           ),
           if (reconnecting) ...[
             const SizedBox(height: 10),
-            Row(
-              children: const [
+            const Row(
+              children: [
                 SizedBox(
                   width: 13,
                   height: 13,
@@ -332,7 +332,7 @@ class _MapView extends StatelessWidget {
             polylines: [
               Polyline(
                 points: [driver!, destination!],
-                color: Brand.green.withOpacity(0.5),
+                color: Brand.green.withValues(alpha: 0.5),
                 strokeWidth: 3,
               ),
             ],

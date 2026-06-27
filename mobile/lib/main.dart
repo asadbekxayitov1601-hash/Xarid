@@ -66,7 +66,7 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         backgroundColor: Brand.card,
-        indicatorColor: Brand.greenBright.withOpacity(0.25),
+        indicatorColor: Brand.greenBright.withValues(alpha: 0.25),
         destinations: [
           const NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: "Do'konlar"),
           NavigationDestination(

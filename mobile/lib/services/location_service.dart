@@ -23,7 +23,7 @@ class LocationService {
   LocationService._();
   static final LocationService instance = LocationService._();
 
-  static const double _minDistanceM = 25; // only resend after moving > ~25m
+  static const int _minDistanceM = 25; // only resend after moving > ~25m
   static const Duration _minInterval = Duration(seconds: 10); // or every ~10s
 
   StreamSubscription<Position>? _sub;
@@ -66,14 +66,14 @@ class LocationService {
 
     const settings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: _minDistanceM.round(),
+      distanceFilter: _minDistanceM,
     );
 
     // Send one fix immediately so the buyer sees the courier pin without
     // waiting for the device to move the first 25m.
     try {
       final first = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        desiredAccuracy: LocationAccuracy.high,
       );
       await _maybePost(first, force: true);
     } catch (_) {
