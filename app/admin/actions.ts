@@ -9,6 +9,7 @@ import { sellPrice } from "@/lib/pricing";
 import { sendStopToDriver } from "@/lib/driver";
 import { notifyBuyerStatus } from "@/lib/notifications";
 import { markPayoutPaid, postCashHandover, postDelivery } from "@/lib/ledger";
+import { hashPassword, normalizePhone } from "@/lib/password";
 
 // Admin sign-in is unified into the normal phone+password login
 // (app/api/auth/credentials -> routed to /admin by role). The admin account is
@@ -221,6 +222,59 @@ export async function createDriver(formData: FormData) {
   const phone = String(formData.get("phone") ?? "").trim();
   if (!name || !phone) return;
   await prisma.driver.create({ data: { name, phone } });
+  revalidatePath("/admin/drivers");
+}
+
+// Provision a phone+password login for an existing Driver so a courier can sign
+// in to the Flutter app (Bearer token) and the /driver portal. Creates (or
+// reuses, by normalized phone) a User with role DRIVER and a scrypt passwordHash,
+// then links it to the Driver via Driver.userId. Idempotent on re-submit: an
+// already-linked driver has its password reset rather than duplicating accounts.
+export async function provisionDriverLogin(formData: FormData) {
+  await requireAdmin();
+  const driverId = String(formData.get("driverId") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  if (!driverId || password.length < 6) return;
+
+  const driver = await prisma.driver.findUnique({
+    where: { id: driverId },
+    include: { user: true },
+  });
+  if (!driver) return;
+
+  const passwordHash = hashPassword(password);
+  // Prefer the driver's own phone for the login; normalize so it matches the
+  // same +998XXXXXXXXX key buyers/admins use. Fall back to the raw value if the
+  // phone can't be normalized (the unique constraint still protects us).
+  const phoneKey = normalizePhone(driver.phone) ?? (driver.phone.trim() || null);
+
+  // Already linked: just (re)set the credentials on the existing User.
+  if (driver.userId) {
+    await prisma.user.update({
+      where: { id: driver.userId },
+      data: { role: "DRIVER", passwordHash, ...(phoneKey ? { phone: phoneKey } : {}) },
+    });
+    revalidatePath("/admin/drivers");
+    return;
+  }
+
+  // A User may already exist for this phone (e.g. the courier ordered as a
+  // buyer first). Promote and link it instead of creating a duplicate.
+  const existing = phoneKey
+    ? await prisma.user.findUnique({ where: { phone: phoneKey } })
+    : null;
+
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: { role: "DRIVER", passwordHash, name: existing.name ?? driver.name },
+      })
+    : await prisma.user.create({
+        data: { phone: phoneKey, name: driver.name, role: "DRIVER", passwordHash },
+      });
+
+  await prisma.driver.update({ where: { id: driverId }, data: { userId: user.id } });
+
   revalidatePath("/admin/drivers");
 }
 

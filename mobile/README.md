@@ -37,10 +37,39 @@ lib/
   screens/         auth, stores, store, basket, orders
 ```
 
+## Phase 3 — live tracking + courier (included)
+This app now also contains the **courier experience** and **live tracking**, in one
+codebase routed by role at login:
+- A `DRIVER` account lands on the courier home (`screens/courier/`): job list →
+  job detail → "Start delivery" streams GPS to `POST /api/driver/location` →
+  "Delivered". Couriers are given a phone+password in the admin panel
+  (Haydovchilar → "Kuryer ilovasi paroli").
+- A customer taps **Kuzatish** on an active order → `TrackScreen` shows the
+  courier moving on an OpenStreetMap map, fed by `GET /api/orders/{id}/stream` (SSE).
+
+### Native permissions (add after `flutter create .`)
+`geolocator` + `url_launcher` need platform permissions:
+
+**Android** — `android/app/src/main/AndroidManifest.xml`, inside `<manifest>`:
+```xml
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+```
+(geolocator needs `minSdkVersion 21+` in `android/app/build.gradle`.)
+
+**iOS** — `ios/Runner/Info.plist`:
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>Xarid kuryer ilovasi yetkazib berishni kuzatish uchun joylashuvdan foydalanadi.</string>
+<key>LSApplicationQueriesSchemes</key>
+<array><string>tel</string><string>https</string></array>
+```
+
 ## Next
-- Live order tracking: consume `GET /api/orders/{id}/stream` (SSE) + a map.
-- Push: register the FCM token via `POST /api/me/device` (needs the FCM setup).
-- Courier app: separate Flutter app that streams GPS to `POST /api/driver/location`.
+- Push: register the FCM token via `POST /api/me/device` (needs Firebase setup).
+- Publishing: app icons, splash, privacy policy, store listings.
+- Optionally split customer vs courier into two store listings via build flavors.
 
 > Note: scaffold authored without a local Flutter toolchain — run `flutter analyze`
-> after `flutter create .`; minor layout tweaks (e.g. grid aspect ratios) may be needed.
+> after `flutter create .`; minor tweaks (e.g. grid aspect ratios, package API drift)
+> may be needed. The backend endpoints are compile-verified.
