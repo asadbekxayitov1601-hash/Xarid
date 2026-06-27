@@ -18,3 +18,11 @@ pubspec.lock
 .idea/
 *.iml
 .vscode/
+
+# Release signing secrets — NEVER commit
+*.jks
+*.keystore
+key.properties
+**/key.properties
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
