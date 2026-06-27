@@ -7,3 +7,6 @@ prisma/dev.db
 .vercel
 tsconfig.tsbuildinfo
 tsconfig.seedcheck.tsbuildinfo
+
+# JetBrains IDE
+.idea/
