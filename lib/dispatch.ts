@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { haversineKm, hasCoords } from "@/lib/geo";
+import { notifyCourierNewJob } from "@/lib/notifications";
 
 // How recent a DriverLocation must be for a courier to count as "available" and
 // route-able by distance. Older fixes are treated as stale (the courier may be
@@ -118,6 +119,8 @@ export async function autoAssignCourier(orderId: string): Promise<AssignResult> 
       status: ASSIGNABLE_STATUSES.has(fresh.status) ? "ASSIGNED" : fresh.status,
     },
   });
+
+  await notifyCourierNewJob(orderId).catch(() => {}); // FCM push to the courier's app
 
   return { ok: true, driverId: chosen.driverId, distanceKm: chosen.distanceKm };
 }
