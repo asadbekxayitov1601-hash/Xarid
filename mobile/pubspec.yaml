@@ -13,9 +13,34 @@ dependencies:
   provider: ^6.1.2
   shared_preferences: ^2.2.3
   cupertino_icons: ^1.0.6
+  # Phase 3: live tracking + courier
+  flutter_map: ^7.0.2 # OpenStreetMap tiles, no API key
+  latlong2: ^0.9.1
+  geolocator: ^12.0.0 # courier GPS stream
+  url_launcher: ^6.3.0 # call customer / open in maps
 
 dev_dependencies:
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
+
+# App launcher icons — run:  dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"
+  remove_alpha_ios: true
+  background_color_ios: "#FFFDF1"
+  adaptive_icon_background: "#FFFDF1"
+  adaptive_icon_foreground: "assets/icon.png"
+
+# Splash screen — run:  dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#FFFDF1"
+  image: "assets/icon.png"
+  android_12:
+    color: "#FFFDF1"
+    image: "assets/icon.png"

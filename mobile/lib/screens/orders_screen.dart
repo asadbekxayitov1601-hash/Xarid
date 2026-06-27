@@ -4,6 +4,7 @@ import '../api.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
+import 'track_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -99,6 +100,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
+                      if (o.status != 'DELIVERED' && o.status != 'CANCELLED') ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => TrackScreen(orderId: o.id)),
+                            ),
+                            icon: const Icon(Icons.location_on_outlined, size: 18, color: Brand.green),
+                            label: const Text('Kuzatish', style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 );
