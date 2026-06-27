@@ -7,7 +7,7 @@ import { runCutoff } from "@/lib/po";
 import { saveActuals } from "@/lib/orders";
 import { sellPrice } from "@/lib/pricing";
 import { sendStopToDriver } from "@/lib/driver";
-import { notifyBuyerStatus } from "@/lib/notifications";
+import { notifyBuyerStatus, notifyCourierNewJob } from "@/lib/notifications";
 import { markPayoutPaid, postCashHandover, postDelivery } from "@/lib/ledger";
 import { hashPassword, normalizePhone } from "@/lib/password";
 
@@ -285,6 +285,7 @@ export async function assignDriver(formData: FormData) {
   if (!orderId || !driverId) return;
   await prisma.order.update({ where: { id: orderId }, data: { driverId } });
   await sendStopToDriver(orderId); // no-op if the driver hasn't linked Telegram yet
+  await notifyCourierNewJob(orderId).catch(() => {}); // FCM push to the courier's app
   revalidatePath("/admin/routes");
   revalidatePath("/admin/orders");
 }
