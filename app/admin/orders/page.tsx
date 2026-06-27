@@ -44,17 +44,17 @@ export default async function AdminOrdersPage() {
       <h1 className="text-xl font-bold">Buyurtmalar</h1>
 
       {orders.map((o) => (
-        <section key={o.id} className="rounded-2xl border border-stone-200 bg-white">
-          <header className="flex flex-wrap items-center gap-2 border-b border-stone-100 px-4 py-3">
+        <section key={o.id} className="rounded-2xl border border-border-primary bg-bg-secondary">
+          <header className="flex flex-wrap items-center gap-2 border-b border-border-primary px-4 py-3">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">
                 №{o.id.slice(-6).toUpperCase()} · {o.buyerName} · {o.buyerPhone}
               </p>
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-text-secondary">
                 {o.address} · yetkazish {o.deliveryDate.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" })}
               </p>
             </div>
-            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold">{o.status}</span>
+            <span className="rounded-full bg-bg-primary px-2.5 py-1 text-xs font-semibold">{o.status}</span>
             <span className="text-sm font-bold">{uzs(o.total)}</span>
             {o.cashTaken != null && (
               <span
@@ -69,7 +69,7 @@ export default async function AdminOrdersPage() {
               <a
                 href={`/api/pod/${o.id}`}
                 target="_blank"
-                className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-200"
+                className="rounded-full bg-bg-primary px-2.5 py-1 text-xs font-semibold text-text-secondary hover:opacity-80"
               >
                 📷 surat
               </a>
@@ -77,7 +77,7 @@ export default async function AdminOrdersPage() {
           </header>
 
           {o.purchaseOrders.length > 0 && (
-            <div className="flex flex-wrap gap-2 border-b border-stone-100 px-4 py-2">
+            <div className="flex flex-wrap gap-2 border-b border-border-primary px-4 py-2">
               {o.purchaseOrders.map((po) => (
                 <span key={po.id} className={`rounded-full px-2.5 py-1 text-xs font-medium ${PO_BADGE[po.status] ?? ""}`}>
                   {po.supplier.name}: {po.status}
@@ -89,14 +89,14 @@ export default async function AdminOrdersPage() {
           {ACTUALS_EDITABLE.has(o.status) ? (
             <form action={saveOrderActuals}>
               <input type="hidden" name="orderId" value={o.id} />
-              <ul className="divide-y divide-stone-100 text-sm">
+              <ul className="divide-y divide-border-primary text-sm">
                 {o.items.map((i) => (
                   <li key={i.id} className="flex items-center justify-between gap-2 px-4 py-1.5">
                     <span className="min-w-0 flex-1 truncate">
                       {i.offer.product.nameUz}
-                      <span className="text-xs text-stone-400"> · {i.offer.supplier.name}</span>
+                      <span className="text-xs text-text-secondary"> · {i.offer.supplier.name}</span>
                     </span>
-                    <span className="text-xs text-stone-400">
+                    <span className="text-xs text-text-secondary">
                       buyurtma: {i.qty} {UNIT_LABELS[i.offer.product.unit] ?? ""}
                     </span>
                     <input
@@ -105,26 +105,26 @@ export default async function AdminOrdersPage() {
                       step="0.01"
                       min="0"
                       defaultValue={i.qtyActual ?? i.qty}
-                      className="w-20 rounded border border-stone-300 px-2 py-1 text-right"
+                      className="w-20 rounded border border-border-primary px-2 py-1 text-right"
                     />
                   </li>
                 ))}
               </ul>
-              <div className="border-t border-stone-100 px-4 py-2">
-                <button className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold hover:bg-stone-50">
+              <div className="border-t border-border-primary px-4 py-2">
+                <button className="rounded-lg border border-border-primary px-3 py-1.5 text-xs font-semibold hover:bg-bg-primary">
                   Haqiqiy og'irliklarni saqlash (summa qayta hisoblanadi)
                 </button>
               </div>
             </form>
           ) : (
-            <ul className="divide-y divide-stone-100 text-sm">
+            <ul className="divide-y divide-border-primary text-sm">
               {o.items.map((i) => (
                 <li key={i.id} className="flex justify-between px-4 py-1.5">
                   <span className="min-w-0 flex-1 truncate">
                     {i.offer.product.nameUz}
-                    <span className="text-xs text-stone-400"> · {i.offer.supplier.name}</span>
+                    <span className="text-xs text-text-secondary"> · {i.offer.supplier.name}</span>
                   </span>
-                  <span className="text-stone-500">
+                  <span className="text-text-secondary">
                     {i.qtyActual ?? i.qty} {UNIT_LABELS[i.offer.product.unit] ?? ""}
                   </span>
                 </li>
@@ -133,7 +133,7 @@ export default async function AdminOrdersPage() {
           )}
 
           {NEXT_ACTIONS[o.status] && (
-            <footer className="flex flex-wrap gap-2 border-t border-stone-100 px-4 py-3">
+            <footer className="flex flex-wrap gap-2 border-t border-border-primary px-4 py-3">
               {NEXT_ACTIONS[o.status].map((a) => (
                 <form key={a.status} action={setOrderStatus}>
                   <input type="hidden" name="orderId" value={o.id} />
@@ -142,7 +142,7 @@ export default async function AdminOrdersPage() {
                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
                       a.status === "CANCELLED"
                         ? "border border-red-200 text-red-600 hover:bg-red-50"
-                        : "bg-stone-900 text-white hover:bg-stone-700"
+                        : "bg-[var(--accent)] text-white hover:opacity-90"
                     }`}
                   >
                     {a.label}
@@ -154,7 +154,7 @@ export default async function AdminOrdersPage() {
         </section>
       ))}
 
-      {orders.length === 0 && <p className="py-12 text-center text-stone-500">Buyurtmalar yo'q.</p>}
+      {orders.length === 0 && <p className="py-12 text-center text-text-secondary">Buyurtmalar yo'q.</p>}
     </div>
   );
 }

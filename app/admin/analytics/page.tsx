@@ -35,25 +35,25 @@ export default async function AdminAnalyticsPage() {
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4">
-      <p className="text-xs font-medium text-stone-500">{label}</p>
-      <p className="mt-1 text-lg font-bold tabular-nums text-stone-900">{value}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-stone-400">{sub}</p>}
+    <div className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
+      <p className="text-xs font-medium text-text-secondary">{label}</p>
+      <p className="mt-1 text-lg font-bold tabular-nums text-text-primary">{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-text-secondary">{sub}</p>}
     </div>
   );
 }
 
 function Period({ title, orders, gmv, extra }: { title: string; orders: number; gmv: number; extra?: string }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4">
-      <p className="text-sm font-semibold text-stone-700">{title}</p>
-      <p className="mt-2 text-sm text-stone-600">
-        <span className="font-bold tabular-nums text-stone-900">{orders}</span> ta buyurtma
+    <div className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
+      <p className="text-sm font-semibold text-text-primary">{title}</p>
+      <p className="mt-2 text-sm text-text-secondary">
+        <span className="font-bold tabular-nums text-text-primary">{orders}</span> ta buyurtma
       </p>
-      <p className="text-sm text-stone-600">
-        <span className="font-bold tabular-nums text-emerald-700">{uzs(gmv)}</span>
+      <p className="text-sm text-text-secondary">
+        <span className="font-bold tabular-nums text-[color:var(--accent)]">{uzs(gmv)}</span>
       </p>
-      {extra && <p className="mt-0.5 text-xs text-stone-400">{extra}</p>}
+      {extra && <p className="mt-0.5 text-xs text-text-secondary">{extra}</p>}
     </div>
   );
 }
@@ -61,10 +61,10 @@ function Period({ title, orders, gmv, extra }: { title: string; orders: number; 
 function Bars({ title, data, kind }: { title: string; data: Bucket[]; kind: "orders" | "gmv" }) {
   const max = Math.max(1, ...data.map((d) => (kind === "orders" ? d.orders : d.gmv)));
   return (
-    <section className="rounded-2xl border border-stone-200 bg-white p-4">
+    <section className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
       <h2 className="mb-4 font-semibold">{title}</h2>
       {data.length === 0 ? (
-        <p className="text-sm text-stone-500">Hozircha ma&apos;lumot yo&apos;q.</p>
+        <p className="text-sm text-text-secondary">Hozircha ma&apos;lumot yo&apos;q.</p>
       ) : (
         <div className="flex h-44 items-end gap-1 overflow-x-auto pb-1">
           {data.map((d, i) => {
@@ -74,12 +74,12 @@ function Bars({ title, data, kind }: { title: string; data: Bucket[]; kind: "ord
               <div key={i} className="flex min-w-[26px] flex-1 flex-col items-center gap-1">
                 <div className="flex h-full w-full items-end">
                   <div
-                    className="w-full rounded-t bg-emerald-500 transition-all"
+                    className="w-full rounded-t bg-[var(--accent)] transition-all"
                     style={{ height: `${h}%` }}
                     title={`${d.label}: ${d.orders} ta · ${uzs(d.gmv)}`}
                   />
                 </div>
-                <span className="whitespace-nowrap text-[9px] text-stone-400">{d.label}</span>
+                <span className="whitespace-nowrap text-[9px] text-text-secondary">{d.label}</span>
               </div>
             );
           })}

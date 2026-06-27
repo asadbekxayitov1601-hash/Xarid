@@ -62,44 +62,44 @@ export default async function AdminFinancePage({
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-bold">Moliya</h1>
         <div className="ml-auto flex gap-2 text-sm">
-          <a href={`?w=${weeksBack + 1}`} className="rounded-full border border-stone-300 px-3 py-1 hover:bg-stone-100">
+          <a href={`?w=${weeksBack + 1}`} className="rounded-full border border-border-primary px-3 py-1 hover:bg-bg-primary">
             ← oldingi hafta
           </a>
           {weeksBack > 0 && (
-            <a href={`?w=${weeksBack - 1}`} className="rounded-full border border-stone-300 px-3 py-1 hover:bg-stone-100">
+            <a href={`?w=${weeksBack - 1}`} className="rounded-full border border-border-primary px-3 py-1 hover:bg-bg-primary">
               keyingi hafta →
             </a>
           )}
         </div>
       </div>
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-text-secondary">
         Hafta: {fmt(start)} — {fmt(end)} · yetkazilgan buyurtmalar bo'yicha, tarozidan o'tgan miqdorlarda
       </p>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs text-stone-500">Yetkazib beruvchilarga</p>
+        <div className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
+          <p className="text-xs text-text-secondary">Yetkazib beruvchilarga</p>
           <p className="mt-1 text-lg font-bold">{uzs(totalGross)}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs text-stone-500">Xarid marjasi</p>
-          <p className="mt-1 text-lg font-bold text-emerald-700">{uzs(totalMargin)}</p>
+        <div className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
+          <p className="text-xs text-text-secondary">Xarid marjasi</p>
+          <p className="mt-1 text-lg font-bold text-[color:var(--accent)]">{uzs(totalMargin)}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs text-stone-500">Onlayn to'lovlar (hafta)</p>
+        <div className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
+          <p className="text-xs text-text-secondary">Onlayn to'lovlar (hafta)</p>
           <p className="mt-1 text-lg font-bold">{uzs(paid._sum.amount ?? 0)}</p>
-          <p className="text-xs text-stone-400">{paid._count} ta tranzaksiya</p>
+          <p className="text-xs text-text-secondary">{paid._count} ta tranzaksiya</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="text-xs text-stone-500">Kutilayotgan to'lovlar</p>
+        <div className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
+          <p className="text-xs text-text-secondary">Kutilayotgan to'lovlar</p>
           <p className="mt-1 text-lg font-bold">{pending}</p>
         </div>
       </div>
 
-      <section className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+      <section className="overflow-x-auto rounded-2xl border border-border-primary bg-bg-secondary">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-stone-100 text-left text-xs text-stone-500">
+            <tr className="border-b border-border-primary text-left text-xs text-text-secondary">
               <th className="px-4 py-2.5">Yetkazib beruvchi</th>
               <th className="px-2 py-2.5 text-right">Buyurtmalar</th>
               <th className="px-2 py-2.5 text-right">Qatorlar</th>
@@ -108,14 +108,14 @@ export default async function AdminFinancePage({
               <th className="px-4 py-2.5 text-right">To'lov</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100">
+          <tbody className="divide-y divide-border-primary">
             {rows.map((r) => (
               <tr key={r.supplierId}>
                 <td className="px-4 py-2.5 font-medium">{r.supplierName}</td>
                 <td className="px-2 py-2.5 text-right">{r.orders}</td>
                 <td className="px-2 py-2.5 text-right">{r.lines}</td>
                 <td className="px-2 py-2.5 text-right font-semibold">{uzs(r.gross)}</td>
-                <td className="px-2 py-2.5 text-right text-emerald-700">{uzs(r.margin)}</td>
+                <td className="px-2 py-2.5 text-right text-[color:var(--accent)]">{uzs(r.margin)}</td>
                 <td className="px-4 py-2.5 text-right">
                   {paidSuppliers.has(r.supplierId) ? (
                     <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
@@ -127,7 +127,7 @@ export default async function AdminFinancePage({
                       <input type="hidden" name="periodStart" value={start.toISOString()} />
                       <input type="hidden" name="periodEnd" value={end.toISOString()} />
                       <input type="hidden" name="amount" value={r.gross} />
-                      <button className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-700">
+                      <button className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">
                         To'landi deb belgilash
                       </button>
                     </form>
@@ -137,7 +137,7 @@ export default async function AdminFinancePage({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-stone-500">
+                <td colSpan={5} className="px-4 py-8 text-center text-text-secondary">
                   Bu haftada yetkazilgan buyurtmalar yo'q.
                 </td>
               </tr>
@@ -146,10 +146,10 @@ export default async function AdminFinancePage({
         </table>
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-4">
+      <section className="rounded-2xl border border-border-primary bg-bg-secondary p-4">
         <h2 className="font-semibold">Balanslar (butun davr, jonli)</h2>
         <ul className="mt-2 space-y-1 text-sm">
-          <li className="flex justify-between border-b border-dotted border-stone-200 py-1">
+          <li className="flex justify-between border-b border-dotted border-border-primary py-1">
             <span>Mijozlardan olinadigan (jami)</span>
             <span className={receivables > 0 ? "font-semibold text-amber-700" : "font-semibold"}>
               {uzs(receivables)}
@@ -159,23 +159,23 @@ export default async function AdminFinancePage({
             const label = accountLabel(b.account);
             if (!label || b.balance === 0) return null;
             return (
-              <li key={b.account} className="flex justify-between border-b border-dotted border-stone-200 py-1">
+              <li key={b.account} className="flex justify-between border-b border-dotted border-border-primary py-1">
                 <span>{label}</span>
                 <span className="font-semibold">{uzs(Math.abs(b.balance))}</span>
               </li>
             );
           })}
           {ledgerBalances.length === 0 && (
-            <li className="py-2 text-stone-500">Hozircha yozuvlar yo'q — birinchi yetkazilgan buyurtmadan boshlanadi.</li>
+            <li className="py-2 text-text-secondary">Hozircha yozuvlar yo'q — birinchi yetkazilgan buyurtmadan boshlanadi.</li>
           )}
         </ul>
-        <p className="mt-2 text-xs text-stone-400">
+        <p className="mt-2 text-xs text-text-secondary">
           Har bir yozuv ikki tomonlama: mijoz qarzi → yetkazib beruvchi haqi + marja; naqd → haydovchi → kassa;
           onlayn to'lov → bank. Hech bir so'm izsiz yo'qolmaydi.
         </p>
       </section>
 
-      <p className="text-xs text-stone-400 print:hidden">Chop etish uchun: Ctrl+P / Cmd+P</p>
+      <p className="text-xs text-text-secondary print:hidden">Chop etish uchun: Ctrl+P / Cmd+P</p>
     </div>
   );
 }
