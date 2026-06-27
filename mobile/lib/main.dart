@@ -1,0 +1,78 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'api.dart';
+import 'basket.dart';
+import 'theme.dart';
+import 'screens/auth_screen.dart';
+import 'screens/stores_screen.dart';
+import 'screens/basket_screen.dart';
+import 'screens/orders_screen.dart';
+
+void main() => runApp(const XaridApp());
+
+class XaridApp extends StatelessWidget {
+  const XaridApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => Api()..load()),
+        ChangeNotifierProvider(create: (_) => Basket()),
+      ],
+      child: MaterialApp(
+        title: 'Xarid',
+        debugShowCheckedModeBanner: false,
+        theme: buildTheme(),
+        home: const _Gate(),
+      ),
+    );
+  }
+}
+
+class _Gate extends StatelessWidget {
+  const _Gate();
+
+  @override
+  Widget build(BuildContext context) {
+    final api = context.watch<Api>();
+    if (!api.ready) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Brand.green)));
+    }
+    return api.isLoggedIn ? const HomeShell() : const AuthScreen();
+  }
+}
+
+class HomeShell extends StatefulWidget {
+  const HomeShell({super.key});
+  @override
+  State<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<HomeShell> {
+  int _tab = 0;
+  static const _screens = [StoresScreen(), BasketScreen(), OrdersScreen()];
+
+  @override
+  Widget build(BuildContext context) {
+    final count = context.watch<Basket>().count;
+    return Scaffold(
+      body: IndexedStack(index: _tab, children: _screens),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        backgroundColor: Brand.card,
+        indicatorColor: Brand.greenBright.withOpacity(0.25),
+        destinations: [
+          const NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: "Do'konlar"),
+          NavigationDestination(
+            icon: Badge(isLabelVisible: count > 0, label: Text('$count'), child: const Icon(Icons.shopping_basket_outlined)),
+            selectedIcon: const Icon(Icons.shopping_basket),
+            label: 'Savat',
+          ),
+          const NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Buyurtmalar'),
+        ],
+      ),
+    );
+  }
+}
