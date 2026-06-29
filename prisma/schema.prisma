@@ -60,6 +60,7 @@ model User {
   orders       Order[]
   driver       Driver?
   deviceTokens DeviceToken[]
+  supportMessages SupportMessage[]
 }
 
 // A push-notification device token (Firebase Cloud Messaging) for a user's
@@ -108,6 +109,10 @@ model SupplierOffer {
 }
 
 // Delivery driver. Links their Telegram via /start drv_<botCode>.
+// Self-service applicants (via the courier app) create a row with status PENDING
+// and active=false; an admin approves it, which sets status APPROVED + active and
+// flips the linked User.role to DRIVER. Admin-provisioned drivers default APPROVED
+// so existing seeded rows keep working after this additive migration.
 model Driver {
   id        String   @id @default(cuid())
   name      String
@@ -118,7 +123,28 @@ model Driver {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
+  // Application details captured at onboarding (nullable for legacy rows).
+  status          String  @default("APPROVED") // PENDING | APPROVED | REJECTED
+  experienceYears Int?    // years of delivery/driving experience
+  carType         String? // e.g. "Scooter", "Sedan", "Damas"
+  carNumber       String? // vehicle plate, free text
+
   orders Order[]
+}
+
+// One message in a customer/driver <-> support thread. The thread is implicitly
+// keyed by userId; `fromSupport` flips who sent it (false = the user, true = a
+// support operator). Polled by the app (no SSE needed for low-volume chat).
+model SupportMessage {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  fromSupport Boolean @default(false)
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // The buyer's single morning basket.
