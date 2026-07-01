@@ -4,6 +4,7 @@ import '../api.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
+import '../widgets/skeleton.dart';
 import 'track_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -53,12 +54,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
               return const _OrdersSkeleton();
             }
             if (snap.hasError) {
-              return _Message(
-                  icon: Icons.cloud_off, text: 'Buyurtmalarni yuklab bo\'lmadi.', onRetry: _reload);
+              return EmptyMessage(
+                  icon: Icons.cloud_off,
+                  text: 'Buyurtmalarni yuklab bo\'lmadi.',
+                  onRetry: _reload,
+                  scrollable: true);
             }
             final orders = snap.data ?? [];
             if (orders.isEmpty) {
-              return const _Message(icon: Icons.receipt_long, text: 'Buyurtmalar yo\'q.');
+              return const EmptyMessage(
+                  icon: Icons.receipt_long,
+                  text: 'Buyurtmalar yo\'q.',
+                  scrollable: true);
             }
             return ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -125,103 +132,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
-// Centered, branded empty / error state. Scrollable so it stays pull-to-refresh
-// friendly inside the RefreshIndicator.
-class _Message extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Future<void> Function()? onRetry;
-  const _Message({required this.icon, required this.text, this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: const BoxDecoration(color: Brand.card, shape: BoxShape.circle),
-                    child: Icon(icon, size: 40, color: Brand.inkSoft),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(text,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Brand.inkSoft, fontSize: 15)),
-                  if (onRetry != null) ...[
-                    const SizedBox(height: 20),
-                    OutlinedButton.icon(
-                      onPressed: () => onRetry!(),
-                      icon: const Icon(Icons.refresh, size: 18, color: Brand.green),
-                      label: const Text('Qayta urinish',
-                          style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Brand.green),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// A gentle pulsing grey box used to build loading skeletons (no extra packages).
-class _Pulse extends StatefulWidget {
-  final double? width;
-  final double? height;
-  final double radius;
-  const _Pulse({this.width, this.height, this.radius = 8});
-
-  @override
-  State<_Pulse> createState() => _PulseState();
-}
-
-class _PulseState extends State<_Pulse> {
-  bool _dim = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _dim = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _dim ? 0.45 : 1.0,
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeInOut,
-      onEnd: () {
-        if (mounted) setState(() => _dim = !_dim);
-      },
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Brand.card,
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
-      ),
-    );
-  }
-}
-
 // Placeholder list shown while orders load — mirrors an order card.
 class _OrdersSkeleton extends StatelessWidget {
   const _OrdersSkeleton();
@@ -245,15 +155,15 @@ class _OrdersSkeleton extends StatelessWidget {
           children: [
             Row(
               children: [
-                _Pulse(width: 60, height: 14),
+                Pulse(width: 60, height: 14),
                 Spacer(),
-                _Pulse(width: 90, height: 22, radius: 999),
+                Pulse(width: 90, height: 22, radius: 999),
               ],
             ),
             SizedBox(height: 12),
-            _Pulse(width: 180, height: 14),
+            Pulse(width: 180, height: 14),
             SizedBox(height: 8),
-            _Pulse(width: 130, height: 12),
+            Pulse(width: 130, height: 12),
           ],
         ),
       ),

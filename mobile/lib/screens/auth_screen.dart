@@ -73,10 +73,21 @@ class _AuthScreenState extends State<AuthScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 12),
+                  Center(
+                    child: Image.asset(
+                      'assets/logo.png',
+                      width: 100,
+                      height: 100,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   const Text('Xarid',
+                      textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Brand.ink)),
                   const SizedBox(height: 4),
-                  const Text("Qo'qonda tez yetkazib berish", style: TextStyle(color: Brand.inkSoft)),
+                  const Text("Qo'qonda tez yetkazib berish",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Brand.inkSoft)),
                   const SizedBox(height: 28),
                   _SegToggle(
                       signup: _signup,

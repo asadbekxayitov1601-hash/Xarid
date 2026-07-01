@@ -5,6 +5,7 @@ import '../basket.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
+import '../widgets/skeleton.dart';
 import 'basket_screen.dart';
 
 class StoreScreen extends StatefulWidget {
@@ -39,7 +40,7 @@ class _StoreScreenState extends State<StoreScreen> {
             return const _StoreSkeleton();
           }
           if (snap.hasError || snap.data == null) {
-            return _Message(icon: Icons.cloud_off, text: 'Do\'konni ochib bo\'lmadi.', onRetry: _reload);
+            return EmptyMessage(icon: Icons.cloud_off, text: 'Do\'konni ochib bo\'lmadi.', onRetry: _reload);
           }
           final store = snap.data!.store;
           final products = snap.data!.products;
@@ -49,7 +50,7 @@ class _StoreScreenState extends State<StoreScreen> {
               if (products.isEmpty)
                 const SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _Message(icon: Icons.inventory_2_outlined, text: 'Mahsulotlar yo\'q.'),
+                  child: EmptyMessage(icon: Icons.inventory_2_outlined, text: 'Mahsulotlar yo\'q.'),
                 )
               else
                 SliverPadding(
@@ -381,94 +382,6 @@ class _BasketBottomBar extends StatelessWidget {
   }
 }
 
-// Centered, branded empty / error state shared across this screen.
-class _Message extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Future<void> Function()? onRetry;
-  const _Message({required this.icon, required this.text, this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: const BoxDecoration(color: Brand.card, shape: BoxShape.circle),
-              child: Icon(icon, size: 40, color: Brand.inkSoft),
-            ),
-            const SizedBox(height: 16),
-            Text(text,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Brand.inkSoft, fontSize: 15)),
-            if (onRetry != null) ...[
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () => onRetry!(),
-                icon: const Icon(Icons.refresh, size: 18, color: Brand.green),
-                label: const Text('Qayta urinish',
-                    style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Brand.green),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// A gentle pulsing grey box used to build loading skeletons (no extra packages).
-class _Pulse extends StatefulWidget {
-  final double? width;
-  final double? height;
-  final double radius;
-  const _Pulse({this.width, this.height, this.radius = 8});
-
-  @override
-  State<_Pulse> createState() => _PulseState();
-}
-
-class _PulseState extends State<_Pulse> {
-  bool _dim = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _dim = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _dim ? 0.45 : 1.0,
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeInOut,
-      onEnd: () {
-        if (mounted) setState(() => _dim = !_dim);
-      },
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Brand.card,
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
-      ),
-    );
-  }
-}
-
 // Placeholder grid shown while a store's products load — mirrors _ProductCard.
 class _StoreSkeleton extends StatelessWidget {
   const _StoreSkeleton();
@@ -483,15 +396,15 @@ class _StoreSkeleton extends StatelessWidget {
             padding: EdgeInsets.all(16),
             child: Row(
               children: [
-                _Pulse(width: 72, height: 72, radius: 16),
+                Pulse(width: 72, height: 72, radius: 16),
                 SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Pulse(width: 180, height: 20),
+                      Pulse(width: 180, height: 20),
                       SizedBox(height: 10),
-                      _Pulse(width: 120, height: 13),
+                      Pulse(width: 120, height: 13),
                     ],
                   ),
                 ),
@@ -519,17 +432,17 @@ class _StoreSkeleton extends StatelessWidget {
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AspectRatio(aspectRatio: 4 / 3, child: _Pulse(radius: 0)),
+                    AspectRatio(aspectRatio: 4 / 3, child: Pulse(radius: 0)),
                     Padding(
                       padding: EdgeInsets.all(10),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _Pulse(width: 70, height: 15),
+                          Pulse(width: 70, height: 15),
                           SizedBox(height: 8),
-                          _Pulse(width: double.infinity, height: 12),
+                          Pulse(width: double.infinity, height: 12),
                           SizedBox(height: 6),
-                          _Pulse(width: 90, height: 12),
+                          Pulse(width: 90, height: 12),
                         ],
                       ),
                     ),
