@@ -19,27 +19,35 @@
 - Schema changes additive + nullable only (`db push` safe). No new payment gateways. No Clerk.
 - Flutter: `flutter analyze` clean.
 
+## Status: M1-M6 complete (2026-07-01)
+Commits on `feat/driver-app-and-support`: `7cafd78` (M1+M2 backend), M3 mobile,
+`209ed5c` (M6 security). Gates green: `flutter analyze` clean, `tsc --noEmit`
+clean, `NODE_ENV=production next build` compiled. DB synced (`db push`).
+Remaining (needs owner decision): open PR / squash-merge; deploy env
+(`SESSION_SECRET` on Railway); optional hardening WEB-002/003 (token expiry,
+rate limiting) from SECURITY_REVIEW.md; real-device QA pass.
+
 ## Milestones
-- [ ] **M1 — Backend: driver applications + balance**
+- [x] **M1 — Backend: driver applications + balance**
   - Schema: `Driver.experienceYears?`, `Driver.carType?`, `Driver.carNumber?`, `Driver.status @default("APPROVED")` (PENDING|APPROVED|REJECTED).
   - `POST /api/driver/apply` (Bearer) — create/update PENDING Driver linked to user.
   - `GET /api/driver/me` (Bearer) — application status + profile for the app gate.
   - `GET /api/driver/earnings` (Bearer) — balance (sum courierPayout of DELIVERED) + history.
   - Admin: approve/reject in `app/admin/drivers`.
-- [ ] **M2 — Backend: support chat**
+- [x] **M2 — Backend: support chat**
   - Schema: `SupportMessage { id, userId, fromSupport, body, createdAt, readAt? }`.
   - `GET/POST /api/support` (Bearer) — user thread; admin reply path.
   - Admin support inbox page.
-- [ ] **M3 — Driver app restructure (map + profile)**
+- [x] **M3 — Driver app restructure (map + profile)**
   - Bottom nav: **Map**, **Profile**. Map = live self-location, online toggle, assigned jobs as
     pins/cards; tap -> existing job actions (start/delivered/call/navigate).
   - Application + "pending review" gate screens when not yet an approved driver.
   - Profile = balance card + delivered-order history.
-- [ ] **M4 — Customer polish + support UI (both apps)**
+- [x] **M4 — Customer polish + support UI (both apps)**
   - Support chat screen wired into customer Account + driver Profile.
   - Function polish pass (error/empty/loading states, retries).
-- [ ] **M5 — QA**: `flutter analyze`, `next build`, `tsc --noEmit`, fix all findings.
-- [ ] **M6 — Pentest**: cybersecurity skill static review of API + auth; fix high/criticals.
+- [x] **M5 — QA**: `flutter analyze`, `next build`, `tsc --noEmit`, fix all findings.
+- [x] **M6 — Pentest**: cybersecurity skill static review of API + auth; fix high/criticals.
 
 ## Decisions / assumptions
 - "Two separate apps" = keep the existing flavor split (one Dart codebase, two app IDs). Not two repos.
