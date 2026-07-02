@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../theme.dart';
 import '../../util.dart';
 import '../../services/location_service.dart';
+import '../../services/routing_service.dart';
 import 'driver_api.dart';
 
 /// Kokand (Qoʻqon) centre — the map's fallback focus when an order has no pin.
@@ -25,11 +27,34 @@ class CourierJob extends StatefulWidget {
 class _CourierJobState extends State<CourierJob> {
   late CourierOrder _order;
   bool _busy = false;
+  RoutePath? _route;
+  LatLng? _courierPos;
 
   @override
   void initState() {
     super.initState();
     _order = widget.order;
+    _loadRoute();
+  }
+
+  // Fetch the driving route from the courier's current location to the drop, to
+  // draw on the map. Best-effort: no permission / no fix / OSRM down simply
+  // leaves the straight drop pin + external "open in maps" button.
+  Future<void> _loadRoute() async {
+    if (!_hasPin) return;
+    try {
+      if (!await LocationService.instance.ensurePermission()) return;
+      final pos = await Geolocator.getCurrentPosition();
+      final from = LatLng(pos.latitude, pos.longitude);
+      final path = await RoutingService.route(from, _dropPoint);
+      if (!mounted) return;
+      setState(() {
+        _courierPos = from;
+        _route = path;
+      });
+    } catch (_) {
+      // Keep the plain drop pin.
+    }
   }
 
   bool get _hasPin =>
@@ -126,7 +151,13 @@ class _CourierJobState extends State<CourierJob> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: [
-          _MapCard(point: _dropPoint, hasPin: _hasPin, onOpenMaps: _openInMaps),
+          _MapCard(
+            point: _dropPoint,
+            hasPin: _hasPin,
+            courier: _courierPos,
+            route: _route,
+            onOpenMaps: _openInMaps,
+          ),
           const SizedBox(height: 16),
 
           // Drop address
@@ -224,24 +255,68 @@ class _CourierJobState extends State<CourierJob> {
   }
 }
 
-class _MapCard extends StatelessWidget {
+class _MapCard extends StatefulWidget {
   final LatLng point;
   final bool hasPin;
+  final LatLng? courier;
+  final RoutePath? route;
   final VoidCallback onOpenMaps;
-  const _MapCard({required this.point, required this.hasPin, required this.onOpenMaps});
+  const _MapCard({
+    required this.point,
+    required this.hasPin,
+    required this.courier,
+    required this.route,
+    required this.onOpenMaps,
+  });
+
+  @override
+  State<_MapCard> createState() => _MapCardState();
+}
+
+class _MapCardState extends State<_MapCard> {
+  final _map = MapController();
+
+  @override
+  void didUpdateWidget(covariant _MapCard old) {
+    super.didUpdateWidget(old);
+    // When the route arrives, frame the whole path (courier + drop).
+    if (widget.route != null && widget.route != old.route) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fit());
+    }
+  }
+
+  void _fit() {
+    final pts = <LatLng>[
+      if (widget.route != null) ...widget.route!.points,
+      if (widget.courier != null) widget.courier!,
+      widget.point,
+    ];
+    if (pts.length < 2) return;
+    try {
+      _map.fitCamera(CameraFit.coordinates(coordinates: pts, padding: const EdgeInsets.all(36)));
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _map.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final route = widget.route;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: SizedBox(
-        height: 200,
+        height: 220,
         child: Stack(
           children: [
             FlutterMap(
+              mapController: _map,
               options: MapOptions(
-                initialCenter: point,
-                initialZoom: hasPin ? 15 : 12,
+                initialCenter: widget.point,
+                initialZoom: widget.hasPin ? 15 : 12,
                 interactionOptions: const InteractionOptions(
                   flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
                 ),
@@ -249,22 +324,32 @@ class _MapCard extends StatelessWidget {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'uz.xarid.app',
+                  userAgentPackageName: 'uz.xarid.courier',
                 ),
-                if (hasPin)
-                  MarkerLayer(
-                    markers: [
+                if (route != null)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(points: route.points, strokeWidth: 5, color: Brand.green),
+                    ],
+                  ),
+                MarkerLayer(
+                  markers: [
+                    if (widget.hasPin)
                       Marker(
-                        point: point,
+                        point: widget.point,
                         width: 44,
                         height: 44,
                         child: const Icon(Icons.location_on, color: Brand.green, size: 44),
                       ),
-                    ],
-                  ),
+                    if (widget.courier != null)
+                      Marker(point: widget.courier!, width: 26, height: 26, child: const _CourierDot()),
+                  ],
+                ),
               ],
             ),
-            if (!hasPin)
+            if (route != null)
+              Positioned(left: 12, top: 12, child: _RouteChip(route: route)),
+            if (!widget.hasPin)
               const Positioned(
                 left: 12,
                 bottom: 12,
@@ -277,12 +362,53 @@ class _MapCard extends StatelessWidget {
                 heroTag: 'open_maps',
                 backgroundColor: Brand.cream,
                 foregroundColor: Brand.green,
-                onPressed: onOpenMaps,
+                onPressed: widget.onOpenMaps,
                 child: const Icon(Icons.navigation_outlined),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CourierDot extends StatelessWidget {
+  const _CourierDot();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF2563EB),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: const [BoxShadow(color: Color(0x402563EB), blurRadius: 8, spreadRadius: 2)],
+      ),
+    );
+  }
+}
+
+class _RouteChip extends StatelessWidget {
+  final RoutePath route;
+  const _RouteChip({required this.route});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: Brand.cream,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Brand.border),
+        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 2))],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.directions_car_filled, size: 16, color: Brand.green),
+          const SizedBox(width: 6),
+          Text('${route.distanceLabel} · ${route.etaLabel}',
+              style: const TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 13)),
+        ],
       ),
     );
   }
