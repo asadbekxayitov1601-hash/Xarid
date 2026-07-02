@@ -6,10 +6,15 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
+import '../i18n.dart';
 import '../services/sse_client.dart';
+import '../services/routing_service.dart';
 import '../theme.dart';
+import '../util.dart';
+import 'order_chat_screen.dart';
 
 /// Live order tracking. Opens the SSE stream
 /// `GET {apiBaseUrl}/api/orders/{orderId}/stream`, renders the order status and
@@ -55,7 +60,28 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   LatLng? _driver;
   LatLng? _destination;
   String? _driverName;
+  String? _driverPhone;
+  String? _driverCarType;
+  String? _driverCarNumber;
+  String? _driverPhoto;
+  double? _driverRatingAvg;
+  int _driverRatingCount = 0;
+  bool _rated = false;
   String? _address;
+
+  // The OSRM road route from the courier to the drop, refreshed as the courier
+  // moves. Its duration/distance also feed the live ETA in the status bar.
+  RoutePath? _route;
+  final Distance _distance = const Distance();
+  LatLng? _lastRouteOrigin;
+  DateTime? _lastRouteAt;
+  bool _routeLoading = false;
+  // Auto-frame the map only once (with the courier present); afterwards respect
+  // the user's own pan/zoom instead of yanking back every location frame.
+  bool _framedOnce = false;
+  // Backfill the courier's vehicle at most once when the driver first appears
+  // over SSE (the 'location' event carries name + position but no car info).
+  bool _driverDetailsRequested = false;
 
   @override
   void initState() {
@@ -160,6 +186,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
       setState(() {
         if (data['status'] is String) _status = data['status'] as String;
         _etaMin = _asInt(data['eta']);
+        if (data['rated'] == true) _rated = true;
         if (buyer is Map) {
           _address = buyer['address'] as String?;
           final dest = _asLatLng(buyer['lat'], buyer['lng']);
@@ -167,6 +194,12 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
         }
         if (driver is Map) {
           _driverName = driver['name'] as String?;
+          _driverPhone = driver['phone'] as String?;
+          _driverCarType = driver['carType'] as String?;
+          _driverCarNumber = driver['carNumber'] as String?;
+          _driverPhoto = driver['photoUrl'] as String?;
+          _driverRatingAvg = (driver['ratingAvg'] as num?)?.toDouble();
+          _driverRatingCount = (driver['ratingCount'] as num?)?.toInt() ?? 0;
           final dp = _asLatLng(driver['lat'], driver['lng']);
           if (dp != null) {
             // Snap (no glide) — this is the first known position.
@@ -181,6 +214,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
       if (_driver != null || _destination != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _fitToPoints());
       }
+      _maybeLoadRoute();
     } catch (_) {
       // Snapshot is best-effort; ignore and rely on the live stream.
     }
@@ -205,11 +239,19 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
       if (ev['name'] is String) {
         setState(() => _driverName = ev['name'] as String);
       }
+      // Courier just appeared over SSE -> backfill the vehicle once, since the
+      // location event has no car info.
+      if (_driverCarType == null && !_driverDetailsRequested) {
+        _driverDetailsRequested = true;
+        _backfillDriverDetails();
+      }
       final p = _asLatLng(ev['lat'], ev['lng']);
       if (p != null) {
         _moveCourierTo(p);
         // Keep the courier comfortably in view as it moves.
         _fitToPoints();
+        // Refresh the road route + ETA as the courier advances (throttled).
+        _maybeLoadRoute();
       }
     }
   }
@@ -226,7 +268,105 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
     if (mounted && _reconnecting) setState(() => _reconnecting = false);
   }
 
+  // Fetch (or refresh) the courier -> drop road route. Throttled: skipped unless
+  // there is no route yet or the courier has moved > 200m since the last fetch,
+  // so the public OSRM server isn't hit on every ~15s location frame.
+  Future<void> _maybeLoadRoute() async {
+    final from = _driverTo ?? _driver;
+    final dest = _destination;
+    if (from == null || dest == null || _routeLoading) return;
+    // Throttle every ATTEMPT (independent of whether a route already exists) so
+    // a degraded/rate-limited OSRM isn't hit on every ~15s frame: skip only when
+    // the last attempt was both nearby (<200m) AND recent (<20s). Moving >200m
+    // or 20s elapsing lets the next frame retry, so a transient failure recovers
+    // without spamming the server.
+    if (_lastRouteOrigin != null && _lastRouteAt != null) {
+      final moved = _distance.as(LengthUnit.Meter, _lastRouteOrigin!, from);
+      final elapsed = DateTime.now().difference(_lastRouteAt!);
+      if (moved < 200 && elapsed < const Duration(seconds: 20)) return;
+    }
+    _routeLoading = true;
+    _lastRouteOrigin = from;
+    _lastRouteAt = DateTime.now();
+    try {
+      final path = await RoutingService.route(from, dest);
+      if (mounted && path != null) setState(() => _route = path);
+    } finally {
+      _routeLoading = false;
+    }
+  }
+
+  // The SSE stream carries the courier's name + position but not the vehicle.
+  // When the courier first appears mid-session, fetch the one-shot /track
+  // snapshot once to fill in the car type/number (and phone) for the card.
+  Future<void> _backfillDriverDetails() async {
+    final token = await _token();
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${Config.apiBaseUrl}/api/orders/${widget.orderId}/track'),
+            headers: {if (token != null) 'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode < 200 || res.statusCode >= 300) return;
+      final data = jsonDecode(res.body);
+      if (data is! Map || data['driver'] is! Map) return;
+      final driver = data['driver'] as Map;
+      if (!mounted) return;
+      setState(() {
+        _driverName ??= driver['name'] as String?;
+        _driverPhone ??= driver['phone'] as String?;
+        _driverCarType = driver['carType'] as String?;
+        _driverCarNumber = driver['carNumber'] as String?;
+        _driverPhoto = driver['photoUrl'] as String?;
+        _driverRatingAvg = (driver['ratingAvg'] as num?)?.toDouble();
+        _driverRatingCount = (driver['ratingCount'] as num?)?.toInt() ?? 0;
+      });
+    } catch (_) {
+      // Best-effort; the card still shows the name + call button.
+    }
+  }
+
+  void _openChat() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => OrderChatScreen(
+        orderId: widget.orderId,
+        amCourier: false,
+        peerName: _driverName ?? context.tr('common.courier'),
+      ),
+    ));
+  }
+
+  Future<void> _submitRating(int stars) async {
+    final token = await _token();
+    try {
+      final res = await http
+          .post(
+            Uri.parse('${Config.apiBaseUrl}/api/orders/${widget.orderId}/rate'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'stars': stars}),
+          )
+          .timeout(const Duration(seconds: 12));
+      if (!mounted) return;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        setState(() => _rated = true);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+              content: Text(context.tr('track.rated_thanks')), backgroundColor: Brand.green));
+      }
+    } catch (_) {
+      // Ignore; the prompt stays so the buyer can retry.
+    }
+  }
+
   void _fitToPoints() {
+    // Auto-frame only until we've framed once with the courier on screen, so
+    // the camera stops fighting the user's manual pan/zoom on later frames.
+    if (_framedOnce) return;
     final pts = <LatLng>[
       if (_driver != null) _driver!,
       if (_destination != null) _destination!,
@@ -244,9 +384,17 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
           ),
         );
       }
+      // Lock only once the courier is actually present, so a destination-only
+      // early fit doesn't prevent framing both when the courier appears.
+      if (_driver != null) _framedOnce = true;
     } catch (_) {
       // Map may not be laid out yet on the very first frame; harmless.
     }
+  }
+
+  Future<void> _callDriver(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
   static int? _asInt(dynamic v) {
@@ -267,7 +415,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Buyurtmani kuzatish', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('track.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: Brand.green))
@@ -275,7 +423,10 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
               children: [
                 _StatusBar(
                   status: _status,
-                  etaMin: _etaMin,
+                  // Prefer the OSRM driving time when we have a route; fall back
+                  // to the server's straight-line ETA otherwise.
+                  etaMin: _route?.durationMin ?? _etaMin,
+                  distanceKm: _route?.distanceKm,
                   reconnecting: _reconnecting,
                 ),
                 Expanded(
@@ -285,10 +436,27 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
                           controller: _map,
                           driver: _driver,
                           destination: _destination,
+                          route: _route,
                           fallbackCenter: _kokand,
                           driverName: _driverName,
                         ),
                 ),
+                if (_status == 'DELIVERED' && !_rated && _driverName != null)
+                  _RatePrompt(name: _driverName!, onRate: _submitRating),
+                if (_driverName != null && _driverName!.isNotEmpty && !_isTerminal(_status))
+                  _CourierCard(
+                    name: _driverName!,
+                    carType: _driverCarType,
+                    carNumber: _driverCarNumber,
+                    photoUrl: _driverPhoto,
+                    ratingAvg: _driverRatingAvg,
+                    ratingCount: _driverRatingCount,
+                    etaMin: _route?.durationMin ?? _etaMin,
+                    onChat: _openChat,
+                    onCall: _driverPhone != null && _driverPhone!.isNotEmpty
+                        ? () => _callDriver(_driverPhone!)
+                        : null,
+                  ),
                 if (_address != null && _address!.isNotEmpty) _AddressFooter(address: _address!),
               ],
             ),
@@ -296,12 +464,244 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   }
 }
 
+/// Courier info shown to the buyer: photo, name, vehicle, rating, chat + call
+/// buttons, and the approximate arrival clock time derived from the live ETA.
+class _CourierCard extends StatelessWidget {
+  const _CourierCard({
+    required this.name,
+    this.carType,
+    this.carNumber,
+    this.photoUrl,
+    this.ratingAvg,
+    this.ratingCount = 0,
+    this.etaMin,
+    this.onChat,
+    this.onCall,
+  });
+
+  final String name;
+  final String? carType;
+  final String? carNumber;
+  final String? photoUrl;
+  final double? ratingAvg;
+  final int ratingCount;
+  final int? etaMin;
+  final VoidCallback? onChat;
+  final VoidCallback? onCall;
+
+  String? get _vehicle {
+    final parts = <String>[
+      if (carType != null && carType!.isNotEmpty) carType!,
+      if (carNumber != null && carNumber!.isNotEmpty) carNumber!,
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  String? _arrivalClock() {
+    final e = etaMin;
+    if (e == null || e < 0) return null;
+    final t = DateTime.now().add(Duration(minutes: e));
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.hour)}:${two(t.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final arrival = _arrivalClock();
+    final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      decoration: const BoxDecoration(
+        color: Brand.cream,
+        border: Border(top: BorderSide(color: Brand.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ClipOval(
+                child: hasPhoto
+                    ? AppImage(url: photoUrl, width: 48, height: 48)
+                    : Container(
+                        width: 48,
+                        height: 48,
+                        color: Brand.green.withValues(alpha: 0.12),
+                        child: const Icon(Icons.delivery_dining, color: Brand.green, size: 24),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Brand.ink)),
+                        ),
+                        const SizedBox(width: 8),
+                        _RatingBadge(avg: ratingAvg, count: ratingCount),
+                      ],
+                    ),
+                    Text(_vehicle ?? context.t('common.courier'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
+                  ],
+                ),
+              ),
+              if (onChat != null) ...[
+                _RoundBtn(icon: Icons.chat_bubble_outline_rounded, onTap: onChat!, filled: false),
+                const SizedBox(width: 8),
+              ],
+              if (onCall != null) _RoundBtn(icon: Icons.call, onTap: onCall!, filled: true),
+            ],
+          ),
+          if (etaMin != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(color: Brand.card, borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                children: [
+                  const Icon(Icons.schedule, size: 18, color: Brand.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      arrival != null
+                          ? context.t('track.arriving', {'time': arrival})
+                          : context.t('track.arriving_soon'),
+                      style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700, fontSize: 13.5),
+                    ),
+                  ),
+                  if (etaMin! > 0)
+                    Text('~$etaMin ${context.t('unit.min')}',
+                        style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingBadge extends StatelessWidget {
+  final double? avg;
+  final int count;
+  const _RatingBadge({this.avg, this.count = 0});
+
+  @override
+  Widget build(BuildContext context) {
+    final rated = avg != null && count > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: Brand.card, borderRadius: BorderRadius.circular(999)),
+      child: rated
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                const SizedBox(width: 3),
+                Text(avg!.toStringAsFixed(1),
+                    style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 12)),
+              ],
+            )
+          : Text(context.t('track.new_rating'),
+              style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w700, fontSize: 11)),
+    );
+  }
+}
+
+class _RoundBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool filled;
+  const _RoundBtn({required this.icon, required this.onTap, required this.filled});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? Brand.green : Brand.card,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(width: 46, height: 46, child: Icon(icon, color: filled ? Brand.onAccent : Brand.green)),
+      ),
+    );
+  }
+}
+
+/// Post-delivery courier rating (1-5 stars). Calls [onRate] once a star is
+/// tapped; the parent hides this once the server accepts the rating.
+class _RatePrompt extends StatefulWidget {
+  final String name;
+  final ValueChanged<int> onRate;
+  const _RatePrompt({required this.name, required this.onRate});
+
+  @override
+  State<_RatePrompt> createState() => _RatePromptState();
+}
+
+class _RatePromptState extends State<_RatePrompt> {
+  int _picked = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: const BoxDecoration(
+        color: Brand.cream,
+        border: Border(top: BorderSide(color: Brand.border)),
+      ),
+      child: Column(
+        children: [
+          Text(context.t('track.rate_title'),
+              style: const TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 15)),
+          const SizedBox(height: 4),
+          Text(context.t('track.rate_sub', {'name': widget.name}),
+              textAlign: TextAlign.center, style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final star = i + 1;
+              return IconButton(
+                onPressed: () {
+                  setState(() => _picked = star);
+                  widget.onRate(star);
+                },
+                icon: Icon(star <= _picked ? Icons.star_rounded : Icons.star_border_rounded,
+                    color: Colors.amber, size: 34),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Status pill + ETA, plus a calm "reconnecting" hint when the SSE drops.
 class _StatusBar extends StatelessWidget {
-  const _StatusBar({required this.status, required this.etaMin, required this.reconnecting});
+  const _StatusBar({
+    required this.status,
+    required this.etaMin,
+    required this.reconnecting,
+    this.distanceKm,
+  });
 
   final String status;
   final int? etaMin;
+  final double? distanceKm;
   final bool reconnecting;
 
   @override
@@ -326,7 +726,7 @@ class _StatusBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  _statusLabel(status),
+                  context.t('status.$status'),
                   style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13),
                 ),
               ),
@@ -337,7 +737,13 @@ class _StatusBar extends StatelessWidget {
                     const Icon(Icons.schedule, size: 16, color: Brand.inkSoft),
                     const SizedBox(width: 4),
                     Text(
-                      etaMin! <= 0 ? 'Yaqinda' : '~$etaMin daq',
+                      [
+                        if (distanceKm != null)
+                          distanceKm! >= 10
+                              ? '${distanceKm!.toStringAsFixed(0)} km'
+                              : '${distanceKm!.toStringAsFixed(1)} km',
+                        etaMin! <= 0 ? context.t('track.soon') : '~$etaMin ${context.t('unit.min')}',
+                      ].join(' · '),
                       style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700, fontSize: 13),
                     ),
                   ],
@@ -346,17 +752,17 @@ class _StatusBar extends StatelessWidget {
           ),
           if (reconnecting && !_isTerminal(status)) ...[
             const SizedBox(height: 10),
-            const Row(
+            Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 13,
                   height: 13,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Brand.inkSoft),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  'Qayta ulanmoqda...',
-                  style: TextStyle(color: Brand.inkSoft, fontSize: 12.5),
+                  context.t('track.reconnecting'),
+                  style: const TextStyle(color: Brand.inkSoft, fontSize: 12.5),
                 ),
               ],
             ),
@@ -373,8 +779,8 @@ class _StatusBar extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   status == 'DELIVERED'
-                      ? 'Buyurtmangiz yetkazildi. Rahmat!'
-                      : 'Buyurtma bekor qilindi.',
+                      ? context.t('track.delivered_thanks')
+                      : context.t('track.cancelled'),
                   style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12.5),
                 ),
               ],
@@ -393,6 +799,7 @@ class _MapView extends StatelessWidget {
     required this.controller,
     required this.driver,
     required this.destination,
+    required this.route,
     required this.fallbackCenter,
     required this.driverName,
   });
@@ -400,6 +807,7 @@ class _MapView extends StatelessWidget {
   final MapController controller;
   final LatLng? driver;
   final LatLng? destination;
+  final RoutePath? route;
   final LatLng fallbackCenter;
   final String? driverName;
 
@@ -421,7 +829,14 @@ class _MapView extends StatelessWidget {
           userAgentPackageName: 'uz.xarid.app',
           maxZoom: 19,
         ),
-        if (driver != null && destination != null)
+        // The actual road route when we have it; a straight hint line otherwise.
+        if (route != null)
+          PolylineLayer(
+            polylines: [
+              Polyline(points: route!.points, color: Brand.green, strokeWidth: 4),
+            ],
+          )
+        else if (driver != null && destination != null)
           PolylineLayer(
             polylines: [
               Polyline(
@@ -502,14 +917,14 @@ class _NoLocationYet extends StatelessWidget {
             const Icon(Icons.local_shipping_outlined, size: 56, color: Brand.inkSoft),
             const SizedBox(height: 16),
             Text(
-              _statusLabel(status),
+              context.t('status.$status'),
               style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 18),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Kuryer tayinlanishini kutmoqdamiz. Joylashuvi paydo bo\'lishi bilan xaritada ko\'rinadi.',
+            Text(
+              context.t('track.waiting_courier'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Brand.inkSoft, fontSize: 14, height: 1.4),
+              style: const TextStyle(color: Brand.inkSoft, fontSize: 14, height: 1.4),
             ),
           ],
         ),
@@ -567,25 +982,3 @@ Color _statusColor(String status) {
   }
 }
 
-String _statusLabel(String status) {
-  switch (status) {
-    case 'PLACED':
-      return 'Joylashtirildi';
-    case 'CONFIRMED':
-    case 'PARTIAL':
-      return 'Tasdiqlandi';
-    case 'ASSIGNED':
-      return 'Kuryer tayinlandi';
-    case 'PICKED_UP':
-      return 'Olib ketildi';
-    case 'EN_ROUTE':
-    case 'DELIVERING':
-      return 'Yetkazilmoqda';
-    case 'DELIVERED':
-      return 'Yetkazildi';
-    case 'CANCELLED':
-      return 'Bekor qilindi';
-    default:
-      return status;
-  }
-}

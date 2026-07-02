@@ -60,6 +60,7 @@ model User {
   orders       Order[]
   driver       Driver?
   deviceTokens DeviceToken[]
+  supportMessages SupportMessage[]
 }
 
 // A push-notification device token (Firebase Cloud Messaging) for a user's
@@ -108,6 +109,10 @@ model SupplierOffer {
 }
 
 // Delivery driver. Links their Telegram via /start drv_<botCode>.
+// Self-service applicants (via the courier app) create a row with status PENDING
+// and active=false; an admin approves it, which sets status APPROVED + active and
+// flips the linked User.role to DRIVER. Admin-provisioned drivers default APPROVED
+// so existing seeded rows keep working after this additive migration.
 model Driver {
   id        String   @id @default(cuid())
   name      String
@@ -118,7 +123,33 @@ model Driver {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
+  // Application details captured at onboarding (nullable for legacy rows).
+  status          String  @default("APPROVED") // PENDING | APPROVED | REJECTED
+  experienceYears Int?    // years of delivery/driving experience
+  carType         String? // e.g. "Scooter", "Sedan", "Damas"
+  carNumber       String? // vehicle plate, free text
+
+  // Profile photo (compressed image data URL) + running customer rating.
+  photoUrl    String?
+  ratingAvg   Float?  // average of courierRating across delivered orders
+  ratingCount Int     @default(0)
+
   orders Order[]
+}
+
+// One message in a customer/driver <-> support thread. The thread is implicitly
+// keyed by userId; `fromSupport` flips who sent it (false = the user, true = a
+// support operator). Polled by the app (no SSE needed for low-volume chat).
+model SupportMessage {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  fromSupport Boolean @default(false)
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // The buyer's single morning basket.
@@ -170,11 +201,29 @@ model Order {
   cashTaken    Int?
   podFileId    String?  // proof-of-delivery photo (Telegram file_id)
   paidAt       DateTime?
+  // Buyer's 1-5 rating of the courier for this delivery (null until rated).
+  courierRating Int?
   createdAt    DateTime @default(now())
 
   items          OrderItem[]
   purchaseOrders PurchaseOrder[]
   payments       Payment[]
+  messages       OrderMessage[]
+}
+
+// One message in the per-order chat between the buyer and the assigned courier.
+// `fromCourier` flips the sender (false = buyer, true = courier). Polled by both
+// apps (low volume; no SSE needed).
+model OrderMessage {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  fromCourier Boolean  @default(false)
+  body        String
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 // An online payment attempt (Click or Uzum Bank). Amounts in UZS.

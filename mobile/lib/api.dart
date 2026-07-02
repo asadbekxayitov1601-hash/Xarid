@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'config.dart';
 import 'models.dart';
+import 'services/push_service.dart';
 
 class ApiException implements Exception {
   final int status;
@@ -32,6 +33,7 @@ class Api extends ChangeNotifier {
     if (_token != null) {
       try {
         _user = await me();
+        PushService.registerToken();
       } catch (_) {
         _token = null;
         await prefs.remove('token');
@@ -84,6 +86,7 @@ class Api extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', _token!);
     notifyListeners();
+    PushService.registerToken();
   }
 
   Future<AppUser> me() async {
@@ -125,10 +128,22 @@ class Api extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await PushService.deleteToken();
     _token = null;
     _user = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
+    notifyListeners();
+  }
+
+  Future<void> updateName(String newName) async {
+    final res = await http.put(
+      _u('/api/me'),
+      headers: _headers(json: true),
+      body: jsonEncode({'name': newName}),
+    );
+    final data = _decode(res);
+    _user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
     notifyListeners();
   }
 }

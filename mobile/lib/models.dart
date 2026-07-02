@@ -23,6 +23,7 @@ class Store {
   final int? etaMin;
   final int? etaMax;
   final int productCount;
+  final List<String> categories;
   Store({
     required this.id,
     required this.name,
@@ -31,6 +32,7 @@ class Store {
     this.etaMin,
     this.etaMax,
     this.productCount = 0,
+    this.categories = const [],
   });
 
   factory Store.fromJson(Map<String, dynamic> j) => Store(
@@ -41,6 +43,9 @@ class Store {
         etaMin: j['etaMin'] as int?,
         etaMax: j['etaMax'] as int?,
         productCount: (j['productCount'] as int?) ?? 0,
+        categories: ((j['categories'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
       );
 
   String? etaText() {

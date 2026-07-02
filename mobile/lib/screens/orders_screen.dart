@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
+import '../widgets/skeleton.dart';
 import 'track_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -42,7 +44,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Buyurtmalar', style: TextStyle(fontWeight: FontWeight.w800))),
+      appBar: AppBar(title: Text(context.t('orders.title'), style: const TextStyle(fontWeight: FontWeight.w800))),
       body: RefreshIndicator(
         onRefresh: _reload,
         color: Brand.green,
@@ -53,12 +55,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
               return const _OrdersSkeleton();
             }
             if (snap.hasError) {
-              return _Message(
-                  icon: Icons.cloud_off, text: 'Buyurtmalarni yuklab bo\'lmadi.', onRetry: _reload);
+              return EmptyMessage(
+                  icon: Icons.cloud_off,
+                  text: context.t('common.load_failed'),
+                  onRetry: _reload,
+                  scrollable: true);
             }
             final orders = snap.data ?? [];
             if (orders.isEmpty) {
-              return const _Message(icon: Icons.receipt_long, text: 'Buyurtmalar yo\'q.');
+              return EmptyMessage(
+                  icon: Icons.receipt_long,
+                  text: context.t('orders.empty'),
+                  scrollable: true);
             }
             return ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -86,13 +94,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
-                            child: Text(o.statusLabel,
+                            child: Text(context.t('status.${o.status}'),
                                 style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text('${o.itemCount} mahsulot  ·  ${uzs(o.total + o.deliveryFee)}',
+                      Text('${context.t('orders.items', {'n': '${o.itemCount}'})}  ·  ${uzs(o.total + o.deliveryFee)}',
                           style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       Text(o.address,
@@ -108,7 +116,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               MaterialPageRoute(builder: (_) => TrackScreen(orderId: o.id)),
                             ),
                             icon: const Icon(Icons.location_on_outlined, size: 18, color: Brand.green),
-                            label: const Text('Kuzatish', style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
+                            label: Text(context.t('orders.track'), style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
                             style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
                           ),
                         ),
@@ -119,103 +127,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
               },
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-// Centered, branded empty / error state. Scrollable so it stays pull-to-refresh
-// friendly inside the RefreshIndicator.
-class _Message extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Future<void> Function()? onRetry;
-  const _Message({required this.icon, required this.text, this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: const BoxDecoration(color: Brand.card, shape: BoxShape.circle),
-                    child: Icon(icon, size: 40, color: Brand.inkSoft),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(text,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Brand.inkSoft, fontSize: 15)),
-                  if (onRetry != null) ...[
-                    const SizedBox(height: 20),
-                    OutlinedButton.icon(
-                      onPressed: () => onRetry!(),
-                      icon: const Icon(Icons.refresh, size: 18, color: Brand.green),
-                      label: const Text('Qayta urinish',
-                          style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Brand.green),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// A gentle pulsing grey box used to build loading skeletons (no extra packages).
-class _Pulse extends StatefulWidget {
-  final double? width;
-  final double? height;
-  final double radius;
-  const _Pulse({this.width, this.height, this.radius = 8});
-
-  @override
-  State<_Pulse> createState() => _PulseState();
-}
-
-class _PulseState extends State<_Pulse> {
-  bool _dim = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _dim = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _dim ? 0.45 : 1.0,
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeInOut,
-      onEnd: () {
-        if (mounted) setState(() => _dim = !_dim);
-      },
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Brand.card,
-          borderRadius: BorderRadius.circular(widget.radius),
         ),
       ),
     );
@@ -245,15 +156,15 @@ class _OrdersSkeleton extends StatelessWidget {
           children: [
             Row(
               children: [
-                _Pulse(width: 60, height: 14),
+                Pulse(width: 60, height: 14),
                 Spacer(),
-                _Pulse(width: 90, height: 22, radius: 999),
+                Pulse(width: 90, height: 22, radius: 999),
               ],
             ),
             SizedBox(height: 12),
-            _Pulse(width: 180, height: 14),
+            Pulse(width: 180, height: 14),
             SizedBox(height: 8),
-            _Pulse(width: 130, height: 12),
+            Pulse(width: 130, height: 12),
           ],
         ),
       ),

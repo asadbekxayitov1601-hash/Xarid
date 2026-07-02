@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
+import '../widgets/skeleton.dart';
 import 'store_screen.dart';
+import 'address/address_map_screen.dart';
+import 'address/address_list_sheet.dart';
+import '../services/address_service.dart';
 
 class StoresScreen extends StatefulWidget {
   const StoresScreen({super.key});
@@ -14,11 +19,46 @@ class StoresScreen extends StatefulWidget {
 
 class _StoresScreenState extends State<StoresScreen> {
   late Future<List<Store>> _future;
+  String _searchQuery = '';
+  bool _onlyDiscounts = false;
+  bool _fastOnly = false;
+  String? _selectedCategory;
+  SavedAddress? _address;
 
   @override
   void initState() {
     super.initState();
     _future = context.read<Api>().stores();
+    _loadAddress();
+  }
+
+  Future<void> _loadAddress() async {
+    final selected = await AddressService.selected();
+    if (!mounted) return;
+    setState(() => _address = selected);
+    // First launch: no saved address yet -> open the map-pin picker onboarding.
+    if (selected == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openMapPicker();
+      });
+    }
+  }
+
+  // Home chip tap: the saved-address book if we have any, else the map picker.
+  Future<void> _editAddress() async {
+    if (_address == null) {
+      await _openMapPicker();
+    } else {
+      final result = await showAddressBookSheet(context);
+      if (result != null && mounted) setState(() => _address = result);
+    }
+  }
+
+  Future<void> _openMapPicker() async {
+    final result = await Navigator.of(context).push<SavedAddress>(
+      MaterialPageRoute(builder: (_) => const AddressMapScreen()),
+    );
+    if (result != null && mounted) setState(() => _address = result);
   }
 
   Future<void> _reload() async {
@@ -26,43 +66,384 @@ class _StoresScreenState extends State<StoresScreen> {
     await _future;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Do'konlar", style: TextStyle(fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Chiqish',
-            onPressed: () => context.read<Api>().logout(),
+  Widget _buildTopLogoHeader() {
+    return Container(
+      color: Brand.ink,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Image.asset('assets/logo.png', width: 30, height: 30, fit: BoxFit.contain),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'xarid',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 22,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Text(
+              'tezkor',
+              style: TextStyle(
+                color: Brand.green,
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddressSelector() {
+    final hasAddress = _address != null;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: InkWell(
+        onTap: _editAddress,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Brand.card,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Brand.border.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on_rounded, color: Brand.green, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasAddress ? _address!.chip : context.t('stores.pick_address'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: hasAddress ? Brand.ink : Brand.inkSoft,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.keyboard_arrow_down_rounded, color: Brand.inkSoft, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      child: TextField(
+        onChanged: (val) {
+          setState(() {
+            _searchQuery = val;
+          });
+        },
+        style: const TextStyle(fontWeight: FontWeight.w600, color: Brand.ink),
+        decoration: InputDecoration(
+          hintText: context.t('stores.search'),
+          hintStyle: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600),
+          prefixIcon: const Icon(Icons.search, color: Brand.inkSoft, size: 22),
+          filled: true,
+          fillColor: Brand.card,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Data-driven category strip: the categories are the union of what the loaded
+  // stores actually carry (see build()), so tapping one genuinely filters the
+  // list. Hidden entirely when the catalog reports no categories.
+  Widget _buildCategoriesSlider(List<String> categories) {
+    if (categories.isEmpty) return const SizedBox.shrink();
+    return Container(
+      height: 100,
+      margin: const EdgeInsets.only(top: 16, bottom: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final cat = categories[index];
+          final isSelected = _selectedCategory == cat;
+          return Padding(
+            padding: const EdgeInsets.only(right: 14.0),
+            child: InkWell(
+              onTap: () => setState(() => _selectedCategory = isSelected ? null : cat),
+              borderRadius: BorderRadius.circular(16),
+              child: SizedBox(
+                width: 72,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Brand.green.withValues(alpha: 0.15) : Brand.card,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? Brand.green : Brand.border.withValues(alpha: 0.5),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Icon(_categoryIcon(cat),
+                          color: isSelected ? Brand.green : Brand.inkSoft, size: 26),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      cat,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                        color: isSelected ? Brand.green : Brand.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Maps a catalog category (Uzbek, from the DB) to a representative icon.
+  IconData _categoryIcon(String c) {
+    switch (c) {
+      case 'Mevalar':
+        return Icons.apple;
+      case 'Sabzavotlar':
+        return Icons.eco;
+      case "Ko'katlar":
+        return Icons.grass;
+      case 'Poliz ekinlari':
+        return Icons.spa;
+      case 'Sut va tuxum':
+      case 'Sut mahsulotlari':
+        return Icons.egg_alt;
+      case 'Non':
+        return Icons.bakery_dining;
+      case "Go'sht":
+        return Icons.set_meal;
+      case 'Ichimliklar':
+        return Icons.local_drink;
+      case 'Quruq mahsulotlar':
+        return Icons.rice_bowl;
+      default:
+        return Icons.shopping_basket;
+    }
+  }
+
+  Widget _buildFilterPills() {
+    return Container(
+      height: 40,
+      // Breathing room between the search bar / categories and the filters.
+      margin: const EdgeInsets.only(top: 12, bottom: 4),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          _filterTextPill(
+            label: context.t('stores.discounts'),
+            icon: Icons.percent_rounded,
+            iconColor: Colors.pinkAccent,
+            isActive: _onlyDiscounts,
+            onTap: () => setState(() => _onlyDiscounts = !_onlyDiscounts),
+          ),
+          const SizedBox(width: 8),
+          _filterTextPill(
+            label: context.t('stores.fast'),
+            icon: Icons.bolt_rounded,
+            iconColor: Brand.green,
+            isActive: _fastOnly,
+            onTap: () => setState(() => _fastOnly = !_fastOnly),
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _reload,
-        color: Brand.green,
-        child: FutureBuilder<List<Store>>(
-          future: _future,
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const _StoresSkeleton();
-            }
-            if (snap.hasError) {
-              return _Message(icon: Icons.cloud_off, text: 'Hozircha ulanib bo\'lmadi.', onRetry: _reload);
-            }
-            final stores = snap.data ?? [];
-            if (stores.isEmpty) {
-              return const _Message(icon: Icons.storefront, text: 'Hozircha do\'kon yo\'q.');
-            }
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: stores.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _StoreCard(store: stores[i]),
-            );
-          },
+    );
+  }
+
+  Widget _filterTextPill({
+    required String label,
+    required IconData icon,
+    required Color iconColor,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? Brand.green.withValues(alpha: 0.1) : Brand.card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? Brand.green : Brand.border.withValues(alpha: 0.5),
+            width: isActive ? 1.5 : 1.0,
+          ),
         ),
+        child: Row(
+          children: [
+            Icon(icon, color: isActive ? Brand.green : iconColor, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isActive ? Brand.green : Brand.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStoreCountHeader(int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            context.t('stores.found', {'n': '$count'}),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Brand.ink,
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _searchQuery = '';
+                _onlyDiscounts = false;
+                _fastOnly = false;
+                _selectedCategory = null;
+              });
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Brand.card,
+              foregroundColor: Brand.ink,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+            child: Text(
+              context.t('stores.reset'),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Brand.ink,
+      body: Column(
+        children: [
+          _buildTopLogoHeader(),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Brand.cream,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: RefreshIndicator(
+                onRefresh: _reload,
+                color: Brand.green,
+                child: FutureBuilder<List<Store>>(
+                  future: _future,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const _StoresSkeleton();
+                    }
+                    if (snap.hasError) {
+                      return EmptyMessage(
+                          icon: Icons.cloud_off,
+                          text: context.t('common.connect_failed'),
+                          onRetry: _reload,
+                          scrollable: true);
+                    }
+                    final stores = snap.data ?? [];
+
+                    if (stores.isEmpty) {
+                      return EmptyMessage(
+                          icon: Icons.storefront,
+                          text: context.t('stores.none'),
+                          scrollable: true);
+                    }
+
+                    // The category strip is the union of categories the loaded
+                    // stores actually carry, so every chip filters to a
+                    // non-empty result.
+                    final categories = <String>{
+                      for (final s in stores) ...s.categories,
+                    }.toList()
+                      ..sort();
+
+                    // Apply search + category + discount + fast-delivery filters.
+                    final q = _searchQuery.trim().toLowerCase();
+                    final filteredStores = stores.where((s) {
+                      final matchesSearch = q.isEmpty || s.name.toLowerCase().contains(q);
+                      final matchesDiscount = !_onlyDiscounts || s.discountPct != null;
+                      final matchesCategory =
+                          _selectedCategory == null || s.categories.contains(_selectedCategory);
+                      final matchesFast = !_fastOnly || (s.etaMax != null && s.etaMax! <= 30);
+                      return matchesSearch && matchesDiscount && matchesCategory && matchesFast;
+                    }).toList();
+
+                    return ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: 5 + filteredStores.length,
+                      itemBuilder: (context, index) {
+                        if (index == 0) return _buildAddressSelector();
+                        if (index == 1) return _buildSearchBar();
+                        if (index == 2) return _buildCategoriesSlider(categories);
+                        if (index == 3) return _buildFilterPills();
+                        if (index == 4) return _buildStoreCountHeader(filteredStores.length);
+
+                        final store = filteredStores[index - 5];
+                        return _StoreCard(store: store);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -74,17 +455,25 @@ class _StoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final eta = store.etaText();
+    final eta = store.etaText() ?? "25 - 35 daq";
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => StoreScreen(storeId: store.id)),
       ),
       child: Container(
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
         decoration: BoxDecoration(
-          color: Brand.cream,
+          color: Brand.card,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Brand.border),
+          border: Border.all(color: Brand.border, width: 0.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -92,18 +481,66 @@ class _StoreCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                AspectRatio(aspectRatio: 16 / 9, child: AppImage(url: store.image)),
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: AppImage(url: store.image),
+                ),
+                Positioned(
+                  left: 12,
+                  top: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.yellowAccent.shade400,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '2+1',
+                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 18, height: 1.1),
+                        ),
+                        Text(
+                          'Ba\'zi tovarlarga',
+                          style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w700, fontSize: 10, height: 1.1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 if (store.discountPct != null)
                   Positioned(
-                    left: 10,
-                    top: 10,
+                    left: 12,
+                    top: 60,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: Brand.amber, borderRadius: BorderRadius.circular(999)),
-                      child: Text('-${store.discountPct}%',
-                          style: const TextStyle(color: Brand.onAccent, fontWeight: FontWeight.w800, fontSize: 12)),
+                      child: Text(
+                        '-${store.discountPct}%',
+                        style: const TextStyle(color: Brand.onAccent, fontWeight: FontWeight.w800, fontSize: 12),
+                      ),
                     ),
                   ),
+                Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Brand.ink.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      eta,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             Padding(
@@ -111,21 +548,59 @@ class _StoreCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(store.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Brand.ink)),
-                  const SizedBox(height: 6),
-                  Row(children: [
-                    if (eta != null) ...[
-                      const Icon(Icons.schedule, size: 14, color: Brand.inkSoft),
-                      const SizedBox(width: 4),
-                      Text(eta, style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
-                      const SizedBox(width: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          store.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Brand.ink),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Row(
+                        children: [
+                          Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                          SizedBox(width: 4),
+                          Text(
+                            '4.8',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Brand.ink),
+                          ),
+                        ],
+                      ),
                     ],
-                    Text('${store.productCount} mahsulot',
-                        style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
-                  ]),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Do\'konlar · Mahsulotlar',
+                    style: TextStyle(color: Brand.inkSoft, fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: const BoxDecoration(
+                      border: Border(top: BorderSide(color: Brand.border, width: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.percent_rounded, color: Colors.pinkAccent, size: 14),
+                        const SizedBox(width: 6),
+                        const Expanded(
+                          child: Text(
+                            'Ayrim taomlarga -99% gacha chegirma',
+                            style: TextStyle(
+                              color: Colors.pinkAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.keyboard_arrow_right_rounded, color: Colors.pinkAccent.withValues(alpha: 0.5), size: 16),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -136,105 +611,6 @@ class _StoreCard extends StatelessWidget {
   }
 }
 
-// Centered, branded empty / error state. Wrapped in a scroll view so it stays
-// pull-to-refresh friendly inside a RefreshIndicator.
-class _Message extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Future<void> Function()? onRetry;
-  const _Message({required this.icon, required this.text, this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: const BoxDecoration(color: Brand.card, shape: BoxShape.circle),
-                    child: Icon(icon, size: 40, color: Brand.inkSoft),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(text,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Brand.inkSoft, fontSize: 15)),
-                  if (onRetry != null) ...[
-                    const SizedBox(height: 20),
-                    OutlinedButton.icon(
-                      onPressed: () => onRetry!(),
-                      icon: const Icon(Icons.refresh, size: 18, color: Brand.green),
-                      label: const Text('Qayta urinish',
-                          style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Brand.green),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// A gentle pulsing grey box used to build loading skeletons. Pulses opacity with
-// a looping TweenAnimationBuilder so no extra packages are needed.
-class _Pulse extends StatefulWidget {
-  final double? width;
-  final double? height;
-  final double radius;
-  const _Pulse({this.width, this.height, this.radius = 8});
-
-  @override
-  State<_Pulse> createState() => _PulseState();
-}
-
-class _PulseState extends State<_Pulse> {
-  bool _dim = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _dim = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _dim ? 0.45 : 1.0,
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeInOut,
-      onEnd: () {
-        if (mounted) setState(() => _dim = !_dim);
-      },
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Brand.card,
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
-      ),
-    );
-  }
-}
-
-// Placeholder list shown while stores load — mirrors the _StoreCard layout.
 class _StoresSkeleton extends StatelessWidget {
   const _StoresSkeleton();
 
@@ -255,15 +631,15 @@ class _StoresSkeleton extends StatelessWidget {
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AspectRatio(aspectRatio: 16 / 9, child: _Pulse(radius: 0)),
+            AspectRatio(aspectRatio: 16 / 9, child: Pulse(radius: 0)),
             Padding(
               padding: EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Pulse(width: 160, height: 16),
+                  Pulse(width: 160, height: 16),
                   SizedBox(height: 10),
-                  _Pulse(width: 110, height: 12),
+                  Pulse(width: 110, height: 12),
                 ],
               ),
             ),

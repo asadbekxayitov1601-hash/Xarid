@@ -2,7 +2,13 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 import { uzs } from "@/lib/format";
 import { balances } from "@/lib/ledger";
-import { createDriver, recordCashHandover, provisionDriverLogin } from "../actions";
+import {
+  createDriver,
+  recordCashHandover,
+  provisionDriverLogin,
+  approveDriverApplication,
+  rejectDriverApplication,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +29,53 @@ export default async function AdminDriversPage() {
     balances("CASH:DRIVER:"),
   ]);
   const pocket = new Map(pocketBalances.map((b) => [b.account.slice(12), b.balance]));
+  const pending = drivers.filter((d) => d.status === "PENDING");
+  const roster = drivers.filter((d) => d.status !== "PENDING");
 
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold">Haydovchilar</h1>
 
+      {pending.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-semibold text-amber-700">
+            Yangi arizalar ({pending.length})
+          </h2>
+          <ul className="space-y-2">
+            {pending.map((d) => (
+              <li key={d.id} className="rounded-2xl border border-amber-300 bg-amber-50 p-4">
+                <p className="font-semibold">{d.name}</p>
+                <p className="text-xs text-text-secondary">{d.phone}</p>
+                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <dt className="text-text-secondary">Tajriba</dt>
+                  <dd>{d.experienceYears ?? "—"} yil</dd>
+                  <dt className="text-text-secondary">Transport</dt>
+                  <dd>{d.carType ?? "—"}</dd>
+                  <dt className="text-text-secondary">Davlat raqami</dt>
+                  <dd>{d.carNumber ?? "—"}</dd>
+                </dl>
+                <div className="mt-3 flex gap-2">
+                  <form action={approveDriverApplication}>
+                    <input type="hidden" name="driverId" value={d.id} />
+                    <button className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white">
+                      Tasdiqlash
+                    </button>
+                  </form>
+                  <form action={rejectDriverApplication}>
+                    <input type="hidden" name="driverId" value={d.id} />
+                    <button className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600">
+                      Rad etish
+                    </button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <ul className="space-y-2">
-        {drivers.map((d) => {
+        {roster.map((d) => {
           const delivered = d.orders.filter((o) => o.status === "DELIVERED");
           const cashDue = delivered.reduce((s, o) => s + o.total, 0);
           const cashTaken = delivered.reduce((s, o) => s + (o.cashTaken ?? 0), 0);
@@ -87,7 +133,7 @@ export default async function AdminDriversPage() {
             </li>
           );
         })}
-        {drivers.length === 0 && <li className="py-8 text-center text-sm text-text-secondary">Hozircha haydovchilar yo'q.</li>}
+        {roster.length === 0 && <li className="py-8 text-center text-sm text-text-secondary">Hozircha haydovchilar yo'q.</li>}
       </ul>
 
       <form action={createDriver} className="space-y-3 rounded-2xl border border-border-primary bg-bg-secondary p-4">

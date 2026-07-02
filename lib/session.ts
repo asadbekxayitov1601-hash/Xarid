@@ -4,7 +4,16 @@ import { cookies, headers } from "next/headers";
 const COOKIE = "xarid_session";
 
 function secret(): string {
-  return process.env.SESSION_SECRET || "dev-secret-change-me";
+  const s = process.env.SESSION_SECRET;
+  if (s && s.length > 0) return s;
+  // Fail closed in production: without a real secret the HMAC key is public and
+  // any caller could mint `userId.hmac` for any account (including ADMIN). A
+  // thrown error (500 on every auth attempt) is strictly safer than silently
+  // trusting forgeable tokens. Local/dev keeps a static key for convenience.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be set in production");
+  }
+  return "dev-secret-change-me";
 }
 
 function sign(value: string): string {

@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   LayoutDashboard, ClipboardList, Store, Truck, Navigation, Route, Wallet,
-  BarChart3, LogOut, Menu, X,
+  BarChart3, LogOut, Menu, X, MessageCircle,
 } from "lucide-react";
 
 const NAV = [
@@ -18,6 +18,7 @@ const NAV = [
   { href: "/admin/dispatch", label: "Xarid Go", icon: Navigation },
   { href: "/admin/routes", label: "Marshrut", icon: Route },
   { href: "/admin/finance", label: "Moliya", icon: Wallet },
+  { href: "/admin/support", label: "Yordam", icon: MessageCircle },
   { href: "/admin/analytics", label: "Tahlil", icon: BarChart3 },
 ];
 

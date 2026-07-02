@@ -278,6 +278,47 @@ export async function provisionDriverLogin(formData: FormData) {
   revalidatePath("/admin/drivers");
 }
 
+// Approve a self-service courier application: mark the Driver APPROVED + active
+// and promote the linked User to role DRIVER so the courier app unlocks the map.
+export async function approveDriverApplication(formData: FormData) {
+  await requireAdmin();
+  const driverId = String(formData.get("driverId") ?? "").trim();
+  if (!driverId) return;
+  const driver = await prisma.driver.findUnique({ where: { id: driverId } });
+  if (!driver) return;
+  await prisma.driver.update({
+    where: { id: driverId },
+    data: { status: "APPROVED", active: true },
+  });
+  if (driver.userId) {
+    await prisma.user.update({ where: { id: driver.userId }, data: { role: "DRIVER" } });
+  }
+  revalidatePath("/admin/drivers");
+}
+
+// Reject a courier application: flag it REJECTED + inactive. The user keeps their
+// buyer role; they can re-apply, which moves the row back to PENDING.
+export async function rejectDriverApplication(formData: FormData) {
+  await requireAdmin();
+  const driverId = String(formData.get("driverId") ?? "").trim();
+  if (!driverId) return;
+  await prisma.driver.update({
+    where: { id: driverId },
+    data: { status: "REJECTED", active: false },
+  });
+  revalidatePath("/admin/drivers");
+}
+
+// Post an operator reply into a user's support thread (read by the app on poll).
+export async function replySupport(formData: FormData) {
+  await requireAdmin();
+  const userId = String(formData.get("userId") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim().slice(0, 2000);
+  if (!userId || !body) return;
+  await prisma.supportMessage.create({ data: { userId, fromSupport: true, body } });
+  revalidatePath("/admin/support");
+}
+
 export async function assignDriver(formData: FormData) {
   await requireAdmin();
   const orderId = String(formData.get("orderId"));
