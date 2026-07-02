@@ -21,35 +21,45 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "stars" }, { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    select: { buyerUserId: true, status: true, driverId: true, courierRating: true },
+  // Atomically claim the rating slot: this succeeds exactly once, and only for
+  // the buyer, on a DELIVERED, not-yet-rated order. Doing the check + write in a
+  // single conditional update closes the TOCTOU where concurrent POSTs from the
+  // same buyer could each pass a separate null-check and fold multiple times.
+  const claimed = await prisma.order.updateMany({
+    where: { id, buyerUserId: userId, status: "DELIVERED", courierRating: null },
+    data: { courierRating: stars },
   });
-  if (!order) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  if (order.buyerUserId !== userId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (order.status !== "DELIVERED") return NextResponse.json({ error: "not_delivered" }, { status: 409 });
-  if (order.courierRating != null) return NextResponse.json({ error: "already_rated" }, { status: 409 });
+  if (claimed.count !== 1) {
+    // Explain the failure precisely (only on the miss path).
+    const order = await prisma.order.findUnique({
+      where: { id },
+      select: { buyerUserId: true, status: true, courierRating: true },
+    });
+    if (!order) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    if (order.buyerUserId !== userId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    if (order.status !== "DELIVERED") return NextResponse.json({ error: "not_delivered" }, { status: 409 });
+    return NextResponse.json({ error: "already_rated" }, { status: 409 });
+  }
 
-  await prisma.order.update({ where: { id }, data: { courierRating: stars } });
-
-  // Fold into the driver's running average.
+  // Recompute the driver's rating from the source of truth (every rated order),
+  // rather than an incremental fold. This is idempotent + self-healing, so a
+  // replay or a concurrent rating of a different order converges to the correct
+  // aggregate instead of corrupting a running counter.
+  const order = await prisma.order.findUnique({ where: { id }, select: { driverId: true } });
   let ratingAvg: number | null = null;
   let ratingCount = 0;
-  if (order.driverId) {
-    const driver = await prisma.driver.findUnique({
-      where: { id: order.driverId },
-      select: { ratingAvg: true, ratingCount: true },
+  if (order?.driverId) {
+    const agg = await prisma.order.aggregate({
+      where: { driverId: order.driverId, courierRating: { not: null } },
+      _avg: { courierRating: true },
+      _count: { courierRating: true },
     });
-    if (driver) {
-      const prevCount = driver.ratingCount ?? 0;
-      const prevAvg = driver.ratingAvg ?? 0;
-      ratingCount = prevCount + 1;
-      ratingAvg = (prevAvg * prevCount + stars) / ratingCount;
-      await prisma.driver.update({
-        where: { id: order.driverId },
-        data: { ratingAvg, ratingCount },
-      });
-    }
+    ratingAvg = agg._avg.courierRating;
+    ratingCount = agg._count.courierRating;
+    await prisma.driver.update({
+      where: { id: order.driverId },
+      data: { ratingAvg, ratingCount },
+    });
   }
 
   return NextResponse.json({ ok: true, ratingAvg, ratingCount });
