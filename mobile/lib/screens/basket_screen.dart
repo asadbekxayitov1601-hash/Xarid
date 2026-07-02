@@ -4,6 +4,7 @@ import '../api.dart';
 import '../basket.dart';
 import '../theme.dart';
 import '../util.dart';
+import '../services/address_service.dart';
 
 class BasketScreen extends StatefulWidget {
   const BasketScreen({super.key});
@@ -213,6 +214,12 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
     final u = context.read<Api>().user;
     _name = TextEditingController(text: u?.name ?? '');
     _phone = TextEditingController(text: u?.phone ?? '+998 ');
+    // Prefill the delivery address from the one captured on first launch.
+    AddressService.load().then((a) {
+      if (a != null && mounted && _address.text.trim().isEmpty) {
+        _address.text = a.full;
+      }
+    });
   }
 
   @override

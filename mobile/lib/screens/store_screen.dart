@@ -60,7 +60,7 @@ class _StoreScreenState extends State<StoreScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.58,
+                      childAspectRatio: 0.74,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, i) => _ProductCard(product: products[i]),

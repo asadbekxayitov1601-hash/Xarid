@@ -6,12 +6,8 @@ import '../theme.dart';
 import '../util.dart';
 import '../widgets/skeleton.dart';
 import 'store_screen.dart';
-
-class CategoryItem {
-  final String name;
-  final String imageUrl;
-  CategoryItem({required this.name, required this.imageUrl});
-}
+import 'address_screen.dart';
+import '../services/address_service.dart';
 
 class StoresScreen extends StatefulWidget {
   const StoresScreen({super.key});
@@ -23,36 +19,35 @@ class _StoresScreenState extends State<StoresScreen> {
   late Future<List<Store>> _future;
   String _searchQuery = '';
   bool _onlyDiscounts = false;
-  bool _only1plus1 = false;
+  bool _fastOnly = false;
   String? _selectedCategory;
-
-  final List<CategoryItem> _categories = [
-    CategoryItem(
-      name: 'Mevalar',
-      imageUrl: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?w=100&auto=format&fit=crop',
-    ),
-    CategoryItem(
-      name: 'Sabzavotlar',
-      imageUrl: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=100&auto=format&fit=crop',
-    ),
-    CategoryItem(
-      name: 'Ko\'katlar',
-      imageUrl: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=100&auto=format&fit=crop',
-    ),
-    CategoryItem(
-      name: 'Poliz ekinlari',
-      imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=100&auto=format&fit=crop',
-    ),
-    CategoryItem(
-      name: 'Quritilgan mevalar',
-      imageUrl: 'https://images.unsplash.com/photo-1596547609652-9cf5d8d76921?w=100&auto=format&fit=crop',
-    ),
-  ];
+  SavedAddress? _address;
 
   @override
   void initState() {
     super.initState();
     _future = context.read<Api>().stores();
+    _loadAddress();
+  }
+
+  Future<void> _loadAddress() async {
+    final a = await AddressService.load();
+    if (!mounted) return;
+    setState(() => _address = a);
+    // First launch: no saved address yet -> prompt the onboarding capture
+    // (GPS detect, then manual street/apartment entry).
+    if (a == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _editAddress();
+      });
+    }
+  }
+
+  Future<void> _editAddress() async {
+    final result = await Navigator.of(context).push<SavedAddress>(
+      MaterialPageRoute(builder: (_) => AddressScreen(initial: _address)),
+    );
+    if (result != null && mounted) setState(() => _address = result);
   }
 
   Future<void> _reload() async {
@@ -69,12 +64,12 @@ class _StoresScreenState extends State<StoresScreen> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: Brand.green,
-                shape: BoxShape.circle,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.shopping_bag_rounded, color: Brand.onAccent, size: 20),
+              child: Image.asset('assets/logo.png', width: 30, height: 30, fit: BoxFit.contain),
             ),
             const SizedBox(width: 10),
             const Text(
@@ -103,81 +98,40 @@ class _StoresScreenState extends State<StoresScreen> {
   }
 
   Widget _buildAddressSelector() {
+    final hasAddress = _address != null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          InkWell(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Manzilni almashtirish funksiyasi'),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: Brand.ink,
-                ),
-              );
-            },
+      child: InkWell(
+        onTap: _editAddress,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Brand.card,
             borderRadius: BorderRadius.circular(999),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Brand.card,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Brand.border.withValues(alpha: 0.5)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.home_rounded, color: Colors.deepPurple, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    'Uy · Imom Buxoriy ko\'chasi, 25',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: Brand.ink,
-                      fontSize: 14,
-                    ),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.keyboard_arrow_down_rounded, color: Brand.inkSoft, size: 18),
-                ],
-              ),
-            ),
+            border: Border.all(color: Brand.border.withValues(alpha: 0.5)),
           ),
-          Stack(
-            clipBehavior: Clip.none,
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Brand.card,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Brand.border.withValues(alpha: 0.5)),
-                ),
-                child: const Icon(Icons.tune_rounded, color: Brand.ink, size: 20),
-              ),
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text(
-                    '1',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+              const Icon(Icons.location_on_rounded, color: Brand.green, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasAddress ? _address!.chip : 'Yetkazish manzilini tanlang',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: hasAddress ? Brand.ink : Brand.inkSoft,
+                    fontSize: 14,
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
+              const Icon(Icons.keyboard_arrow_down_rounded, color: Brand.inkSoft, size: 18),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -208,65 +162,91 @@ class _StoresScreenState extends State<StoresScreen> {
     );
   }
 
-  Widget _buildCategoriesSlider() {
+  // Data-driven category strip: the categories are the union of what the loaded
+  // stores actually carry (see build()), so tapping one genuinely filters the
+  // list. Hidden entirely when the catalog reports no categories.
+  Widget _buildCategoriesSlider(List<String> categories) {
+    if (categories.isEmpty) return const SizedBox.shrink();
     return Container(
-      height: 110,
+      height: 100,
       margin: const EdgeInsets.only(top: 16, bottom: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _categories.length,
+        itemCount: categories.length,
         itemBuilder: (context, index) {
-          final cat = _categories[index];
-          final isSelected = _selectedCategory == cat.name;
+          final cat = categories[index];
+          final isSelected = _selectedCategory == cat;
           return Padding(
-            padding: const EdgeInsets.only(right: 18.0),
+            padding: const EdgeInsets.only(right: 14.0),
             child: InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedCategory = isSelected ? null : cat.name;
-                });
-              },
+              onTap: () => setState(() => _selectedCategory = isSelected ? null : cat),
               borderRadius: BorderRadius.circular(16),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: isSelected ? Brand.green.withValues(alpha: 0.15) : Brand.card,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected ? Brand.green : Brand.border.withValues(alpha: 0.5),
-                        width: isSelected ? 2 : 1,
+              child: SizedBox(
+                width: 72,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Brand.green.withValues(alpha: 0.15) : Brand.card,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? Brand.green : Brand.border.withValues(alpha: 0.5),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Icon(_categoryIcon(cat),
+                          color: isSelected ? Brand.green : Brand.inkSoft, size: 26),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      cat,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                        color: isSelected ? Brand.green : Brand.ink,
                       ),
                     ),
-                    padding: const EdgeInsets.all(6),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        cat.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.restaurant_rounded, color: Brand.inkSoft),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    cat.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                      color: isSelected ? Brand.green : Brand.ink,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
         },
       ),
     );
+  }
+
+  // Maps a catalog category (Uzbek, from the DB) to a representative icon.
+  IconData _categoryIcon(String c) {
+    switch (c) {
+      case 'Mevalar':
+        return Icons.apple;
+      case 'Sabzavotlar':
+        return Icons.eco;
+      case "Ko'katlar":
+        return Icons.grass;
+      case 'Poliz ekinlari':
+        return Icons.spa;
+      case 'Sut va tuxum':
+      case 'Sut mahsulotlari':
+        return Icons.egg_alt;
+      case 'Non':
+        return Icons.bakery_dining;
+      case "Go'sht":
+        return Icons.set_meal;
+      case 'Ichimliklar':
+        return Icons.local_drink;
+      case 'Quruq mahsulotlar':
+        return Icons.rice_bowl;
+      default:
+        return Icons.shopping_basket;
+    }
   }
 
   Widget _buildFilterPills() {
@@ -276,53 +256,23 @@ class _StoresScreenState extends State<StoresScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          _filterIconPill(Icons.swap_vert_rounded),
-          const SizedBox(width: 8),
           _filterTextPill(
             label: 'Chegirmalar',
             icon: Icons.percent_rounded,
             iconColor: Colors.pinkAccent,
             isActive: _onlyDiscounts,
-            onTap: () {
-              setState(() {
-                _onlyDiscounts = !_onlyDiscounts;
-              });
-            },
+            onTap: () => setState(() => _onlyDiscounts = !_onlyDiscounts),
           ),
           const SizedBox(width: 8),
           _filterTextPill(
-            label: '1+1 aksiyasi',
-            icon: Icons.local_fire_department_rounded,
-            iconColor: Colors.deepOrangeAccent,
-            isActive: _only1plus1,
-            onTap: () {
-              setState(() {
-                _only1plus1 = !_only1plus1;
-              });
-            },
-          ),
-          const SizedBox(width: 8),
-          _filterTextPill(
-            label: 'Yetkazib berish',
-            icon: Icons.delivery_dining_rounded,
+            label: 'Tez yetkazish',
+            icon: Icons.bolt_rounded,
             iconColor: Brand.green,
-            isActive: false,
-            onTap: () {},
+            isActive: _fastOnly,
+            onTap: () => setState(() => _fastOnly = !_fastOnly),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _filterIconPill(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Brand.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Brand.border.withValues(alpha: 0.5)),
-      ),
-      child: Icon(icon, color: Brand.ink, size: 18),
     );
   }
 
@@ -383,7 +333,7 @@ class _StoresScreenState extends State<StoresScreen> {
               setState(() {
                 _searchQuery = '';
                 _onlyDiscounts = false;
-                _only1plus1 = false;
+                _fastOnly = false;
                 _selectedCategory = null;
               });
             },
@@ -434,29 +384,6 @@ class _StoresScreenState extends State<StoresScreen> {
                           scrollable: true);
                     }
                     final stores = snap.data ?? [];
-                    
-                    // Filter stores based on search query and active filter flags
-                    final filteredStores = stores.where((s) {
-                      final matchesSearch = s.name.toLowerCase().contains(_searchQuery.toLowerCase());
-                      final matchesDiscount = !_onlyDiscounts || s.discountPct != null;
-                      return matchesSearch && matchesDiscount;
-                    }).toList();
-
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return ListView(
-                        children: [
-                          _buildAddressSelector(),
-                          _buildSearchBar(),
-                          _buildCategoriesSlider(),
-                          _buildFilterPills(),
-                          _buildStoreCountHeader(0),
-                          const SizedBox(
-                            height: 400,
-                            child: _StoresSkeleton(),
-                          ),
-                        ],
-                      );
-                    }
 
                     if (stores.isEmpty) {
                       return const EmptyMessage(
@@ -465,16 +392,35 @@ class _StoresScreenState extends State<StoresScreen> {
                           scrollable: true);
                     }
 
+                    // The category strip is the union of categories the loaded
+                    // stores actually carry, so every chip filters to a
+                    // non-empty result.
+                    final categories = <String>{
+                      for (final s in stores) ...s.categories,
+                    }.toList()
+                      ..sort();
+
+                    // Apply search + category + discount + fast-delivery filters.
+                    final q = _searchQuery.trim().toLowerCase();
+                    final filteredStores = stores.where((s) {
+                      final matchesSearch = q.isEmpty || s.name.toLowerCase().contains(q);
+                      final matchesDiscount = !_onlyDiscounts || s.discountPct != null;
+                      final matchesCategory =
+                          _selectedCategory == null || s.categories.contains(_selectedCategory);
+                      final matchesFast = !_fastOnly || (s.etaMax != null && s.etaMax! <= 30);
+                      return matchesSearch && matchesDiscount && matchesCategory && matchesFast;
+                    }).toList();
+
                     return ListView.builder(
                       padding: EdgeInsets.zero,
                       itemCount: 5 + filteredStores.length,
                       itemBuilder: (context, index) {
                         if (index == 0) return _buildAddressSelector();
                         if (index == 1) return _buildSearchBar();
-                        if (index == 2) return _buildCategoriesSlider();
+                        if (index == 2) return _buildCategoriesSlider(categories);
                         if (index == 3) return _buildFilterPills();
                         if (index == 4) return _buildStoreCountHeader(filteredStores.length);
-                        
+
                         final store = filteredStores[index - 5];
                         return _StoreCard(store: store);
                       },
