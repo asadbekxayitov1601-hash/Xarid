@@ -52,9 +52,9 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         fromSupport: true,
-        // Mirrors support_auto_reply in lib/i18n.ts; the client localizes the
-        // displayed copy by detecting this sentinel is unnecessary — we just send
-        // a neutral default. Operators can follow up from the admin inbox.
+        // Support messages are persisted free text stored verbatim in the thread
+        // (not localized at render time), so a neutral hardcoded acknowledgement
+        // is fine here. Real operators follow up from the admin inbox.
         body: "Rahmat! Murojaatingiz qabul qilindi. Tez orada javob beramiz.",
         readAt: null,
       },

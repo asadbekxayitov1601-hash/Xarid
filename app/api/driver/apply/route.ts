@@ -19,10 +19,13 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  const fullName = String(body?.fullName ?? "").trim();
+  // Cap free-text at write time (mirrors the .slice() caps in app/admin/actions.ts
+  // and /api/support) so a single applicant row can't be inflated to a huge
+  // payload that then bloats the admin drivers render.
+  const fullName = String(body?.fullName ?? "").trim().slice(0, 120);
   const phone = normalizePhone(String(body?.phone ?? ""));
-  const carType = String(body?.carType ?? "").trim();
-  const carNumber = String(body?.carNumber ?? "").trim();
+  const carType = String(body?.carType ?? "").trim().slice(0, 40);
+  const carNumber = String(body?.carNumber ?? "").trim().slice(0, 20);
   const experienceYears = Math.trunc(Number(body?.experienceYears));
 
   if (fullName.length < 2) return NextResponse.json({ error: "name" }, { status: 400 });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSessionUserId } from "@/lib/session";
+import { getCurrentDriver } from "@/lib/driver-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +14,10 @@ export const dynamic = "force-dynamic";
 const HISTORY_LIMIT = 50;
 
 export async function GET() {
-  const userId = await getSessionUserId();
-  if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const driver = await prisma.driver.findUnique({ where: { userId }, select: { id: true } });
+  // Gate on the same active-driver check the rest of the driver API uses, so a
+  // PENDING applicant or a driver whose access was revoked (REJECTED, active
+  // false) can't re-read their historical delivery addresses + payouts.
+  const driver = await getCurrentDriver();
   if (!driver) return NextResponse.json({ balance: 0, deliveredCount: 0, history: [] });
 
   const delivered = await prisma.order.findMany({
