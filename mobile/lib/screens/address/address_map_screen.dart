@@ -84,15 +84,35 @@ class _AddressMapScreenState extends State<AddressMapScreen> {
     });
   }
 
+  void _toast(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg), backgroundColor: Brand.ink));
+  }
+
   Future<void> _recenter() async {
+    if (!await LocationService.instance.ensurePermission()) {
+      _toast('Joylashuvga ruxsat bering (Sozlamalar)');
+      return;
+    }
+    // A fresh fix can hang on some devices/emulators, so cap it and fall back to
+    // the last known position instead of silently doing nothing.
+    Position? pos;
     try {
-      if (!await LocationService.instance.ensurePermission()) return;
-      final pos = await Geolocator.getCurrentPosition();
-      final p = LatLng(pos.latitude, pos.longitude);
-      _map.move(p, 17);
-      _center = p;
-      _resolve();
-    } catch (_) {}
+      pos = await Geolocator.getCurrentPosition().timeout(const Duration(seconds: 8));
+    } catch (_) {
+      pos = await Geolocator.getLastKnownPosition();
+    }
+    if (pos == null) {
+      _toast('Joylashuv aniqlanmadi');
+      return;
+    }
+    final p = LatLng(pos.latitude, pos.longitude);
+    if (!mounted) return;
+    _center = p;
+    _map.move(p, 17);
+    _resolve();
   }
 
   Future<void> _runSearch(String q) async {
@@ -163,7 +183,11 @@ class _AddressMapScreenState extends State<AddressMapScreen> {
             child: _HintCard(),
           ),
 
-          // My-location FAB, sitting just above the confirm sheet.
+          // Bottom confirm sheet.
+          Align(alignment: Alignment.bottomCenter, child: _confirmSheet()),
+
+          // My-location FAB — kept last (on top) so the sheet can never cover
+          // or swallow its taps.
           Positioned(
             right: 16,
             bottom: 210,
@@ -175,9 +199,6 @@ class _AddressMapScreenState extends State<AddressMapScreen> {
               child: const Icon(Icons.navigation_rounded),
             ),
           ),
-
-          // Bottom confirm sheet.
-          Align(alignment: Alignment.bottomCenter, child: _confirmSheet()),
         ],
       ),
     );
@@ -205,7 +226,7 @@ class _AddressMapScreenState extends State<AddressMapScreen> {
                       ? const SizedBox(
                           width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Brand.green))
                       : const Icon(Icons.search, color: Brand.inkSoft, size: 22),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: TextField(
                       controller: _searchController,

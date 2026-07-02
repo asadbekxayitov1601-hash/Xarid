@@ -260,8 +260,10 @@ class _StoresScreenState extends State<StoresScreen> {
   }
 
   Widget _buildFilterPills() {
-    return SizedBox(
+    return Container(
       height: 40,
+      // Breathing room between the search bar / categories and the filters.
+      margin: const EdgeInsets.only(top: 12, bottom: 4),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
