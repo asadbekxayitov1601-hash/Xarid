@@ -214,8 +214,8 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
     final u = context.read<Api>().user;
     _name = TextEditingController(text: u?.name ?? '');
     _phone = TextEditingController(text: u?.phone ?? '+998 ');
-    // Prefill the delivery address from the one captured on first launch.
-    AddressService.load().then((a) {
+    // Prefill the delivery address from the selected saved address.
+    AddressService.selected().then((a) {
       if (a != null && mounted && _address.text.trim().isEmpty) {
         _address.text = a.full;
       }

@@ -6,7 +6,8 @@ import '../theme.dart';
 import '../util.dart';
 import '../widgets/skeleton.dart';
 import 'store_screen.dart';
-import 'address_screen.dart';
+import 'address/address_map_screen.dart';
+import 'address/address_list_sheet.dart';
 import '../services/address_service.dart';
 
 class StoresScreen extends StatefulWidget {
@@ -31,21 +32,30 @@ class _StoresScreenState extends State<StoresScreen> {
   }
 
   Future<void> _loadAddress() async {
-    final a = await AddressService.load();
+    final selected = await AddressService.selected();
     if (!mounted) return;
-    setState(() => _address = a);
-    // First launch: no saved address yet -> prompt the onboarding capture
-    // (GPS detect, then manual street/apartment entry).
-    if (a == null) {
+    setState(() => _address = selected);
+    // First launch: no saved address yet -> open the map-pin picker onboarding.
+    if (selected == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _editAddress();
+        if (mounted) _openMapPicker();
       });
     }
   }
 
+  // Home chip tap: the saved-address book if we have any, else the map picker.
   Future<void> _editAddress() async {
+    if (_address == null) {
+      await _openMapPicker();
+    } else {
+      final result = await showAddressBookSheet(context);
+      if (result != null && mounted) setState(() => _address = result);
+    }
+  }
+
+  Future<void> _openMapPicker() async {
     final result = await Navigator.of(context).push<SavedAddress>(
-      MaterialPageRoute(builder: (_) => AddressScreen(initial: _address)),
+      MaterialPageRoute(builder: (_) => const AddressMapScreen()),
     );
     if (result != null && mounted) setState(() => _address = result);
   }
