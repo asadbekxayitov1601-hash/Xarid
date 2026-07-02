@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config.dart';
 import '../services/sse_client.dart';
+import '../services/routing_service.dart';
 import '../theme.dart';
 
 /// Live order tracking. Opens the SSE stream
@@ -56,6 +57,12 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   LatLng? _destination;
   String? _driverName;
   String? _address;
+
+  // The OSRM road route from the courier to the drop, refreshed as the courier
+  // moves. Its duration/distance also feed the live ETA in the status bar.
+  RoutePath? _route;
+  final Distance _distance = const Distance();
+  LatLng? _lastRouteOrigin;
 
   @override
   void initState() {
@@ -181,6 +188,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
       if (_driver != null || _destination != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _fitToPoints());
       }
+      _maybeLoadRoute();
     } catch (_) {
       // Snapshot is best-effort; ignore and rely on the live stream.
     }
@@ -210,6 +218,8 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
         _moveCourierTo(p);
         // Keep the courier comfortably in view as it moves.
         _fitToPoints();
+        // Refresh the road route + ETA as the courier advances (throttled).
+        _maybeLoadRoute();
       }
     }
   }
@@ -224,6 +234,23 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
     _sse?.close();
     _sse = null;
     if (mounted && _reconnecting) setState(() => _reconnecting = false);
+  }
+
+  // Fetch (or refresh) the courier -> drop road route. Throttled: skipped unless
+  // there is no route yet or the courier has moved > 200m since the last fetch,
+  // so the public OSRM server isn't hit on every ~15s location frame.
+  Future<void> _maybeLoadRoute() async {
+    final from = _driverTo ?? _driver;
+    final dest = _destination;
+    if (from == null || dest == null) return;
+    if (_route != null && _lastRouteOrigin != null &&
+        _distance.as(LengthUnit.Meter, _lastRouteOrigin!, from) < 200) {
+      return;
+    }
+    _lastRouteOrigin = from;
+    final path = await RoutingService.route(from, dest);
+    if (!mounted || path == null) return;
+    setState(() => _route = path);
   }
 
   void _fitToPoints() {
@@ -275,7 +302,10 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
               children: [
                 _StatusBar(
                   status: _status,
-                  etaMin: _etaMin,
+                  // Prefer the OSRM driving time when we have a route; fall back
+                  // to the server's straight-line ETA otherwise.
+                  etaMin: _route?.durationMin ?? _etaMin,
+                  distanceKm: _route?.distanceKm,
                   reconnecting: _reconnecting,
                 ),
                 Expanded(
@@ -285,6 +315,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
                           controller: _map,
                           driver: _driver,
                           destination: _destination,
+                          route: _route,
                           fallbackCenter: _kokand,
                           driverName: _driverName,
                         ),
@@ -298,10 +329,16 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
 
 /// Status pill + ETA, plus a calm "reconnecting" hint when the SSE drops.
 class _StatusBar extends StatelessWidget {
-  const _StatusBar({required this.status, required this.etaMin, required this.reconnecting});
+  const _StatusBar({
+    required this.status,
+    required this.etaMin,
+    required this.reconnecting,
+    this.distanceKm,
+  });
 
   final String status;
   final int? etaMin;
+  final double? distanceKm;
   final bool reconnecting;
 
   @override
@@ -337,7 +374,13 @@ class _StatusBar extends StatelessWidget {
                     const Icon(Icons.schedule, size: 16, color: Brand.inkSoft),
                     const SizedBox(width: 4),
                     Text(
-                      etaMin! <= 0 ? 'Yaqinda' : '~$etaMin daq',
+                      [
+                        if (distanceKm != null)
+                          distanceKm! >= 10
+                              ? '${distanceKm!.toStringAsFixed(0)} km'
+                              : '${distanceKm!.toStringAsFixed(1)} km',
+                        etaMin! <= 0 ? 'Yaqinda' : '~$etaMin daq',
+                      ].join(' · '),
                       style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700, fontSize: 13),
                     ),
                   ],
@@ -393,6 +436,7 @@ class _MapView extends StatelessWidget {
     required this.controller,
     required this.driver,
     required this.destination,
+    required this.route,
     required this.fallbackCenter,
     required this.driverName,
   });
@@ -400,6 +444,7 @@ class _MapView extends StatelessWidget {
   final MapController controller;
   final LatLng? driver;
   final LatLng? destination;
+  final RoutePath? route;
   final LatLng fallbackCenter;
   final String? driverName;
 
@@ -421,7 +466,14 @@ class _MapView extends StatelessWidget {
           userAgentPackageName: 'uz.xarid.app',
           maxZoom: 19,
         ),
-        if (driver != null && destination != null)
+        // The actual road route when we have it; a straight hint line otherwise.
+        if (route != null)
+          PolylineLayer(
+            polylines: [
+              Polyline(points: route!.points, color: Brand.green, strokeWidth: 4),
+            ],
+          )
+        else if (driver != null && destination != null)
           PolylineLayer(
             polylines: [
               Polyline(
