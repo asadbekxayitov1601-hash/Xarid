@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../api.dart';
 import '../../theme.dart';
@@ -17,16 +20,66 @@ class DriverProfileScreen extends StatefulWidget {
 
 class _DriverProfileScreenState extends State<DriverProfileScreen> {
   late Future<EarningsSummary> _future;
+  DriverProfile? _profile;
+  bool _uploadingPhoto = false;
 
   @override
   void initState() {
     super.initState();
     _future = CourierApi.earnings();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final me = await CourierApi.me();
+      if (mounted) setState(() => _profile = me.driver);
+    } catch (_) {
+      // Header falls back to the session name/initial.
+    }
   }
 
   Future<void> _reload() async {
     setState(() => _future = CourierApi.earnings());
+    _loadProfile();
     await _future;
+  }
+
+  // Detect the image type from magic bytes so the data URL mime is honest
+  // (the server only accepts jpeg/png/webp).
+  String _mimeOf(Uint8List b) {
+    if (b.length >= 3 && b[0] == 0xFF && b[1] == 0xD8) return 'image/jpeg';
+    if (b.length >= 4 && b[0] == 0x89 && b[1] == 0x50) return 'image/png';
+    if (b.length >= 12 && b[8] == 0x57 && b[9] == 0x45 && b[10] == 0x42 && b[11] == 0x50) {
+      return 'image/webp';
+    }
+    return 'image/jpeg';
+  }
+
+  Future<void> _changePhoto() async {
+    if (_uploadingPhoto) return;
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 70,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final dataUrl = 'data:${_mimeOf(bytes)};base64,${base64Encode(bytes)}';
+      if (mounted) setState(() => _uploadingPhoto = true);
+      final updated = await CourierApi.setPhoto(dataUrl);
+      if (mounted) setState(() => _profile = updated);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Rasm yuklanmadi — qayta urinib koʻring')));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
   }
 
   @override
@@ -56,7 +109,15 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
-                _Header(name: name, phone: phone),
+                _Header(
+                  name: name,
+                  phone: phone,
+                  photoUrl: _profile?.photoUrl,
+                  ratingAvg: _profile?.ratingAvg,
+                  ratingCount: _profile?.ratingCount ?? 0,
+                  uploading: _uploadingPhoto,
+                  onChangePhoto: _changePhoto,
+                ),
                 const SizedBox(height: 16),
                 _BalanceCard(
                   balance: data?.balance ?? 0,
@@ -99,23 +160,66 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 class _Header extends StatelessWidget {
   final String name;
   final String phone;
-  const _Header({required this.name, required this.phone});
+  final String? photoUrl;
+  final double? ratingAvg;
+  final int ratingCount;
+  final bool uploading;
+  final VoidCallback onChangePhoto;
+  const _Header({
+    required this.name,
+    required this.phone,
+    required this.photoUrl,
+    required this.ratingAvg,
+    required this.ratingCount,
+    required this.uploading,
+    required this.onChangePhoto,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
+    final rated = ratingAvg != null && ratingCount > 0;
     return Row(
       children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: Brand.green.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            name.isNotEmpty ? name.characters.first.toUpperCase() : 'K',
-            style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w900, fontSize: 24),
+        GestureDetector(
+          onTap: uploading ? null : onChangePhoto,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipOval(
+                child: hasPhoto
+                    ? AppImage(url: photoUrl, width: 64, height: 64)
+                    : Container(
+                        width: 64,
+                        height: 64,
+                        color: Brand.green.withValues(alpha: 0.12),
+                        alignment: Alignment.center,
+                        child: Text(
+                          name.isNotEmpty ? name.characters.first.toUpperCase() : 'K',
+                          style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w900, fontSize: 26),
+                        ),
+                      ),
+              ),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Brand.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Brand.cream, width: 2),
+                  ),
+                  child: uploading
+                      ? const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Brand.onAccent),
+                        )
+                      : const Icon(Icons.camera_alt, color: Brand.onAccent, size: 12),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 14),
@@ -127,6 +231,17 @@ class _Header extends StatelessWidget {
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Brand.ink)),
               if (phone.isNotEmpty)
                 Text(phone, style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                  const SizedBox(width: 3),
+                  Text(
+                    rated ? '${ratingAvg!.toStringAsFixed(1)} · $ratingCount baho' : 'Hali baho yoʻq',
+                    style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

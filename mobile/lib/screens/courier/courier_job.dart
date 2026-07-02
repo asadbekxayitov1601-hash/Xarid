@@ -7,6 +7,7 @@ import '../../theme.dart';
 import '../../util.dart';
 import '../../services/location_service.dart';
 import '../../services/routing_service.dart';
+import '../order_chat_screen.dart';
 import 'driver_api.dart';
 
 /// Kokand (Qoʻqon) centre — the map's fallback focus when an order has no pin.
@@ -147,6 +148,19 @@ class _CourierJobState extends State<CourierJob> {
           'Yetkazma #${_order.id.length > 5 ? _order.id.substring(_order.id.length - 5) : _order.id}',
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Mijoz bilan suhbat',
+            icon: const Icon(Icons.chat_bubble_outline_rounded, color: Brand.green),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => OrderChatScreen(
+                orderId: _order.id,
+                amCourier: true,
+                peerName: _order.customerName.isEmpty ? 'Mijoz' : _order.customerName,
+              ),
+            )),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),

@@ -129,6 +129,11 @@ model Driver {
   carType         String? // e.g. "Scooter", "Sedan", "Damas"
   carNumber       String? // vehicle plate, free text
 
+  // Profile photo (compressed image data URL) + running customer rating.
+  photoUrl    String?
+  ratingAvg   Float?  // average of courierRating across delivered orders
+  ratingCount Int     @default(0)
+
   orders Order[]
 }
 
@@ -196,11 +201,29 @@ model Order {
   cashTaken    Int?
   podFileId    String?  // proof-of-delivery photo (Telegram file_id)
   paidAt       DateTime?
+  // Buyer's 1-5 rating of the courier for this delivery (null until rated).
+  courierRating Int?
   createdAt    DateTime @default(now())
 
   items          OrderItem[]
   purchaseOrders PurchaseOrder[]
   payments       Payment[]
+  messages       OrderMessage[]
+}
+
+// One message in the per-order chat between the buyer and the assigned courier.
+// `fromCourier` flips the sender (false = buyer, true = courier). Polled by both
+// apps (low volume; no SSE needed).
+model OrderMessage {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  fromCourier Boolean  @default(false)
+  body        String
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 // An online payment attempt (Click or Uzum Bank). Amounts in UZS.

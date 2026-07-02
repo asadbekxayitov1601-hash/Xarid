@@ -34,6 +34,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     phone: string;
     carType: string | null;
     carNumber: string | null;
+    photoUrl: string | null;
+    ratingAvg: number | null;
+    ratingCount: number;
     lat: number | null;
     lng: number | null;
     updatedAt: string | null;
@@ -49,6 +52,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       phone: order.driver.phone,
       carType: order.driver.carType,
       carNumber: order.driver.carNumber,
+      photoUrl: order.driver.photoUrl,
+      ratingAvg: order.driver.ratingAvg,
+      ratingCount: order.driver.ratingCount,
       lat: loc?.lat ?? null,
       lng: loc?.lng ?? null,
       updatedAt: loc?.updatedAt?.toISOString() ?? null,
@@ -61,6 +67,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     ok: true,
     status: order.status,
     eta,
+    // Whether the buyer has already rated the courier for this delivery.
+    rated: order.courierRating != null,
     buyer: {
       name: order.buyerName,
       address: order.address,

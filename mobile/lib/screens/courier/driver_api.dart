@@ -90,6 +90,24 @@ class CourierApi {
     final data = await _get('/api/driver/earnings');
     return EarningsSummary.fromJson(data);
   }
+
+  /// PUT /api/driver/me { photoUrl } -> sets the driver's profile photo.
+  static Future<DriverProfile> setPhoto(String dataUrl) async {
+    final token = await _token();
+    if (token == null) throw const CourierApiException('unauthorized');
+    final res = await http
+        .put(
+          Uri.parse('${Config.apiBaseUrl}/api/driver/me'),
+          headers: _headers(token, json: true),
+          body: jsonEncode({'photoUrl': dataUrl}),
+        )
+        .timeout(const Duration(seconds: 30));
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw CourierApiException('http_${res.statusCode}');
+    }
+    final data = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic> : <String, dynamic>{};
+    return DriverProfile.fromJson(data['driver'] as Map<String, dynamic>);
+  }
 }
 
 class CourierApiException implements Exception {
@@ -127,6 +145,9 @@ class DriverProfile {
   final int? experienceYears;
   final String? carType;
   final String? carNumber;
+  final String? photoUrl;
+  final double? ratingAvg;
+  final int ratingCount;
 
   DriverProfile({
     required this.status,
@@ -135,6 +156,9 @@ class DriverProfile {
     this.experienceYears,
     this.carType,
     this.carNumber,
+    this.photoUrl,
+    this.ratingAvg,
+    this.ratingCount = 0,
   });
 
   factory DriverProfile.fromJson(Map<String, dynamic> j) => DriverProfile(
@@ -144,6 +168,9 @@ class DriverProfile {
         experienceYears: (j['experienceYears'] as num?)?.toInt(),
         carType: j['carType'] as String?,
         carNumber: j['carNumber'] as String?,
+        photoUrl: j['photoUrl'] as String?,
+        ratingAvg: (j['ratingAvg'] as num?)?.toDouble(),
+        ratingCount: (j['ratingCount'] as num?)?.toInt() ?? 0,
       );
 }
 

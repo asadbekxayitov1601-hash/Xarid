@@ -12,6 +12,8 @@ import '../config.dart';
 import '../services/sse_client.dart';
 import '../services/routing_service.dart';
 import '../theme.dart';
+import '../util.dart';
+import 'order_chat_screen.dart';
 
 /// Live order tracking. Opens the SSE stream
 /// `GET {apiBaseUrl}/api/orders/{orderId}/stream`, renders the order status and
@@ -60,6 +62,10 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   String? _driverPhone;
   String? _driverCarType;
   String? _driverCarNumber;
+  String? _driverPhoto;
+  double? _driverRatingAvg;
+  int _driverRatingCount = 0;
+  bool _rated = false;
   String? _address;
 
   // The OSRM road route from the courier to the drop, refreshed as the courier
@@ -179,6 +185,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
       setState(() {
         if (data['status'] is String) _status = data['status'] as String;
         _etaMin = _asInt(data['eta']);
+        if (data['rated'] == true) _rated = true;
         if (buyer is Map) {
           _address = buyer['address'] as String?;
           final dest = _asLatLng(buyer['lat'], buyer['lng']);
@@ -189,6 +196,9 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
           _driverPhone = driver['phone'] as String?;
           _driverCarType = driver['carType'] as String?;
           _driverCarNumber = driver['carNumber'] as String?;
+          _driverPhoto = driver['photoUrl'] as String?;
+          _driverRatingAvg = (driver['ratingAvg'] as num?)?.toDouble();
+          _driverRatingCount = (driver['ratingCount'] as num?)?.toInt() ?? 0;
           final dp = _asLatLng(driver['lat'], driver['lng']);
           if (dp != null) {
             // Snap (no glide) — this is the first known position.
@@ -307,9 +317,48 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
         _driverPhone ??= driver['phone'] as String?;
         _driverCarType = driver['carType'] as String?;
         _driverCarNumber = driver['carNumber'] as String?;
+        _driverPhoto = driver['photoUrl'] as String?;
+        _driverRatingAvg = (driver['ratingAvg'] as num?)?.toDouble();
+        _driverRatingCount = (driver['ratingCount'] as num?)?.toInt() ?? 0;
       });
     } catch (_) {
       // Best-effort; the card still shows the name + call button.
+    }
+  }
+
+  void _openChat() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => OrderChatScreen(
+        orderId: widget.orderId,
+        amCourier: false,
+        peerName: _driverName ?? 'Kuryer',
+      ),
+    ));
+  }
+
+  Future<void> _submitRating(int stars) async {
+    final token = await _token();
+    try {
+      final res = await http
+          .post(
+            Uri.parse('${Config.apiBaseUrl}/api/orders/${widget.orderId}/rate'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'stars': stars}),
+          )
+          .timeout(const Duration(seconds: 12));
+      if (!mounted) return;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        setState(() => _rated = true);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(
+              content: Text('Rahmat! Bahoyingiz qabul qilindi.'), backgroundColor: Brand.green));
+      }
+    } catch (_) {
+      // Ignore; the prompt stays so the buyer can retry.
     }
   }
 
@@ -391,12 +440,18 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
                           driverName: _driverName,
                         ),
                 ),
+                if (_status == 'DELIVERED' && !_rated && _driverName != null)
+                  _RatePrompt(name: _driverName!, onRate: _submitRating),
                 if (_driverName != null && _driverName!.isNotEmpty && !_isTerminal(_status))
                   _CourierCard(
                     name: _driverName!,
                     carType: _driverCarType,
                     carNumber: _driverCarNumber,
+                    photoUrl: _driverPhoto,
+                    ratingAvg: _driverRatingAvg,
+                    ratingCount: _driverRatingCount,
                     etaMin: _route?.durationMin ?? _etaMin,
+                    onChat: _openChat,
                     onCall: _driverPhone != null && _driverPhone!.isNotEmpty
                         ? () => _callDriver(_driverPhone!)
                         : null,
@@ -408,21 +463,29 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   }
 }
 
-/// Courier info shown to the buyer: name, vehicle, a call button, and the
-/// approximate arrival clock time derived from the live ETA.
+/// Courier info shown to the buyer: photo, name, vehicle, rating, chat + call
+/// buttons, and the approximate arrival clock time derived from the live ETA.
 class _CourierCard extends StatelessWidget {
   const _CourierCard({
     required this.name,
     this.carType,
     this.carNumber,
+    this.photoUrl,
+    this.ratingAvg,
+    this.ratingCount = 0,
     this.etaMin,
+    this.onChat,
     this.onCall,
   });
 
   final String name;
   final String? carType;
   final String? carNumber;
+  final String? photoUrl;
+  final double? ratingAvg;
+  final int ratingCount;
   final int? etaMin;
+  final VoidCallback? onChat;
   final VoidCallback? onCall;
 
   String get _vehicle {
@@ -444,6 +507,7 @@ class _CourierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final arrival = _arrivalClock();
+    final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -456,21 +520,33 @@ class _CourierCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(color: Brand.green.withValues(alpha: 0.12), shape: BoxShape.circle),
-                child: const Icon(Icons.delivery_dining, color: Brand.green, size: 24),
+              ClipOval(
+                child: hasPhoto
+                    ? AppImage(url: photoUrl, width: 48, height: 48)
+                    : Container(
+                        width: 48,
+                        height: 48,
+                        color: Brand.green.withValues(alpha: 0.12),
+                        child: const Icon(Icons.delivery_dining, color: Brand.green, size: 24),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Brand.ink)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Brand.ink)),
+                        ),
+                        const SizedBox(width: 8),
+                        _RatingBadge(avg: ratingAvg, count: ratingCount),
+                      ],
+                    ),
                     Text(_vehicle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -478,16 +554,11 @@ class _CourierCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onCall != null)
-                Material(
-                  color: Brand.green,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: onCall,
-                    child: const SizedBox(width: 46, height: 46, child: Icon(Icons.call, color: Brand.onAccent)),
-                  ),
-                ),
+              if (onChat != null) ...[
+                _RoundBtn(icon: Icons.chat_bubble_outline_rounded, onTap: onChat!, filled: false),
+                const SizedBox(width: 8),
+              ],
+              if (onCall != null) _RoundBtn(icon: Icons.call, onTap: onCall!, filled: true),
             ],
           ),
           if (etaMin != null) ...[
@@ -512,6 +583,104 @@ class _CourierCard extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingBadge extends StatelessWidget {
+  final double? avg;
+  final int count;
+  const _RatingBadge({this.avg, this.count = 0});
+
+  @override
+  Widget build(BuildContext context) {
+    final rated = avg != null && count > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: Brand.card, borderRadius: BorderRadius.circular(999)),
+      child: rated
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                const SizedBox(width: 3),
+                Text(avg!.toStringAsFixed(1),
+                    style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 12)),
+              ],
+            )
+          : const Text('Yangi',
+              style: TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w700, fontSize: 11)),
+    );
+  }
+}
+
+class _RoundBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool filled;
+  const _RoundBtn({required this.icon, required this.onTap, required this.filled});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? Brand.green : Brand.card,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(width: 46, height: 46, child: Icon(icon, color: filled ? Brand.onAccent : Brand.green)),
+      ),
+    );
+  }
+}
+
+/// Post-delivery courier rating (1-5 stars). Calls [onRate] once a star is
+/// tapped; the parent hides this once the server accepts the rating.
+class _RatePrompt extends StatefulWidget {
+  final String name;
+  final ValueChanged<int> onRate;
+  const _RatePrompt({required this.name, required this.onRate});
+
+  @override
+  State<_RatePrompt> createState() => _RatePromptState();
+}
+
+class _RatePromptState extends State<_RatePrompt> {
+  int _picked = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: const BoxDecoration(
+        color: Brand.cream,
+        border: Border(top: BorderSide(color: Brand.border)),
+      ),
+      child: Column(
+        children: [
+          const Text('Kuryerni baholang',
+              style: TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 15)),
+          const SizedBox(height: 4),
+          Text('${widget.name} · Yetkazib berish qanday oʻtdi?',
+              textAlign: TextAlign.center, style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final star = i + 1;
+              return IconButton(
+                onPressed: () {
+                  setState(() => _picked = star);
+                  widget.onRate(star);
+                },
+                icon: Icon(star <= _picked ? Icons.star_rounded : Icons.star_border_rounded,
+                    color: Colors.amber, size: 34),
+              );
+            }),
+          ),
         ],
       ),
     );
