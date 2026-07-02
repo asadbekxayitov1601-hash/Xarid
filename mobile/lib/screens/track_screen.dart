@@ -67,6 +67,14 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   RoutePath? _route;
   final Distance _distance = const Distance();
   LatLng? _lastRouteOrigin;
+  DateTime? _lastRouteAt;
+  bool _routeLoading = false;
+  // Auto-frame the map only once (with the courier present); afterwards respect
+  // the user's own pan/zoom instead of yanking back every location frame.
+  bool _framedOnce = false;
+  // Backfill the courier's vehicle at most once when the driver first appears
+  // over SSE (the 'location' event carries name + position but no car info).
+  bool _driverDetailsRequested = false;
 
   @override
   void initState() {
@@ -220,6 +228,12 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
       if (ev['name'] is String) {
         setState(() => _driverName = ev['name'] as String);
       }
+      // Courier just appeared over SSE -> backfill the vehicle once, since the
+      // location event has no car info.
+      if (_driverCarType == null && !_driverDetailsRequested) {
+        _driverDetailsRequested = true;
+        _backfillDriverDetails();
+      }
       final p = _asLatLng(ev['lat'], ev['lng']);
       if (p != null) {
         _moveCourierTo(p);
@@ -249,18 +263,60 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   Future<void> _maybeLoadRoute() async {
     final from = _driverTo ?? _driver;
     final dest = _destination;
-    if (from == null || dest == null) return;
-    if (_route != null && _lastRouteOrigin != null &&
-        _distance.as(LengthUnit.Meter, _lastRouteOrigin!, from) < 200) {
-      return;
+    if (from == null || dest == null || _routeLoading) return;
+    // Throttle every ATTEMPT (independent of whether a route already exists) so
+    // a degraded/rate-limited OSRM isn't hit on every ~15s frame: skip only when
+    // the last attempt was both nearby (<200m) AND recent (<20s). Moving >200m
+    // or 20s elapsing lets the next frame retry, so a transient failure recovers
+    // without spamming the server.
+    if (_lastRouteOrigin != null && _lastRouteAt != null) {
+      final moved = _distance.as(LengthUnit.Meter, _lastRouteOrigin!, from);
+      final elapsed = DateTime.now().difference(_lastRouteAt!);
+      if (moved < 200 && elapsed < const Duration(seconds: 20)) return;
     }
+    _routeLoading = true;
     _lastRouteOrigin = from;
-    final path = await RoutingService.route(from, dest);
-    if (!mounted || path == null) return;
-    setState(() => _route = path);
+    _lastRouteAt = DateTime.now();
+    try {
+      final path = await RoutingService.route(from, dest);
+      if (mounted && path != null) setState(() => _route = path);
+    } finally {
+      _routeLoading = false;
+    }
+  }
+
+  // The SSE stream carries the courier's name + position but not the vehicle.
+  // When the courier first appears mid-session, fetch the one-shot /track
+  // snapshot once to fill in the car type/number (and phone) for the card.
+  Future<void> _backfillDriverDetails() async {
+    final token = await _token();
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${Config.apiBaseUrl}/api/orders/${widget.orderId}/track'),
+            headers: {if (token != null) 'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode < 200 || res.statusCode >= 300) return;
+      final data = jsonDecode(res.body);
+      if (data is! Map || data['driver'] is! Map) return;
+      final driver = data['driver'] as Map;
+      if (!mounted) return;
+      setState(() {
+        _driverName ??= driver['name'] as String?;
+        _driverPhone ??= driver['phone'] as String?;
+        _driverCarType = driver['carType'] as String?;
+        _driverCarNumber = driver['carNumber'] as String?;
+      });
+    } catch (_) {
+      // Best-effort; the card still shows the name + call button.
+    }
   }
 
   void _fitToPoints() {
+    // Auto-frame only until we've framed once with the courier on screen, so
+    // the camera stops fighting the user's manual pan/zoom on later frames.
+    if (_framedOnce) return;
     final pts = <LatLng>[
       if (_driver != null) _driver!,
       if (_destination != null) _destination!,
@@ -278,6 +334,9 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
           ),
         );
       }
+      // Lock only once the courier is actually present, so a destination-only
+      // early fit doesn't prevent framing both when the courier appears.
+      if (_driver != null) _framedOnce = true;
     } catch (_) {
       // Map may not be laid out yet on the very first frame; harmless.
     }
