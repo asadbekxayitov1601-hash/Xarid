@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -12,7 +13,8 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool _signup = false;
   bool _busy = false;
-  String? _error;
+  // Holds an i18n key so the error re-localizes if the language changes.
+  String? _errorKey;
   final _phone = TextEditingController(text: '+998 ');
   final _password = TextEditingController();
   final _name = TextEditingController();
@@ -28,7 +30,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _submit() async {
     setState(() {
       _busy = true;
-      _error = null;
+      _errorKey = null;
     });
     try {
       await context.read<Api>().authenticate(
@@ -39,24 +41,24 @@ class _AuthScreenState extends State<AuthScreen> {
           );
       // The auth gate in main.dart rebuilds to HomeShell on success.
     } on ApiException catch (e) {
-      setState(() => _error = _msg(e.code));
+      setState(() => _errorKey = _errKey(e.code));
     } catch (_) {
-      setState(() => _error = "Tarmoq xatosi. Qayta urinib ko'ring.");
+      setState(() => _errorKey = 'auth.err_generic');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  String _msg(String code) {
+  String _errKey(String code) {
     switch (code) {
       case 'taken':
-        return "Bu raqam allaqachon ro'yxatdan o'tgan.";
+        return 'auth.err_taken';
       case 'phone':
-        return 'Telefon raqamni tekshiring (+998 ...).';
+        return 'auth.err_phone';
       case 'password':
-        return "Parol kamida 6 belgidan iborat bo'lsin.";
+        return 'auth.err_password';
       default:
-        return "Telefon yoki parol noto'g'ri.";
+        return 'auth.err_invalid';
     }
   }
 
@@ -85,19 +87,19 @@ class _AuthScreenState extends State<AuthScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Brand.ink)),
                   const SizedBox(height: 4),
-                  const Text("Qo'qonda tez yetkazib berish",
+                  Text(context.t('auth.subtitle'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Brand.inkSoft)),
+                      style: const TextStyle(color: Brand.inkSoft)),
                   const SizedBox(height: 28),
                   _SegToggle(
                       signup: _signup,
                       onChanged: (v) => setState(() {
                             _signup = v;
-                            _error = null;
+                            _errorKey = null;
                           })),
                   const SizedBox(height: 16),
                   if (_signup) ...[
-                    TextField(controller: _name, decoration: const InputDecoration(hintText: 'Ismingiz')),
+                    TextField(controller: _name, decoration: InputDecoration(hintText: context.t('auth.name'))),
                     const SizedBox(height: 12),
                   ],
                   TextField(
@@ -108,10 +110,10 @@ class _AuthScreenState extends State<AuthScreen> {
                   TextField(
                       controller: _password,
                       obscureText: true,
-                      decoration: const InputDecoration(hintText: 'Parol')),
-                  if (_error != null) ...[
+                      decoration: InputDecoration(hintText: context.t('auth.password'))),
+                  if (_errorKey != null) ...[
                     const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                    Text(context.t(_errorKey!), style: const TextStyle(color: Colors.red)),
                   ],
                   const SizedBox(height: 20),
                   FilledButton(
@@ -121,7 +123,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Brand.onAccent))
-                        : Text(_signup ? "Ro'yxatdan o'tish" : 'Kirish'),
+                        : Text(_signup ? context.t('auth.signup_cta') : context.t('auth.signin_cta')),
                   ),
                 ],
               ),
@@ -147,8 +149,8 @@ class _SegToggle extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: Brand.border)),
       child: Row(children: [
-        _seg('Kirish', !signup, () => onChanged(false)),
-        _seg("Ro'yxat", signup, () => onChanged(true)),
+        _seg(context.t('auth.signin'), !signup, () => onChanged(false)),
+        _seg(context.t('auth.register'), signup, () => onChanged(true)),
       ]),
     );
   }

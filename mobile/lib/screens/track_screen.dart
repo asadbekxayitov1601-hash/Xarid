@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
+import '../i18n.dart';
 import '../services/sse_client.dart';
 import '../services/routing_service.dart';
 import '../theme.dart';
@@ -331,7 +332,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
       builder: (_) => OrderChatScreen(
         orderId: widget.orderId,
         amCourier: false,
-        peerName: _driverName ?? 'Kuryer',
+        peerName: _driverName ?? context.tr('common.courier'),
       ),
     ));
   }
@@ -354,8 +355,8 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
         setState(() => _rated = true);
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(
-              content: Text('Rahmat! Bahoyingiz qabul qilindi.'), backgroundColor: Brand.green));
+          ..showSnackBar(SnackBar(
+              content: Text(context.tr('track.rated_thanks')), backgroundColor: Brand.green));
       }
     } catch (_) {
       // Ignore; the prompt stays so the buyer can retry.
@@ -414,7 +415,7 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Buyurtmani kuzatish', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('track.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: Brand.green))
@@ -488,12 +489,12 @@ class _CourierCard extends StatelessWidget {
   final VoidCallback? onChat;
   final VoidCallback? onCall;
 
-  String get _vehicle {
+  String? get _vehicle {
     final parts = <String>[
       if (carType != null && carType!.isNotEmpty) carType!,
       if (carNumber != null && carNumber!.isNotEmpty) carNumber!,
     ];
-    return parts.isEmpty ? 'Kuryer' : parts.join(' · ');
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 
   String? _arrivalClock() {
@@ -547,7 +548,7 @@ class _CourierCard extends StatelessWidget {
                         _RatingBadge(avg: ratingAvg, count: ratingCount),
                       ],
                     ),
-                    Text(_vehicle,
+                    Text(_vehicle ?? context.t('common.courier'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
@@ -572,12 +573,14 @@ class _CourierCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      arrival != null ? 'Taxminan $arrival da yetib keladi' : 'Yetib kelmoqda',
+                      arrival != null
+                          ? context.t('track.arriving', {'time': arrival})
+                          : context.t('track.arriving_soon'),
                       style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),
                   if (etaMin! > 0)
-                    Text('~$etaMin daq',
+                    Text('~$etaMin ${context.t('unit.min')}',
                         style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w800)),
                 ],
               ),
@@ -610,8 +613,8 @@ class _RatingBadge extends StatelessWidget {
                     style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 12)),
               ],
             )
-          : const Text('Yangi',
-              style: TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w700, fontSize: 11)),
+          : Text(context.t('track.new_rating'),
+              style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w700, fontSize: 11)),
     );
   }
 }
@@ -661,10 +664,10 @@ class _RatePromptState extends State<_RatePrompt> {
       ),
       child: Column(
         children: [
-          const Text('Kuryerni baholang',
-              style: TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 15)),
+          Text(context.t('track.rate_title'),
+              style: const TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 15)),
           const SizedBox(height: 4),
-          Text('${widget.name} · Yetkazib berish qanday oʻtdi?',
+          Text(context.t('track.rate_sub', {'name': widget.name}),
               textAlign: TextAlign.center, style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
           const SizedBox(height: 8),
           Row(
@@ -723,7 +726,7 @@ class _StatusBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  _statusLabel(status),
+                  context.t('status.$status'),
                   style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13),
                 ),
               ),
@@ -739,7 +742,7 @@ class _StatusBar extends StatelessWidget {
                           distanceKm! >= 10
                               ? '${distanceKm!.toStringAsFixed(0)} km'
                               : '${distanceKm!.toStringAsFixed(1)} km',
-                        etaMin! <= 0 ? 'Yaqinda' : '~$etaMin daq',
+                        etaMin! <= 0 ? context.t('track.soon') : '~$etaMin ${context.t('unit.min')}',
                       ].join(' · '),
                       style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700, fontSize: 13),
                     ),
@@ -749,17 +752,17 @@ class _StatusBar extends StatelessWidget {
           ),
           if (reconnecting && !_isTerminal(status)) ...[
             const SizedBox(height: 10),
-            const Row(
+            Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 13,
                   height: 13,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Brand.inkSoft),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  'Qayta ulanmoqda...',
-                  style: TextStyle(color: Brand.inkSoft, fontSize: 12.5),
+                  context.t('track.reconnecting'),
+                  style: const TextStyle(color: Brand.inkSoft, fontSize: 12.5),
                 ),
               ],
             ),
@@ -776,8 +779,8 @@ class _StatusBar extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   status == 'DELIVERED'
-                      ? 'Buyurtmangiz yetkazildi. Rahmat!'
-                      : 'Buyurtma bekor qilindi.',
+                      ? context.t('track.delivered_thanks')
+                      : context.t('track.cancelled'),
                   style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12.5),
                 ),
               ],
@@ -914,14 +917,14 @@ class _NoLocationYet extends StatelessWidget {
             const Icon(Icons.local_shipping_outlined, size: 56, color: Brand.inkSoft),
             const SizedBox(height: 16),
             Text(
-              _statusLabel(status),
+              context.t('status.$status'),
               style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 18),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Kuryer tayinlanishini kutmoqdamiz. Joylashuvi paydo bo\'lishi bilan xaritada ko\'rinadi.',
+            Text(
+              context.t('track.waiting_courier'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Brand.inkSoft, fontSize: 14, height: 1.4),
+              style: const TextStyle(color: Brand.inkSoft, fontSize: 14, height: 1.4),
             ),
           ],
         ),
@@ -979,25 +982,3 @@ Color _statusColor(String status) {
   }
 }
 
-String _statusLabel(String status) {
-  switch (status) {
-    case 'PLACED':
-      return 'Joylashtirildi';
-    case 'CONFIRMED':
-    case 'PARTIAL':
-      return 'Tasdiqlandi';
-    case 'ASSIGNED':
-      return 'Kuryer tayinlandi';
-    case 'PICKED_UP':
-      return 'Olib ketildi';
-    case 'EN_ROUTE':
-    case 'DELIVERING':
-      return 'Yetkazilmoqda';
-    case 'DELIVERED':
-      return 'Yetkazildi';
-    case 'CANCELLED':
-      return 'Bekor qilindi';
-    default:
-      return status;
-  }
-}

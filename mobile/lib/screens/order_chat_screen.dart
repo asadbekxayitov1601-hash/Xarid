@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 /// One message in a per-order buyer <-> courier chat.
@@ -140,7 +141,7 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Yuborilmadi — qayta urinib koʻring')));
+          ..showSnackBar(SnackBar(content: Text(context.tr('support.send_failed'))));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -168,15 +169,15 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
     if (_failed && _messages.isEmpty) {
       return _Centered(
         icon: Icons.cloud_off,
-        text: 'Yuklab boʻlmadi',
-        action: TextButton(onPressed: _load, child: const Text('Qayta urinish')),
+        text: context.t('common.load_failed'),
+        action: TextButton(onPressed: _load, child: Text(context.t('common.retry'))),
       );
     }
     if (_messages.isEmpty) {
       return _Centered(
         icon: Icons.chat_bubble_outline_rounded,
-        text: widget.amCourier ? 'Mijoz bilan yozishing' : 'Kuryer bilan yozishing',
-        subtitle: 'Xabar yozib, yetkazib berishni muvofiqlashtiring.',
+        text: widget.amCourier ? context.t('chat.with_customer') : context.t('chat.with_courier'),
+        subtitle: context.t('chat.sub'),
       );
     }
     return ListView.builder(
@@ -206,9 +207,9 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
                 controller: _controller,
                 minLines: 1,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: 'Xabar yozing...',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: InputDecoration(
+                  hintText: context.t('chat.hint'),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
             ),

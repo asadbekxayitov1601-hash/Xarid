@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api.dart';
 import '../config.dart';
+import '../i18n.dart';
 import '../theme.dart';
 import 'edit_name_screen.dart';
 import 'orders_screen.dart';
@@ -64,7 +65,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user.name ?? 'Foydalanuvchi',
+                            user.name ?? context.t('account.user'),
                             style: const TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
@@ -98,7 +99,7 @@ class _AccountScreenState extends State<AccountScreen> {
             // Profile menu list: Buyurtmalar tarixi, Topshiriqlar, Promokodlar, etc.
             _menuItem(
               icon: Icons.receipt_long_outlined,
-              label: 'Buyurtmalar tarixi',
+              label: context.t('account.order_history'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -109,7 +110,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
             _menuItem(
               icon: Icons.percent_outlined,
-              label: 'Promokodlar',
+              label: context.t('account.promo'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -119,15 +120,15 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             _menuItem(
               icon: Icons.chat_bubble_outline_rounded,
-              label: 'Yordam',
+              label: context.t('account.help'),
               onTap: () => _showHelpBottomSheet(context),
             ),
             _menuItem(
               icon: Icons.language_outlined,
-              label: 'Til',
-              trailing: const Text(
-                "O'zbek",
-                style: TextStyle(
+              label: context.t('account.language'),
+              trailing: Text(
+                L10n.names[context.watch<L10n>().locale] ?? '',
+                style: const TextStyle(
                   color: Brand.inkSoft,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -137,7 +138,7 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             _menuItem(
               icon: Icons.lock_outline_rounded,
-              label: 'Maxfiylik siyosati',
+              label: context.t('account.privacy'),
               onTap: () async {
                 final uri = Uri.parse('${Config.apiBaseUrl}/privacy');
                 if (await canLaunchUrl(uri)) {
@@ -147,7 +148,7 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             _menuItem(
               icon: Icons.description_outlined,
-              label: 'Foydalanuvchi shartnomasi',
+              label: context.t('account.terms'),
               onTap: () async {
                 final uri = Uri.parse('${Config.apiBaseUrl}/terms');
                 if (await canLaunchUrl(uri)) {
@@ -157,12 +158,12 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             _menuItem(
               icon: Icons.delivery_dining_outlined,
-              label: 'Kuryer bo\'lish',
+              label: context.t('account.become_courier'),
               onTap: () => _showCourierBottomSheet(context),
             ),
             _menuItem(
               icon: Icons.logout_rounded,
-              label: 'Chiqish',
+              label: context.t('account.logout'),
               textColor: Colors.redAccent,
               iconColor: Colors.redAccent,
               onTap: () => api.logout(),
@@ -173,7 +174,7 @@ class _AccountScreenState extends State<AccountScreen> {
             // App Version metadata
             Center(
               child: Text(
-                "Ilova",
+                context.t('account.app'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -352,13 +353,15 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _showLanguageBottomSheet(BuildContext context) {
+    final l10n = context.read<L10n>();
     showModalBottomSheet(
       context: context,
       backgroundColor: Brand.cream,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
+        final current = l10n.locale;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -366,60 +369,27 @@ class _AccountScreenState extends State<AccountScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Muloqot tili',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Brand.ink,
-                  ),
+                Text(
+                  context.tr('account.lang_title'),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Brand.ink),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Ilova tilini tanlang:',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Brand.inkSoft,
-                  ),
+                Text(
+                  context.tr('account.lang_sub'),
+                  style: const TextStyle(fontSize: 14, color: Brand.inkSoft),
                 ),
                 const SizedBox(height: 20),
-                _languageOption(
-                  title: "O'zbekcha",
-                  isSelected: true,
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                const SizedBox(height: 10),
-                _languageOption(
-                  title: "Русский",
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Rus tili tez kunda qo'shiladi!"),
-                        backgroundColor: Brand.inkSoft,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-                _languageOption(
-                  title: "English",
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("English language will be added soon!"),
-                        backgroundColor: Brand.inkSoft,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                ),
+                for (final code in L10n.supported) ...[
+                  _languageOption(
+                    title: L10n.names[code]!,
+                    isSelected: code == current,
+                    onTap: () {
+                      l10n.setLocale(code);
+                      Navigator.pop(sheetContext);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                ],
               ],
             ),
           ),

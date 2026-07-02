@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../api.dart';
+import '../../i18n.dart';
 import '../../theme.dart';
 import 'driver_api.dart';
 import 'driver_apply_screen.dart';
@@ -88,16 +89,16 @@ class _DriverShellState extends State<DriverShell> {
         onDestinationSelected: (i) => setState(() => _tab = i),
         backgroundColor: Brand.card,
         indicatorColor: Brand.greenBright.withValues(alpha: 0.25),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Xarita',
+            icon: const Icon(Icons.map_outlined),
+            selectedIcon: const Icon(Icons.map),
+            label: context.t('nav.map'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profil',
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
+            label: context.t('nav.profile'),
           ),
         ],
       ),
@@ -115,10 +116,10 @@ class _PendingScreen extends StatelessWidget {
     final api = context.read<Api>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kuryer arizasi', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('driver.apply_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(
-            tooltip: 'Chiqish',
+            tooltip: context.t('account.logout'),
             icon: const Icon(Icons.logout, color: Brand.inkSoft),
             onPressed: () => api.logout(),
           ),
@@ -140,21 +141,20 @@ class _PendingScreen extends StatelessWidget {
                 child: const Icon(Icons.hourglass_top_rounded, color: Brand.amber, size: 40),
               ),
               const SizedBox(height: 20),
-              const Text('Arizangiz koʻrib chiqilmoqda',
+              Text(context.t('driver.pending_title'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Brand.ink)),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Brand.ink)),
               const SizedBox(height: 10),
-              const Text(
-                'Administrator maʼlumotlaringizni tekshirmoqda. Tasdiqlangach, '
-                'xaritaga kirasiz va buyurtmalar qabul qila boshlaysiz.',
+              Text(
+                context.t('driver.pending_sub'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Brand.inkSoft, height: 1.4),
+                style: const TextStyle(color: Brand.inkSoft, height: 1.4),
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: onRefresh,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Holatni tekshirish'),
+                label: Text(context.t('driver.check_status')),
               ),
             ],
           ),
@@ -181,14 +181,14 @@ class _GateError extends StatelessWidget {
               children: [
                 const Icon(Icons.cloud_off, size: 56, color: Brand.inkSoft),
                 const SizedBox(height: 12),
-                const Text('Ulanib boʻlmadi',
-                    style: TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 18)),
+                Text(context.t('driver.gate_error'),
+                    style: const TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 18)),
                 const SizedBox(height: 6),
-                const Text('Internetni tekshirib, qayta urinib koʻring.',
-                    textAlign: TextAlign.center, style: TextStyle(color: Brand.inkSoft)),
+                Text(context.t('driver.gate_error_sub'),
+                    textAlign: TextAlign.center, style: const TextStyle(color: Brand.inkSoft)),
                 const SizedBox(height: 20),
-                FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Qayta urinish')),
-                TextButton(onPressed: () => api.logout(), child: const Text('Chiqish')),
+                FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: Text(context.t('common.retry'))),
+                TextButton(onPressed: () => api.logout(), child: Text(context.t('account.logout'))),
               ],
             ),
           ),

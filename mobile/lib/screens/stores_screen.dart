@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
@@ -127,7 +128,7 @@ class _StoresScreenState extends State<StoresScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  hasAddress ? _address!.chip : 'Yetkazish manzilini tanlang',
+                  hasAddress ? _address!.chip : context.t('stores.pick_address'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -157,7 +158,7 @@ class _StoresScreenState extends State<StoresScreen> {
         },
         style: const TextStyle(fontWeight: FontWeight.w600, color: Brand.ink),
         decoration: InputDecoration(
-          hintText: 'Qidiruv',
+          hintText: context.t('stores.search'),
           hintStyle: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600),
           prefixIcon: const Icon(Icons.search, color: Brand.inkSoft, size: 22),
           filled: true,
@@ -269,7 +270,7 @@ class _StoresScreenState extends State<StoresScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           _filterTextPill(
-            label: 'Chegirmalar',
+            label: context.t('stores.discounts'),
             icon: Icons.percent_rounded,
             iconColor: Colors.pinkAccent,
             isActive: _onlyDiscounts,
@@ -277,7 +278,7 @@ class _StoresScreenState extends State<StoresScreen> {
           ),
           const SizedBox(width: 8),
           _filterTextPill(
-            label: 'Tez yetkazish',
+            label: context.t('stores.fast'),
             icon: Icons.bolt_rounded,
             iconColor: Brand.green,
             isActive: _fastOnly,
@@ -333,7 +334,7 @@ class _StoresScreenState extends State<StoresScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '$count ta xarid joyi topildi',
+            context.t('stores.found', {'n': '$count'}),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -355,9 +356,9 @@ class _StoresScreenState extends State<StoresScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             ),
-            child: const Text(
-              'Qayta sozlash',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            child: Text(
+              context.t('stores.reset'),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
         ],
@@ -391,16 +392,16 @@ class _StoresScreenState extends State<StoresScreen> {
                     if (snap.hasError) {
                       return EmptyMessage(
                           icon: Icons.cloud_off,
-                          text: 'Hozircha ulanib bo\'lmadi.',
+                          text: context.t('common.connect_failed'),
                           onRetry: _reload,
                           scrollable: true);
                     }
                     final stores = snap.data ?? [];
 
                     if (stores.isEmpty) {
-                      return const EmptyMessage(
+                      return EmptyMessage(
                           icon: Icons.storefront,
-                          text: 'Hozircha do\'kon yo\'q.',
+                          text: context.t('stores.none'),
                           scrollable: true);
                     }
 

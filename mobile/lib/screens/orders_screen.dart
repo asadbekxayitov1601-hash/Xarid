@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
@@ -43,7 +44,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Buyurtmalar', style: TextStyle(fontWeight: FontWeight.w800))),
+      appBar: AppBar(title: Text(context.t('orders.title'), style: const TextStyle(fontWeight: FontWeight.w800))),
       body: RefreshIndicator(
         onRefresh: _reload,
         color: Brand.green,
@@ -56,15 +57,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
             if (snap.hasError) {
               return EmptyMessage(
                   icon: Icons.cloud_off,
-                  text: 'Buyurtmalarni yuklab bo\'lmadi.',
+                  text: context.t('common.load_failed'),
                   onRetry: _reload,
                   scrollable: true);
             }
             final orders = snap.data ?? [];
             if (orders.isEmpty) {
-              return const EmptyMessage(
+              return EmptyMessage(
                   icon: Icons.receipt_long,
-                  text: 'Buyurtmalar yo\'q.',
+                  text: context.t('orders.empty'),
                   scrollable: true);
             }
             return ListView.separated(
@@ -93,13 +94,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
-                            child: Text(o.statusLabel,
+                            child: Text(context.t('status.${o.status}'),
                                 style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text('${o.itemCount} mahsulot  ·  ${uzs(o.total + o.deliveryFee)}',
+                      Text('${context.t('orders.items', {'n': '${o.itemCount}'})}  ·  ${uzs(o.total + o.deliveryFee)}',
                           style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       Text(o.address,
@@ -115,7 +116,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               MaterialPageRoute(builder: (_) => TrackScreen(orderId: o.id)),
                             ),
                             icon: const Icon(Icons.location_on_outlined, size: 18, color: Brand.green),
-                            label: const Text('Kuzatish', style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
+                            label: Text(context.t('orders.track'), style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
                             style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
                           ),
                         ),

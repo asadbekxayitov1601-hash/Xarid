@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
 import '../basket.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../util.dart';
@@ -32,7 +33,7 @@ class _StoreScreenState extends State<StoreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Do\'kon')),
+      appBar: AppBar(title: Text(context.t('store.title'))),
       body: FutureBuilder<({Store store, List<Product> products})>(
         future: _future,
         builder: (context, snap) {
@@ -40,7 +41,7 @@ class _StoreScreenState extends State<StoreScreen> {
             return const _StoreSkeleton();
           }
           if (snap.hasError || snap.data == null) {
-            return EmptyMessage(icon: Icons.cloud_off, text: 'Do\'konni ochib bo\'lmadi.', onRetry: _reload);
+            return EmptyMessage(icon: Icons.cloud_off, text: context.t('store.open_failed'), onRetry: _reload);
           }
           final store = snap.data!.store;
           final products = snap.data!.products;
@@ -48,9 +49,9 @@ class _StoreScreenState extends State<StoreScreen> {
             slivers: [
               SliverToBoxAdapter(child: _Header(store: store)),
               if (products.isEmpty)
-                const SliverFillRemaining(
+                SliverFillRemaining(
                   hasScrollBody: false,
-                  child: EmptyMessage(icon: Icons.inventory_2_outlined, text: 'Mahsulotlar yo\'q.'),
+                  child: EmptyMessage(icon: Icons.inventory_2_outlined, text: context.t('store.no_products')),
                 )
               else
                 SliverPadding(
@@ -297,23 +298,23 @@ class _BasketBottomBar extends StatelessWidget {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const BasketScreen()),
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: Row(
                     children: [
-                      Icon(Icons.delivery_dining, color: Brand.green, size: 22),
-                      SizedBox(width: 8),
+                      const Icon(Icons.delivery_dining, color: Brand.green, size: 22),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Bepul yetkazib berish',
-                          style: TextStyle(
+                          context.t('basket.free_delivery'),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Brand.ink,
                           ),
                         ),
                       ),
-                      Icon(Icons.chevron_right, color: Brand.inkSoft, size: 20),
+                      const Icon(Icons.chevron_right, color: Brand.inkSoft, size: 20),
                     ],
                   ),
                 ),
@@ -350,11 +351,11 @@ class _BasketBottomBar extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Savatga',
+                            context.t('basket.to_cart'),
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Brand.onAccent,
                               fontSize: 16,
                               fontWeight: FontWeight.w800,

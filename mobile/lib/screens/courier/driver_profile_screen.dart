@@ -3,7 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../api.dart';
+import '../../config.dart';
+import '../../i18n.dart';
 import '../../theme.dart';
 import '../../util.dart';
 import '../support_screen.dart';
@@ -45,6 +48,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     await _future;
   }
 
+  Future<void> _openUrl(String path) async {
+    final uri = Uri.parse('${Config.apiBaseUrl}$path');
+    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   // Detect the image type from magic bytes so the data URL mime is honest
   // (the server only accepts jpeg/png/webp).
   String _mimeOf(Uint8List b) {
@@ -75,7 +83,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Rasm yuklanmadi — qayta urinib koʻring')));
+          ..showSnackBar(SnackBar(content: Text(context.tr('driver.photo_failed'))));
       }
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
@@ -90,10 +98,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('driver.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(
-            tooltip: 'Chiqish',
+            tooltip: context.t('account.logout'),
             icon: const Icon(Icons.logout, color: Brand.inkSoft),
             onPressed: () => api.logout(),
           ),
@@ -128,14 +136,26 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 const SizedBox(height: 20),
                 _MenuTile(
                   icon: Icons.support_agent_outlined,
-                  label: 'Yordam',
+                  label: context.t('account.help'),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SupportScreen()),
                   ),
                 ),
+                const SizedBox(height: 10),
+                _MenuTile(
+                  icon: Icons.lock_outline_rounded,
+                  label: context.t('account.privacy'),
+                  onTap: () => _openUrl('/privacy'),
+                ),
+                const SizedBox(height: 10),
+                _MenuTile(
+                  icon: Icons.description_outlined,
+                  label: context.t('account.terms'),
+                  onTap: () => _openUrl('/terms'),
+                ),
                 const SizedBox(height: 20),
-                const Text('Yetkazmalar tarixi',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Brand.ink)),
+                Text(context.t('driver.history'),
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Brand.ink)),
                 const SizedBox(height: 8),
                 if (snap.connectionState == ConnectionState.waiting)
                   const Padding(
@@ -237,7 +257,10 @@ class _Header extends StatelessWidget {
                   const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
                   const SizedBox(width: 3),
                   Text(
-                    rated ? '${ratingAvg!.toStringAsFixed(1)} · $ratingCount baho' : 'Hali baho yoʻq',
+                    rated
+                        ? context.t('driver.rating_count',
+                            {'avg': ratingAvg!.toStringAsFixed(1), 'n': '$ratingCount'})
+                        : context.t('driver.no_rating'),
                     style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                 ],
@@ -277,7 +300,7 @@ class _BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Balans',
+          Text(context.t('driver.balance'),
               style: TextStyle(color: Brand.onAccent.withValues(alpha: 0.8), fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           if (loading)
@@ -301,7 +324,7 @@ class _BalanceCard extends StatelessWidget {
               const Icon(Icons.local_shipping_outlined, size: 18, color: Brand.onAccent),
               const SizedBox(width: 8),
               Text(
-                '$deliveredCount ta yetkazilgan buyurtma',
+                context.t('driver.delivered_count', {'n': '$deliveredCount'}),
                 style: TextStyle(color: Brand.onAccent.withValues(alpha: 0.9), fontWeight: FontWeight.w600),
               ),
             ],
@@ -364,7 +387,7 @@ class _HistoryTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  entry.address.isEmpty ? 'Manzil koʻrsatilmagan' : entry.address,
+                  entry.address.isEmpty ? context.t('driver.no_address') : entry.address,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w600, color: Brand.ink),
@@ -400,11 +423,12 @@ class _EmptyHistory extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 28),
       alignment: Alignment.center,
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.inbox_outlined, size: 48, color: Brand.inkSoft),
-          SizedBox(height: 10),
-          Text('Hali yetkazmalar yoʻq', style: TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600)),
+          const Icon(Icons.inbox_outlined, size: 48, color: Brand.inkSoft),
+          const SizedBox(height: 10),
+          Text(context.t('driver.no_history'),
+              style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -423,8 +447,9 @@ class _InlineError extends StatelessWidget {
         children: [
           const Icon(Icons.cloud_off, size: 44, color: Brand.inkSoft),
           const SizedBox(height: 8),
-          const Text('Yuklab boʻlmadi', style: TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600)),
-          TextButton(onPressed: onRetry, child: const Text('Qayta urinish')),
+          Text(context.t('common.load_failed'),
+              style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600)),
+          TextButton(onPressed: onRetry, child: Text(context.t('common.retry'))),
         ],
       ),
     );

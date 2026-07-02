@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../i18n.dart';
 import '../../theme.dart';
 import 'driver_api.dart';
 
@@ -64,20 +65,20 @@ class _DriverApplyScreenState extends State<DriverApplyScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Yuborilmadi — qayta urinib koʻring')));
+          ..showSnackBar(SnackBar(content: Text(context.tr('support.send_failed'))));
         setState(() => _busy = false);
       }
     }
   }
 
   String? _required(String? v) =>
-      (v == null || v.trim().isEmpty) ? 'Toʻldiring' : null;
+      (v == null || v.trim().isEmpty) ? context.tr('driver.required') : null;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kuryer arizasi', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('driver.apply_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
         automaticallyImplyLeading: widget.reapply,
       ),
       body: Form(
@@ -85,13 +86,12 @@ class _DriverApplyScreenState extends State<DriverApplyScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            const Text(
-              'Xarid kuryeri boʻlish uchun maʼlumotlaringizni kiriting. Administrator '
-              'arizangizni koʻrib chiqadi.',
-              style: TextStyle(color: Brand.inkSoft, height: 1.4),
+            Text(
+              context.t('driver.apply_intro'),
+              style: const TextStyle(color: Brand.inkSoft, height: 1.4),
             ),
             const SizedBox(height: 20),
-            _label('Toʻliq ism'),
+            _label(context.t('driver.full_name')),
             TextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
@@ -99,7 +99,7 @@ class _DriverApplyScreenState extends State<DriverApplyScreen> {
               decoration: const InputDecoration(hintText: 'Ism Familiya'),
             ),
             const SizedBox(height: 16),
-            _label('Telefon raqami'),
+            _label(context.t('auth.phone')),
             TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
@@ -107,19 +107,19 @@ class _DriverApplyScreenState extends State<DriverApplyScreen> {
               decoration: const InputDecoration(hintText: '+998 90 123 45 67'),
             ),
             const SizedBox(height: 16),
-            _label('Ish tajribasi (yil)'),
+            _label(context.t('driver.experience')),
             TextFormField(
               controller: _experience,
               keyboardType: TextInputType.number,
               validator: (v) {
                 final n = int.tryParse((v ?? '').trim());
-                if (n == null || n < 0 || n > 70) return 'Notoʻgʻri qiymat';
+                if (n == null || n < 0 || n > 70) return context.tr('driver.invalid');
                 return null;
               },
               decoration: const InputDecoration(hintText: '2'),
             ),
             const SizedBox(height: 16),
-            _label('Transport turi'),
+            _label(context.t('driver.car_type')),
             DropdownButtonFormField<String>(
               initialValue: _carType,
               items: _carTypes
@@ -128,7 +128,7 @@ class _DriverApplyScreenState extends State<DriverApplyScreen> {
               onChanged: (v) => setState(() => _carType = v ?? _carTypes.first),
             ),
             const SizedBox(height: 16),
-            _label('Davlat raqami'),
+            _label(context.t('driver.car_number')),
             TextFormField(
               controller: _carNumber,
               textCapitalization: TextCapitalization.characters,
@@ -144,7 +144,7 @@ class _DriverApplyScreenState extends State<DriverApplyScreen> {
                       width: 22,
                       child: CircularProgressIndicator(strokeWidth: 2.5, color: Brand.onAccent),
                     )
-                  : const Text('Ariza yuborish'),
+                  : Text(context.t('driver.submit')),
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
 import '../basket.dart';
+import '../i18n.dart';
 import '../theme.dart';
 import '../util.dart';
 import '../services/address_service.dart';
@@ -40,7 +41,7 @@ class _BasketScreenState extends State<BasketScreen> {
     final displayTotal = hasDiscount ? basket.total - 20000 : basket.total;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Savat', style: TextStyle(fontWeight: FontWeight.w800))),
+      appBar: AppBar(title: Text(context.t('basket.title'), style: const TextStyle(fontWeight: FontWeight.w800))),
       body: basket.items.isEmpty
           ? const _EmptyBasket()
           : Column(
@@ -93,14 +94,14 @@ class _BasketScreenState extends State<BasketScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Brand.green.withValues(alpha: 0.3)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.celebration_rounded, color: Brand.green, size: 20),
-                        SizedBox(width: 12),
+                        const Icon(Icons.celebration_rounded, color: Brand.green, size: 20),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Ajoyib! Birinchi buyurtmangiz uchun 20 000 so\'m chegirma taqdim etildi.',
-                            style: TextStyle(
+                            context.t('basket.first_reward'),
+                            style: const TextStyle(
                               color: Brand.green,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
@@ -119,7 +120,7 @@ class _BasketScreenState extends State<BasketScreen> {
                 padding: const EdgeInsets.all(16),
                 child: FilledButton(
                   onPressed: () => _openCheckout(context, hasDiscount),
-                  child: Text('Buyurtma berish  ·  ${uzs(displayTotal)}'),
+                  child: Text('${context.t('basket.order_cta')}  ·  ${uzs(displayTotal)}'),
                 ),
               ),
             ),
@@ -157,9 +158,9 @@ class _EmptyBasket extends StatelessWidget {
               child: const Icon(Icons.shopping_basket_outlined, size: 40, color: Brand.inkSoft),
             ),
             const SizedBox(height: 16),
-            const Text('Savat bo\'sh',
+            Text(context.t('basket.empty'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Brand.inkSoft, fontSize: 15)),
+                style: const TextStyle(color: Brand.inkSoft, fontSize: 15)),
           ],
         ),
       ),
@@ -232,7 +233,7 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
 
   Future<void> _submit() async {
     if (_name.text.trim().isEmpty || _phone.text.trim().isEmpty || _address.text.trim().isEmpty) {
-      setState(() => _error = "Barcha maydonlarni to'ldiring.");
+      setState(() => _error = context.tr('basket.fill_all'));
       return;
     }
     setState(() {
@@ -254,10 +255,10 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
       if (!mounted) return;
       navigator.pop();
       messenger.showSnackBar(
-        const SnackBar(content: Text('Buyurtma qabul qilindi!'), backgroundColor: Brand.green),
+        SnackBar(content: Text(context.tr('basket.placed')), backgroundColor: Brand.green),
       );
     } catch (_) {
-      setState(() => _error = "Buyurtma berilmadi. Qayta urinib ko'ring.");
+      setState(() => _error = context.tr('basket.failed'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -275,17 +276,17 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Yetkazib berish',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Brand.ink)),
+          Text(context.t('basket.checkout_title'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Brand.ink)),
           const SizedBox(height: 16),
-          TextField(controller: _name, decoration: const InputDecoration(hintText: 'Ismingiz')),
+          TextField(controller: _name, decoration: InputDecoration(hintText: context.t('auth.name'))),
           const SizedBox(height: 10),
           TextField(
               controller: _phone,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(hintText: 'Telefon')),
+              decoration: InputDecoration(hintText: context.t('auth.phone'))),
           const SizedBox(height: 10),
-          TextField(controller: _address, decoration: const InputDecoration(hintText: 'Manzil')),
+          TextField(controller: _address, decoration: InputDecoration(hintText: context.t('basket.address_hint'))),
           if (_error != null) ...[
             const SizedBox(height: 10),
             Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -294,7 +295,7 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Mahsulotlar', style: TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600)),
+              Text(context.t('basket.products'), style: const TextStyle(color: Brand.inkSoft, fontWeight: FontWeight.w600)),
               Text(uzs(basket.total), style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700)),
             ],
           ),
@@ -303,7 +304,7 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Birinchi buyurtma chegirmasi', style: TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
+                Text(context.t('basket.first_discount'), style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w700)),
                 Text('-${uzs(20000)}', style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w900)),
               ],
             ),
@@ -312,7 +313,7 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Jami to\'lov', style: TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 16)),
+              Text(context.t('basket.total'), style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w800, fontSize: 16)),
               Text(
                 uzs(displayTotal),
                 style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w900, fontSize: 18),
@@ -327,7 +328,7 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Brand.onAccent))
-                : const Text('Tasdiqlash (naqd to\'lov)'),
+                : Text(context.t('basket.confirm')),
           ),
         ],
       ),

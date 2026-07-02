@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 /// One message in the support thread.
@@ -144,7 +145,7 @@ class _SupportScreenState extends State<SupportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Yuborilmadi — qayta urinib koʻring')));
+          ..showSnackBar(SnackBar(content: Text(context.tr('support.send_failed'))));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -155,7 +156,7 @@ class _SupportScreenState extends State<SupportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Yordam", style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('support.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: Column(
         children: [
@@ -173,15 +174,15 @@ class _SupportScreenState extends State<SupportScreen> {
     if (_failed && _messages.isEmpty) {
       return _Centered(
         icon: Icons.cloud_off,
-        text: 'Yuklab boʻlmadi',
-        action: TextButton(onPressed: _load, child: const Text('Qayta urinish')),
+        text: context.t('common.load_failed'),
+        action: TextButton(onPressed: _load, child: Text(context.t('common.retry'))),
       );
     }
     if (_messages.isEmpty) {
-      return const _Centered(
+      return _Centered(
         icon: Icons.support_agent,
-        text: 'Savolingiz bormi?',
-        subtitle: 'Bizga yozing — tez orada javob beramiz.',
+        text: context.t('support.empty'),
+        subtitle: context.t('support.empty_sub'),
       );
     }
     return ListView.builder(
@@ -209,9 +210,9 @@ class _SupportScreenState extends State<SupportScreen> {
                 minLines: 1,
                 maxLines: 4,
                 textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  hintText: 'Xabar yozing...',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: InputDecoration(
+                  hintText: context.t('support.hint'),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api.dart';
 import 'basket.dart';
+import 'i18n.dart';
 import 'theme.dart';
 import 'screens/auth_screen.dart';
 import 'screens/stores_screen.dart';
@@ -38,6 +39,7 @@ class XaridApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => Api()..load()),
         ChangeNotifierProvider(create: (_) => Basket()),
+        ChangeNotifierProvider(create: (_) => L10n()..load()),
       ],
       child: MaterialApp(
         title: _isCourierFlavor ? 'Xarid Kuryer' : 'Xarid',
@@ -109,10 +111,10 @@ class _HomeShellState extends State<HomeShell> {
         backgroundColor: Brand.card,
         indicatorColor: Brand.greenBright.withValues(alpha: 0.25),
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront),
-            label: "Do'konlar",
+          NavigationDestination(
+            icon: const Icon(Icons.storefront_outlined),
+            selectedIcon: const Icon(Icons.storefront),
+            label: context.t('nav.stores'),
           ),
           NavigationDestination(
             icon: Badge(
@@ -121,17 +123,17 @@ class _HomeShellState extends State<HomeShell> {
               child: const Icon(Icons.shopping_basket_outlined),
             ),
             selectedIcon: const Icon(Icons.shopping_basket),
-            label: 'Savat',
+            label: context.t('nav.basket'),
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Buyurtmalar',
+          NavigationDestination(
+            icon: const Icon(Icons.receipt_long_outlined),
+            selectedIcon: const Icon(Icons.receipt_long),
+            label: context.t('nav.orders'),
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profil',
+          NavigationDestination(
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
+            label: context.t('nav.profile'),
           ),
         ],
       ),
