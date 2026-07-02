@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
 import '../services/sse_client.dart';
@@ -56,6 +57,9 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
   LatLng? _driver;
   LatLng? _destination;
   String? _driverName;
+  String? _driverPhone;
+  String? _driverCarType;
+  String? _driverCarNumber;
   String? _address;
 
   // The OSRM road route from the courier to the drop, refreshed as the courier
@@ -174,6 +178,9 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
         }
         if (driver is Map) {
           _driverName = driver['name'] as String?;
+          _driverPhone = driver['phone'] as String?;
+          _driverCarType = driver['carType'] as String?;
+          _driverCarNumber = driver['carNumber'] as String?;
           final dp = _asLatLng(driver['lat'], driver['lng']);
           if (dp != null) {
             // Snap (no glide) — this is the first known position.
@@ -276,6 +283,11 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
     }
   }
 
+  Future<void> _callDriver(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
   static int? _asInt(dynamic v) {
     if (v is int) return v;
     if (v is num) return v.round();
@@ -320,9 +332,129 @@ class _TrackScreenState extends State<TrackScreen> with SingleTickerProviderStat
                           driverName: _driverName,
                         ),
                 ),
+                if (_driverName != null && _driverName!.isNotEmpty && !_isTerminal(_status))
+                  _CourierCard(
+                    name: _driverName!,
+                    carType: _driverCarType,
+                    carNumber: _driverCarNumber,
+                    etaMin: _route?.durationMin ?? _etaMin,
+                    onCall: _driverPhone != null && _driverPhone!.isNotEmpty
+                        ? () => _callDriver(_driverPhone!)
+                        : null,
+                  ),
                 if (_address != null && _address!.isNotEmpty) _AddressFooter(address: _address!),
               ],
             ),
+    );
+  }
+}
+
+/// Courier info shown to the buyer: name, vehicle, a call button, and the
+/// approximate arrival clock time derived from the live ETA.
+class _CourierCard extends StatelessWidget {
+  const _CourierCard({
+    required this.name,
+    this.carType,
+    this.carNumber,
+    this.etaMin,
+    this.onCall,
+  });
+
+  final String name;
+  final String? carType;
+  final String? carNumber;
+  final int? etaMin;
+  final VoidCallback? onCall;
+
+  String get _vehicle {
+    final parts = <String>[
+      if (carType != null && carType!.isNotEmpty) carType!,
+      if (carNumber != null && carNumber!.isNotEmpty) carNumber!,
+    ];
+    return parts.isEmpty ? 'Kuryer' : parts.join(' · ');
+  }
+
+  String? _arrivalClock() {
+    final e = etaMin;
+    if (e == null || e < 0) return null;
+    final t = DateTime.now().add(Duration(minutes: e));
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.hour)}:${two(t.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final arrival = _arrivalClock();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      decoration: const BoxDecoration(
+        color: Brand.cream,
+        border: Border(top: BorderSide(color: Brand.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(color: Brand.green.withValues(alpha: 0.12), shape: BoxShape.circle),
+                child: const Icon(Icons.delivery_dining, color: Brand.green, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Brand.ink)),
+                    Text(_vehicle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Brand.inkSoft, fontSize: 13)),
+                  ],
+                ),
+              ),
+              if (onCall != null)
+                Material(
+                  color: Brand.green,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: onCall,
+                    child: const SizedBox(width: 46, height: 46, child: Icon(Icons.call, color: Brand.onAccent)),
+                  ),
+                ),
+            ],
+          ),
+          if (etaMin != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(color: Brand.card, borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                children: [
+                  const Icon(Icons.schedule, size: 18, color: Brand.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      arrival != null ? 'Taxminan $arrival da yetib keladi' : 'Yetib kelmoqda',
+                      style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w700, fontSize: 13.5),
+                    ),
+                  ),
+                  if (etaMin! > 0)
+                    Text('~$etaMin daq',
+                        style: const TextStyle(color: Brand.green, fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

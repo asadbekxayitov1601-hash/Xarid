@@ -32,6 +32,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     id: string;
     name: string;
     phone: string;
+    carType: string | null;
+    carNumber: string | null;
     lat: number | null;
     lng: number | null;
     updatedAt: string | null;
@@ -45,6 +47,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       id: order.driver.id,
       name: order.driver.name,
       phone: order.driver.phone,
+      carType: order.driver.carType,
+      carNumber: order.driver.carNumber,
       lat: loc?.lat ?? null,
       lng: loc?.lng ?? null,
       updatedAt: loc?.updatedAt?.toISOString() ?? null,
